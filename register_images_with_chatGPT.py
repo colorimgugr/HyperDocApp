@@ -8,6 +8,8 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtGui import QPixmap, QImage, QTransform
 from PyQt5.QtCore import Qt, QPointF, QRectF
+import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 
 def np_to_qpixmap(img):
@@ -38,7 +40,6 @@ def overlay_checkerboard(fixed, aligned, tile_size=20):
                 result[y:y+tile_size, x:x+tile_size] = aligned[y:y+tile_size, x:x+tile_size]
     return result
 
-
 class ZoomableGraphicsView(QGraphicsView):
     def __init__(self):
         super().__init__()
@@ -57,7 +58,6 @@ class ZoomableGraphicsView(QGraphicsView):
         zoom_out_factor = 1 / zoom_in_factor
         zoom = zoom_in_factor if event.angleDelta().y() > 0 else zoom_out_factor
         self.scale(zoom, zoom)
-
 
 class RegistrationApp(QWidget):
     def __init__(self):
@@ -102,12 +102,6 @@ class RegistrationApp(QWidget):
         param_layout.addWidget(self.method_selector)
         param_layout.addWidget(QLabel("Transformation:"))
         param_layout.addWidget(self.transform_selector)
-
-        self.feature_toggle_btn = QPushButton("Show Features")
-        self.feature_toggle_btn.setCheckable(True)
-        self.feature_toggle_btn.toggled.connect(self.toggle_features)
-
-        param_layout.addWidget(self.feature_toggle_btn)
 
         self.label_fixed = QLabel("Fixed Image")
         self.label_moving = QLabel("Moving Image")
@@ -219,20 +213,8 @@ class RegistrationApp(QWidget):
         else:
             img = self.aligned_img
 
-        if self.show_features and self.kp1 is not None and self.kp2 is not None:
-            # Draw features on the aligned image (large image)
-            img_with_features = cv2.drawKeypoints(img, self.kp1, None, color=(0, 255, 0))  # Green for fixed image
-            img_with_features = cv2.drawKeypoints(img_with_features, self.kp2, None, color=(255, 0, 255))  # Magenta for moving image
-            self.viewer_aligned.setImage(np_to_qpixmap(img_with_features))  # Display image with features
-            return
-
         # Display the final aligned image
         self.viewer_aligned.setImage(np_to_qpixmap(img))
-
-    def toggle_features(self, checked):
-        self.show_features = checked
-        self.update_display()
-
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

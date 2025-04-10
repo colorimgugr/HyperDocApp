@@ -6,9 +6,7 @@
   <component name="ChangeListManager">
     <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="Open OK with mat v7.3&#10;Strating registration">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hypercubes/open.py" beforeDir="false" afterPath="$PROJECT_DIR$/hypercubes/open.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/interface/Hyperdoc_GUI_design.ui" beforeDir="false" afterPath="$PROJECT_DIR$/interface/Hyperdoc_GUI_design.ui" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/registration/registerHypercubes.py" beforeDir="false" afterPath="$PROJECT_DIR$/registration/registerHypercubes.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/register_images_with_chatGPT.py" beforeDir="false" afterPath="$PROJECT_DIR$/register_images_with_chatGPT.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -69,6 +67,11 @@
     &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable&quot;
   }
 }</component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\Usuario\Documents\GitHub\Hypertool" />
+    </key>
+  </component>
   <component name="RunManager">
     <configuration name="Run in console" type="PythonConfigurationType" factoryName="Python">
       <module name="Hypertool" />
@@ -139,7 +142,15 @@
       <option name="project" value="LOCAL" />
       <updated>1744112816540</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="Open OK with mat v7.3&#10;Strating registration">
+      <option name="closed" value="true" />
+      <created>1744279115309</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1744279115309</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
