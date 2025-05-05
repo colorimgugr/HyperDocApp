@@ -141,7 +141,7 @@ def register_cube(fixed_cube, moving_cube, method="ORB", max_features=500,
 
 
 if __name__ == "__main__":
-    from hypercubes.openSave import*
+    from hypercubes.hypercube import*
     path_ref=r'C:\Users\Usuario\Documents\DOC_Yannick\Hyperdoc_Test\Archivo chancilleria\SWIR\mat/MPD41a.mat'
     path_to_align = r'C:\Users\Usuario\Documents\DOC_Yannick\Hyperdoc_Test\Archivo chancilleria\VNIR/mat/MPD41a.mat'
     _,fixed_cube = open_hyp(path_ref,open_window=False)

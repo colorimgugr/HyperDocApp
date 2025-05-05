@@ -34,10 +34,10 @@ import matplotlib.text
 import os
 
 from matplotlib.pyplot import fill_between
-from data_vizualisation.data_vizualisation_window import*
-from hypercubes.hypercube import*
 
-class Data_Viz_Window(QWidget,Ui_DataVizualisation):
+from interface.Hyperdoc_GUI_design import*
+
+class MainWindow(QMainWindow, Ui_MainWindow):
     #TODO : make a widget window to edit metadata and add a button on all windows of the app
     def __init__(self):
         super().__init__()
@@ -100,8 +100,7 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
 
         for elem in [self.pushButton_next_cube,self.pushButton_prev_cube,self.pushButton_save_image,self.horizontalSlider_red_channel,self.horizontalSlider_green_channel,self.horizontalSlider_blue_channel,self.spinBox_red_channel,self.spinBox_green_channel,self.spinBox_blue_channel,self.checkBox_std,self.pushButton_save_spectra,self.horizontalSlider_transparency_GT,self.radioButton_VNIR,self.radioButton_rgb_user,self.radioButton_rgb_default,self.radioButton_SWIR,self.radioButton_grayscale]:
             elem.setEnabled(False)
-        BASE_DIR = os.path.dirname(os.path.dirname(__file__))
-        path_icon = os.path.join(BASE_DIR, "interface", "Hyperdoc_logo_transparente_CIMLab.png")
+        path_icon=os.path.join(os.path.dirname(__file__), "interface/Hyperdoc_logo_transparente_CIMLab.png")
 
         self.pixmap = QPixmap(path_icon)
         self.setWindowIcon(QIcon(path_icon))
@@ -169,11 +168,13 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
         if filepath:quick_change=True
         else : quick_change=False
 
+
         if not filepath:
-            filepath, _ = QFileDialog.getOpenFileName(self, "Ouvrir un hypercube", default_dir)
+            filepath, _ = QFileDialog.getOpenFileName(self, "Ouvrir un hypercube", default_dir, "Fichiers HDF5 (*.h5)")
 
         if not filepath:
             return
+
         self.cubes_path=filepath
 
         if 'UVIS' in filepath:
@@ -193,41 +194,27 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
             return
 
         try:
-            self.hyps[0].open_hyp(path_VNIR,open_dialog=False,show_except=False)
-            if self.hyps[0].data is None:
-                self.image_loaded[0] = False
-            else:
-                self.image_loaded[0] = True
+            self.hyps[0].load_hypercube(path_VNIR)
+            self.image_loaded[0] = True
         except:
             self.image_loaded[0] = False
 
         try:
-            self.hyps[1].open_hyp(path_SWIR,open_dialog=False,show_except=False)
-            if self.hyps[1].data is None :
-                self.image_loaded[1] = False
-            else :
-                self.image_loaded[1] = True
+            self.hyps[1].load_hypercube(path_SWIR)
+            self.image_loaded[1] = True
         except:
             self.image_loaded[1] = False
+
 
         if self.image_loaded[0]:
             file_GT=(path_VNIR[:-3] + '_GT.png').split('/')[-1]
         elif self.image_loaded[1]:
             file_GT=(path_SWIR[:-3] + '_GT.png').split('/')[-1]
 
-        print(f'before test : `{self.folder_GT}')
         if self.folder_GT:
             try:
                 path_GT = self.folder_GT + '/' + file_GT
-                print(f'path_GT from folder_GT : {path_GT}')
-                try : self.GT.load_image(path_GT)
-                except :
-                    file_GT_bis=file_GT.replace('-VNIR','')
-                    file_GT_bis=file_GT_bis.replace('-SWIR','')
-                    path_GT = self.folder_GT + '/' + file_GT_bis
-                    print(f'path_GT from folder_GT EXCEPT : {path_GT}')
-                    self.GT.load_image(path_GT)
-
+                self.GT.load_image(path_GT)
                 self.image_loaded[2] = True
             except:
                 self.image_loaded[2] = False
@@ -237,17 +224,12 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
             try:
                 if self.image_loaded[0]:
                     path_GT = path_VNIR[:-3] + '_GT.png'
-                    print(f'path GT from VNIR : {path_GT}')
                 elif self.image_loaded[1]:
                     path_GT = path_SWIR[:-3] + '_GT.png'
-                    print(f'path GT from SWNIR : {path_GT}')
                 self.GT.load_image(path_GT)
-
                 self.image_loaded[2]=True
             except:
                 self.image_loaded[2] = False
-
-            print(f'image[2] loaded = {self.image_loaded[2]}')
 
         if self.image_loaded[2] == False:
             try:
@@ -264,15 +246,11 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
                     if ans==qm.Yes:
                         filepath, _ = QFileDialog.getOpenFileName(self, "Open Ground Truth PNG image",path_VNIR,
                                                                   "PNG (*.png)")
-                        print(f'path after ask : `{filepath}')
                         try:
                             path_GT = filepath
-
                             self.GT.load_image(path_GT)
                             self.image_loaded[2] = True
                             self.folder_GT=('/').join(filepath.split('/')[:-1])
-                            print(f'folder after ask : `{self.folder_GT}')
-
                         except:
                             msg = QMessageBox()
                             msg.setIcon(QMessageBox.Icon.Warning)
@@ -338,7 +316,7 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
         self.image_loaded[2] = False
 
         try:
-            self.hyps[0].open_hyp(filepath,open_dialog=False)
+            self.hyps[0].load_hypercube(filepath)
             self.image_loaded[0] = True
             self.label_general_message.setText('UV-VIS minicube of substrate')
         except:
@@ -613,6 +591,7 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
             else:
                 return
 
+
             self.canvas_spectra.load_spectra(wls,spectra_mean,spectra_std,GT_material,GT_colors,std,self.image_loaded)
 
         else:
@@ -662,6 +641,28 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
 
         except:
             self.label_general_message.setText('Saving spectra FAILED')
+
+class Hypercube:
+    def __init__(self, filepath=None):
+        self.filepath = filepath
+        self.data = None
+        self.wl = None
+        self.metadata = None
+
+        if  self.filepath:
+            self.load_hypercube( self.filepath)
+
+    def load_hypercube(self, filepath):
+        """ Charge un fichier .h5 et extrait l'hypercube et evalue les longueurs d'onde. """
+        with h5py.File(filepath, 'r') as f:
+            self.data = np.array(f['DataCube']).T
+            self.metadata = {attr: f.attrs[attr] for attr in f.attrs}
+            self.wl = self.metadata['wl']
+
+    def get_rgb_image(self, indices):
+        if self.data is None:
+            return None
+        return self.data[:, :, indices]
 
 class Canvas_Image(FigureCanvas):
     def __init__(self):
@@ -1003,7 +1004,7 @@ if __name__ == "__main__":
     sys.excepthook = excepthook
     app = QApplication(sys.argv)
 
-    window = Data_Viz_Window()
+    window = MainWindow()
     window.showMaximized()
 
     update_font(app)

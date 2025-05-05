@@ -15,13 +15,12 @@ from PyQt5.QtCore import Qt, QPointF, QRectF, QRect, QPoint,QSize
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 import os
-
 import random
 
-# TODO : switch button to make function
+# TODO : Manual outling features
 
 from registration.registration_window import*
-from hypercubes.openSave import*
+from hypercubes.hypercube import*
 
 def np_to_qpixmap(img):
     if len(img.shape) == 2:
@@ -157,9 +156,9 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
         self.setupUi(self)
         self.setWindowTitle("Image Registration")
 
-        self.fixed_cube = None
-        self.moving_cube = None
-        self.aligned_cube= None
+        self.fixed_cube = Hypercube()
+        self.moving_cube = Hypercube()
+        self.aligned_cube= Hypercube()
         self.fixed_img = None
         self.moving_img = None
         self.aligned_img = None
@@ -186,6 +185,7 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
         self.pushButton_register.clicked.connect(self.register_imageAndCube)
         self.checkBox_crop.clicked.connect(self.check_selected_zones)
         self.pushButton_save_cube.clicked.connect(self.open_save_dialog)
+        self.pushButton_switch_images.clicked.connect(self.switch_fixe_mov)
 
         self.overlay_selector.currentIndexChanged.connect(self.update_display)
 
@@ -243,7 +243,7 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
     def update_images(self):
 
         for i_mov in [0,1]:
-            cube=self.cube[i_mov]
+            cube=self.cube[i_mov].data
             if cube is not None:
                 mode = ['one', 'whole'][self.radioButton_whole[i_mov].isChecked()]
                 chan = self.slider_channel[i_mov].value()
@@ -259,47 +259,87 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
                 # self.label_img[i_mov].setPixmap(np_to_qpixmap(img).scaled(300, 300, Qt.KeepAspectRatio))
                 self.viewer_img[i_mov].setImage(np_to_qpixmap(img))
 
-    def load_cube(self,i_mov,fname=None):
+    def load_cube(self,i_mov=None,fname=None,switch=False):
 
-        if fname is None:
-            fname, _ = QFileDialog.getOpenFileName(self, ['Load Fixed Cube','Load Moving Cube'][i_mov])
+        if switch:
+            old_fixed_cube=self.fixed_cube
+            self.fixed_cube=self.moving_cube
+            self.moving_cube=old_fixed_cube
+            self.cube = [self.fixed_cube, self.moving_cube]
 
-        if fname:
-            if fname[-3:] in['mat', '.h5']:
-                _, cube,_ = open_hyp(fname, open_dialog=False)
-                if i_mov:
-                    self.moving_cube = cube
-                else:
-                    self.fixed_cube = cube
+            for i_mov in range(2):
+                cube=self.cube[i_mov].data
+                self.slider_channel[i_mov].setMaximum(cube.shape[2] - 1)
+                self.spinBox_channel[i_mov].setMaximum(cube.shape[2] - 1)
 
-                self.cube = [self.fixed_cube, self.moving_cube]
-                self.slider_channel[i_mov].setMaximum(cube.shape[2]-1)
-                self.spinBox_channel[i_mov].setMaximum(cube.shape[2]-1)
-
-                if cube.shape[2]==121:
+                if cube.shape[2] == 121:
                     self.slider_channel[i_mov].setValue(60)
                     self.spinBox_channel[i_mov].setValue(60)
-                elif cube.shape[2]==161:
+                elif cube.shape[2] == 161:
                     self.slider_channel[i_mov].setValue(10)
                     self.spinBox_channel[i_mov].setValue(10)
 
                 mode = ['one', 'whole'][self.radioButton_whole[i_mov].isChecked()]
                 chan = self.slider_channel[i_mov].value()
                 img = self.cube_to_img(cube, mode, chan)
-                img =(img * 256 / np.max(img)).astype('uint8')
-            else:
-                img = cv2.imread(fname, cv2.IMREAD_GRAYSCALE)
+                img = (img * 256 / np.max(img)).astype('uint8')
 
+                # else:
+                #     img = cv2.imread(fname, cv2.IMREAD_GRAYSCALE)
+
+            self.viewer_img[i_mov].clear_rectangle()
             self.viewer_img[i_mov].clear_rectangle()
 
             if i_mov:
-                self.moving_img=img
+                self.moving_img = img
             else:
                 self.fixed_img = img
 
             self.img = [self.fixed_img, self.moving_img]
 
             self.viewer_img[i_mov].setImage(np_to_qpixmap(img))
+
+        else :
+            if fname is None:
+                fname, _ = QFileDialog.getOpenFileName(self, ['Load Fixed Cube','Load Moving Cube'][i_mov])
+
+            if fname:
+                if fname[-3:] in['mat', '.h5']:
+                    if i_mov:
+                        self.moving_cube.open_hyp(fname, open_dialog=False)
+                        cube=self.moving_cube.data
+                    else:
+                        self.fixed_cube.open_hyp(fname, open_dialog=False)
+                        cube=self.fixed_cube.data
+
+                    self.cube = [self.fixed_cube, self.moving_cube]
+                    self.slider_channel[i_mov].setMaximum(cube.shape[2]-1)
+                    self.spinBox_channel[i_mov].setMaximum(cube.shape[2]-1)
+
+                    if cube.shape[2]==121:
+                        self.slider_channel[i_mov].setValue(60)
+                        self.spinBox_channel[i_mov].setValue(60)
+                    elif cube.shape[2]==161:
+                        self.slider_channel[i_mov].setValue(10)
+                        self.spinBox_channel[i_mov].setValue(10)
+
+                    mode = ['one', 'whole'][self.radioButton_whole[i_mov].isChecked()]
+                    chan = self.slider_channel[i_mov].value()
+                    img = self.cube_to_img(cube, mode, chan)
+                    img =(img * 256 / np.max(img)).astype('uint8')
+                else:
+                    img = cv2.imread(fname, cv2.IMREAD_GRAYSCALE)
+
+                self.viewer_img[i_mov].clear_rectangle()
+
+                if i_mov:
+                    self.moving_img=img
+                else:
+                    self.fixed_img = img
+
+                self.img = [self.fixed_img, self.moving_img]
+
+                self.viewer_img[i_mov].setImage(np_to_qpixmap(img))
 
         self.pushButton_register.setEnabled(False)
 
@@ -387,9 +427,9 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
         if transform_type == "Affine":
             matrix, _ = cv2.estimateAffinePartial2D(src_pts, dst_pts)
             self.aligned_img = cv2.warpAffine(self.moving_img, matrix, (self.fixed_img.shape[1], self.fixed_img.shape[0]))
-            self.aligned_cube = np.zeros((self.fixed_cube.shape[0],self.fixed_cube.shape[1],self.moving_cube.shape[2]), dtype=np.float32)
-            for k in range(self.moving_cube.shape[2]):
-                self.aligned_cube[:,:,k] = cv2.warpAffine(self.moving_cube[:,:,k], matrix,
+            self.aligned_cube = np.zeros((self.fixed_cube.data.shape[0],self.fixed_cube.data.shape[1],self.moving_cube.data.shape[2]), dtype=np.float32)
+            for k in range(self.moving_cube.data.shape[2]):
+                self.aligned_cube[:,:,k] = cv2.warpAffine(self.moving_cube.data[:,:,k], matrix,
                                                   (self.fixed_img.shape[1], self.fixed_img.shape[0]))
 
         elif transform_type == "Perspective":
@@ -407,10 +447,10 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
                 return
             matrix, _ = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC)
             self.aligned_img = cv2.warpPerspective(self.moving_img, matrix, (self.fixed_img.shape[1], self.fixed_img.shape[0]))
-            self.aligned_cube = np.zeros((self.fixed_cube.shape[0],self.fixed_cube.shape[1],self.moving_cube.shape[2]), dtype=np.float32)
+            self.aligned_cube.data = np.zeros((self.fixed_cube.data.shape[0],self.fixed_cube.data.shape[1],self.moving_cube.data.shape[2]), dtype=np.float32)
 
-            for k in range(self.moving_cube.shape[2]):
-                self.aligned_cube[:,:,k] = cv2.warpPerspective(self.moving_cube[:,:,k], matrix,
+            for k in range(self.moving_cube.data.shape[2]):
+                self.aligned_cube.data[:,:,k] = cv2.warpPerspective(self.moving_cube.data[:,:,k], matrix,
                                                   (self.fixed_img.shape[1], self.fixed_img.shape[0]))
         else:
             QMessageBox.warning(self, "Error", "Unsupported transformation.")
@@ -570,73 +610,64 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
         """
         Sauvegarde les cubes et images selon le dict opts retourné par SaveWindow.get_options().
         """
-        # 1) Choix de dossier
-        save_dir = QFileDialog.getExistingDirectory(self, "Choisir un dossier de sauvegarde")
-        if not save_dir:
-            return
 
-        # 2) Rogner si nécessaire
+        save_path_align=None
+        save_path_fixed=None
+        save_both = opts['save_both']
+
+        # 1) Choix des noms de fichier
+        save_path_align, _ = QFileDialog.getSaveFileName(
+            parent=None,
+            caption="ALIGNED cube Save As…")
+        if save_both:
+            save_path_fixed, _ = QFileDialog.getSaveFileName(
+                parent=None,
+                caption="ALIGNED cube Save As…")
+
+        mini_fixed_cube=Hypercube(data=self.fixed_cube.data,wl=self.fixed_cube.wl,metadata=self.fixed_cube.metadata)
+        mini_align_cube=Hypercube(data=self.moving_cube.data,wl=self.moving_cube.wl,metadata=self.moving_cube.metadata)
+
+        # Crop
         if opts['crop_cube']:
             y, x, dy, dx = self.viewer_aligned.get_rect_coords()
             y, x, dy, dx = map(int, (y, x, dy, dx))
-            fixed_cube = self.fixed_cube[y:y + dy, x:x + dx, :]
-            aligned_cube = self.aligned_cube[y:y + dy, x:x + dx, :]
-            if opts['export_images']:
-                fixed_img = self.fixed_img[x:x + dx, y:y + dy]
-                aligned_img = self.aligned_img[x:x + dx, y:y + dy]
-        else:
-            fixed_cube = self.fixed_cube
-            aligned_cube = self.aligned_cube
-            if opts['export_images']:
-                fixed_img = self.fixed_img
-                aligned_img = self.aligned_img
+            mini_fixed_cube.data = self.fixed_cube.data[y:y + dy, x:x + dx, :]
+            mini_align_cube.data = self.aligned_cube.data[y:y + dy, x:x + dx, :]
 
-        # 3) Export images 2D
+            fixed_img = self.fixed_img[x:x + dx, y:y + dy]
+            aligned_img = self.aligned_img[x:x + dx, y:y + dy]
+        else:
+            fixed_img = self.fixed_img
+            aligned_img = self.aligned_img
+
+        # Image
         if opts['export_images']:
             ext = opts['image_format'].lower()
-            fixed_fn = os.path.join(save_dir, f"fixed_crop.{ext}")
-            aligned_fn = os.path.join(save_dir, f"aligned_crop.{ext}")
-            cv2.imwrite(fixed_fn, fixed_img)
+            folder= os.path.dirname(save_path_align)
+            name=save_path_align.split('/')[-1].split('.')[0]
+            save_path_temp=folder+'/'+name
+            fixed_fn = save_path_temp+ext
+            folder = os.path.dirname(save_path_fixed)
+            name = save_path_fixed.split('/')[-1].split('.')[0]
+            save_path_temp = folder + '/' + name
+            aligned_fn = save_path_temp+ext
             cv2.imwrite(aligned_fn, aligned_img)
+            if save_both:
+                cv2.imwrite(fixed_fn, fixed_img)
+
 
         # 4) Export cubes
         fmt = opts['cube_format']
-        save_both = opts['save_both']
-        if fmt == "HDF5":
-            import h5py
-            if save_both:
-                with h5py.File(os.path.join(save_dir, "fixed_cube.h5"), "w") as f:
-                    f.create_dataset("data", data=fixed_cube)
-            with h5py.File(os.path.join(save_dir, "aligned_cube.h5"), "w") as f:
-                f.create_dataset("data", data=aligned_cube)
+        mini_align_cube.save_hyp(save_path_align,fmt=fmt)
+        if not save_both:
+            QMessageBox.information(self, "Succès", f"Cube saved as {fmt} in :\n{save_path_align}")
+        if save_both:
+            mini_fixed_cube.save_hyp(save_path_fixed,fmt=fmt)
+            QMessageBox.information(self, "Succès", f"Cubes saved as {fmt} in :\n{save_path_align} \n{save_path_fixed} ")
 
-        elif fmt == "ENVI":
-            from spectral.io import envi
-            meta = {
-                "lines": aligned_cube.shape[0],
-                "samples": aligned_cube.shape[1],
-                "bands": aligned_cube.shape[2],
-                "data type": 4,
-                "interleave": "bil"
-            }
-            if save_both:
-                envi.save_image(os.path.join(save_dir, "fixed_cube.hdr"),
-                                fixed_cube.astype(np.float32), metadata=meta)
-            envi.save_image(os.path.join(save_dir, "aligned_cube.hdr"),
-                            aligned_cube.astype(np.float32), metadata=meta)
 
-        elif fmt == "MATLAB":
-            from scipy.io import savemat
-            tosave = {"aligned_cube": aligned_cube}
-            if save_both:
-                tosave["fixed_cube"] = fixed_cube
-            savemat(os.path.join(save_dir, "hypercubes.mat"), tosave)
-
-        else:
-            QMessageBox.warning(self, "Format non supporté", fmt)
-            return
-
-        QMessageBox.information(self, "Succès", f"Cubes sauvegardés en {fmt} dans :\n{save_dir}")
+    def switch_fixe_mov(self):
+        self.load_cube(switch=True)
 
 # TODO : clean different load and save function in data_viz and register and openSave
 
