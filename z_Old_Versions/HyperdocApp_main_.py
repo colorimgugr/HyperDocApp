@@ -38,7 +38,6 @@ from matplotlib.pyplot import fill_between
 from interface.Hyperdoc_GUI_design import*
 
 class MainWindow(QMainWindow, Ui_MainWindow):
-    #TODO : make a widget window to edit metadata and add a button on all windows of the app
     def __init__(self):
         super().__init__()
         self.setupUi(self)

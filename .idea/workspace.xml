@@ -4,17 +4,15 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="register minicubes OK.">
-      <change beforePath="$PROJECT_DIR$/.idea/Hypertool.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/Hypertool.iml" afterDir="false" />
+    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="Load .mat7.3 (with hypercube module), envie and h5p OK.">
+      <change afterPath="$PROJECT_DIR$/hypercubes/HDF5BrowserDialog.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/hypercubes/HDF5BrowserDialog.ui" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/test_hypercubes_class.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data_vizualisation/data_vizualisation_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/data_vizualisation/data_vizualisation_tool.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hypercubes/openSave.py" beforeDir="false" afterPath="$PROJECT_DIR$/hypercubes/hypercube.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hypercubes/save_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/hypercubes/save_window.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hypercubes/save_window.ui" beforeDir="false" afterPath="$PROJECT_DIR$/hypercubes/save_window.ui" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/registration/registerHypercubes.py" beforeDir="false" afterPath="$PROJECT_DIR$/registration/registerHypercubes.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hypercubes/hypercube.py" beforeDir="false" afterPath="$PROJECT_DIR$/hypercubes/hypercube.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/registration/register_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/registration/register_tool.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/registration/registration_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/registration/registration_window.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/registration/registration_window.ui" beforeDir="false" afterPath="$PROJECT_DIR$/registration/registration_window.ui" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/test.py" beforeDir="false" afterPath="$PROJECT_DIR$/test.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/z_Old_Versions/HyperdocApp_main_.py" beforeDir="false" afterPath="$PROJECT_DIR$/z_Old_Versions/HyperdocApp_main_.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -59,28 +57,28 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;Python.HyperdocApp_core_v3.5.1.executor&quot;: &quot;Run&quot;,
-    &quot;Python.HyperdocApp_main_.executor&quot;: &quot;Run&quot;,
-    &quot;Python.Hyperdoc_GUI_design.executor&quot;: &quot;Run&quot;,
-    &quot;Python.Run in console.executor&quot;: &quot;Run&quot;,
-    &quot;Python.Test_update.executor&quot;: &quot;Run&quot;,
-    &quot;Python.Unnamed.executor&quot;: &quot;Run&quot;,
-    &quot;Python.hypercube_app_v26.executor&quot;: &quot;Run&quot;,
-    &quot;Python.open.executor&quot;: &quot;Run&quot;,
-    &quot;Python.register_images.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Users/Usuario/Documents/GitHub/Hyperspectral_Yannick&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.externalTools&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Python.HyperdocApp_core_v3.5.1.executor": "Run",
+    "Python.HyperdocApp_main_.executor": "Run",
+    "Python.Hyperdoc_GUI_design.executor": "Run",
+    "Python.Run in console.executor": "Run",
+    "Python.Test_update.executor": "Run",
+    "Python.Unnamed.executor": "Run",
+    "Python.hypercube_app_v26.executor": "Run",
+    "Python.open.executor": "Run",
+    "Python.register_images.executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "main",
+    "last_opened_file_path": "C:/Users/Usuario/Documents/GitHub/Hypertool",
+    "settings.editor.selected.configurable": "preferences.externalTools"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
-      <recent name="C:\Users\Usuario\Documents\GitHub\Hypertool\registration" />
       <recent name="C:\Users\Usuario\Documents\GitHub\Hypertool" />
+      <recent name="C:\Users\Usuario\Documents\GitHub\Hypertool\registration" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
       <recent name="C:\Users\Usuario\Documents\GitHub\Hypertool\registration" />
@@ -220,7 +218,15 @@
       <option name="project" value="LOCAL" />
       <updated>1746203942196</updated>
     </task>
-    <option name="localTasksCounter" value="13" />
+    <task id="LOCAL-00013" summary="Load .mat7.3 (with hypercube module), envie and h5p OK.">
+      <option name="closed" value="true" />
+      <created>1746457691298</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1746457691298</updated>
+    </task>
+    <option name="localTasksCounter" value="14" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -283,6 +289,7 @@
     <MESSAGE value="matching OK&#10;adapt slider maxVal #packet and show #/total" />
     <MESSAGE value="Selection Zone OK&#10;Matching features viz OK" />
     <MESSAGE value="register minicubes OK." />
-    <option name="LAST_COMMIT_MESSAGE" value="register minicubes OK." />
+    <MESSAGE value="Load .mat7.3 (with hypercube module), envie and h5p OK." />
+    <option name="LAST_COMMIT_MESSAGE" value="Load .mat7.3 (with hypercube module), envie and h5p OK." />
   </component>
 </project>

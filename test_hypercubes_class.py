@@ -30,7 +30,6 @@ def _is_hdf5_file(path: str) -> bool:
         except:
             return False
 
-
 class HDF5BrowserDialog(QDialog, Ui_HDF5BrowserDialog):
     """
     Dialog for browsing HDF5 or legacy MAT (<v7.3) files:
@@ -334,6 +333,59 @@ class Hypercube:
                 f"The extension '{ext}' is not supported.")
         self.reinit_cube()
 
+    def save(self,filepath=None,fmt=None):
+
+        if filepath is None:
+            app = QApplication.instance() or QApplication([])
+            filepath, _ = QFileDialog.getSaveFileName(
+                parent=None,
+                caption="Save cube As…",
+            )
+            if filepath is None:
+                print('Problem getting filepath to save')
+                return
+
+        if fmt=='HDF5':
+            self.save_hdf5_cube(filepath)
+
+        elif fmt=='MATLAB':
+            self.save_matlab_cube(filepath)
+
+        elif fmt=='ENVI':
+            self.save_envi_cube(filepath)
+
+    def save_hdf5_cube(self,filepath: str):
+        with h5py.File(filepath+'.h5', "w") as f:
+            f.create_dataset("DataCube", data=self.data.transpose(2,1,0))
+            print('data_set creado')
+            for key, val in self.metadata.items():
+                f.attrs[key] = val
+
+    def save_envi_cube(self,filepath: str,
+                       interleave: str = "bil",
+                       dtype_code: int = 4):
+
+        os.makedirs(filepath, exist_ok=True)
+        hdr_meta = {
+            "lines": self.data.shape[0],
+            "samples": self.data.shape[1],
+            "bands": self.data.shape[2],
+            "data type": dtype_code,
+            "interleave": interleave
+        }
+        if self.metadata is not None:
+           hdr_meta.update(self.metadata)
+        envi.save_image(filepath, self.data.astype(np.float32), metadata=hdr_meta)
+
+    def save_matlab_cube(self,filepath: str):
+        from scipy.io import savemat
+        tosave = {'DataCube': filepath}
+        if self.metadata:
+            for key, value in self.metadata.items():
+                tosave[key] = value
+
+        savemat(filepath, tosave)
+
 class SaveWindow(QDialog, Ui_Save_Window):
     """Dialog for saving options."""
     def __init__(self, parent=None):
@@ -392,7 +444,7 @@ if __name__ == "__main__":
     sample = "jabon_guillermo_final.mat"  # or .h5
     folder = r"C:\Users\Usuario\Downloads"
     filepath = os.path.join(folder, sample)
-    # filepath = None  # force dialog
+    filepath = None  # force dialog
 
     try:
         cube = Hypercube(filepath, load_init=True)

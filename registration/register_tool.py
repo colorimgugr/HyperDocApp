@@ -655,16 +655,14 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
             if save_both:
                 cv2.imwrite(fixed_fn, fixed_img)
 
-
         # 4) Export cubes
         fmt = opts['cube_format']
-        mini_align_cube.save_hyp(save_path_align,fmt=fmt)
+        mini_align_cube.save(save_path_align,fmt=fmt)
         if not save_both:
             QMessageBox.information(self, "Succès", f"Cube saved as {fmt} in :\n{save_path_align}")
         if save_both:
-            mini_fixed_cube.save_hyp(save_path_fixed,fmt=fmt)
+            mini_fixed_cube.save(save_path_fixed,fmt=fmt)
             QMessageBox.information(self, "Succès", f"Cubes saved as {fmt} in :\n{save_path_align} \n{save_path_fixed} ")
-
 
     def switch_fixe_mov(self):
         self.load_cube(switch=True)
