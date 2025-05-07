@@ -162,7 +162,6 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
         self.open_hypercubes_and_GT(filepath=file_hyp)
 
     def open_hypercubes_and_GT(self,filepath=None):
-        """ open .h5 et initialise les sliders. """
 
         self.image_loaded=[0,0,0]
         default_dir = self.cubes_path
@@ -193,7 +192,8 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
             return
 
         try:
-            self.hyps[0].open_hyp(path_VNIR,open_dialog=False,show_except=False)
+            self.hyps[0].open_hyp(default_path=path_VNIR,open_dialog=False,show_exception=False)
+
             if self.hyps[0].data is None:
                 self.image_loaded[0] = False
             else:
@@ -202,7 +202,7 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
             self.image_loaded[0] = False
 
         try:
-            self.hyps[1].open_hyp(path_SWIR,open_dialog=False,show_except=False)
+            self.hyps[1].open_hyp(path_SWIR,open_dialog=False,show_exception=False)
             if self.hyps[1].data is None :
                 self.image_loaded[1] = False
             else :
@@ -246,8 +246,6 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
                 self.image_loaded[2]=True
             except:
                 self.image_loaded[2] = False
-
-            print(f'image[2] loaded = {self.image_loaded[2]}')
 
         if self.image_loaded[2] == False:
             try:
@@ -297,6 +295,8 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
             self.radioButton_VNIR.setChecked(True)
         if not self.image_loaded[2]:
             self.horizontalSlider_transparency_GT.setEnabled(False)
+
+        print(f'image loaded : {self.image_loaded}')
 
         self.radioButton_VNIR.setAutoExclusive(True)
         self.radioButton_SWIR.setAutoExclusive(True)

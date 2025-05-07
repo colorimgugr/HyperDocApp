@@ -11,7 +11,7 @@ from PyQt5.QtWidgets import (
 from hypercubes.save_window import Ui_Save_Window
 from hypercubes.HDF5BrowserDialog import Ui_HDF5BrowserDialog
 
-#TODO : finish to check transpose at loading and add other clasical open idem than saving option in matlab
+#TODO : finish to check transpose at loading and add other classical open idem than saving option in matlab
 
 class HDF5BrowserDialog(QDialog, Ui_HDF5BrowserDialog):
     """
@@ -218,6 +218,8 @@ class Hypercube:
                 pass
 
         # 2) If we get here, automatic failed → show browser dialog
+        # TODO : remember choice made by user for future loading
+
         if ext in (".mat", ".h5", ".hdf5"):
             try:
                 app = QApplication.instance() or QApplication([])
@@ -478,10 +480,11 @@ if __name__ == '__main__':
     # Example usage:
     # sample   = '00001-VNIR-mock-up.mat'
     # folder   = r'C:\Users\Usuario\Documents\DOC_Yannick\Hyperdoc_Test\Samples\minicubes'
-    sample = 'jabon_guillermo_final.mat'
-    folder = r'C:\Users\Usuario\Downloads'
-    filepath = os.path.join(folder, sample)
-    filepath = None  # force dialog
+    # sample = 'jabon_guillermo_final.mat'
+    # folder = r'C:\Users\Usuario\Downloads'
+    # filepath = os.path.join(folder, sample)
+    filepath='C:/Users/Usuario/Documents/DOC_Yannick/Hyperdoc_Test/Samples/minicubes/00001-VNIR-mock-up.h5'
+    # filepath = None  # force dialog
 
     try:
         cube = Hypercube(filepath, load_init=True)
