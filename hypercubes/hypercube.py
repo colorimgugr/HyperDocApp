@@ -5,34 +5,43 @@ from spectral.io import envi
 from scipy.io import savemat, loadmat
 import cv2
 
-from PyQt5.QtWidgets import (
+from PyQt5.QtWidgets import (QWidget,
     QApplication, QFileDialog, QMessageBox, QDialog, QTreeWidgetItem
 )
+from PyQt5.QtCore    import pyqtSignal, QEventLoop
 from hypercubes.save_window import Ui_Save_Window
-from hypercubes.HDF5BrowserDialog import Ui_HDF5BrowserDialog
+from hypercubes.HDF5BrowserWidget import Ui_HDF5BrowserWidget
 
 #TODO : finish to check transpose at loading and add other classical open idem than saving option in matlab
+# TODO : sortir HDF5BrowserWidget du fichier de la classe hypercube ?
 
-class HDF5BrowserDialog(QDialog, Ui_HDF5BrowserDialog):
+class HDF5BrowserWidget(QWidget, Ui_HDF5BrowserWidget):
     """
-    Dialog for browsing HDF5 or legacy MAT (<v7.3) files:
-    lets the user pick the cube path, wavelength path, and metadata path.
+    Embeddable widget for browsing HDF5 / legacy MAT files.
+    Emits `accepted` when OK is clicked, `rejected` on Cancel.
     """
-    def __init__(self, filepath, parent=None):
+
+    accepted = pyqtSignal()
+    rejected = pyqtSignal()
+
+    def __init__(self, filepath=None, parent=None,closable=False):
         super().__init__(parent)
         self.setupUi(self)
-        self.setWindowTitle(f"HDF5 / MAT Browser — {os.path.basename(filepath)}")
-        # ensure 3 columns are visible
         self.treeWidget.setColumnCount(3)
         self.treeWidget.setHeaderLabels(['Name', 'Type', 'Path'])
         self.filepath = filepath
+        self._accepted = False
+        self.closable=closable
+        if filepath is None:
+            return
 
         # Connect buttons
         self.btn_select_cube.clicked.connect(lambda: self._assign(self.le_cube))
         self.btn_select_wl.clicked.connect(lambda: self._assign(self.le_wl))
         self.btn_select_meta.clicked.connect(lambda: self._assign(self.le_meta))
-        self.btn_ok.clicked.connect(self.accept)
-        self.btn_cancel.clicked.connect(self.reject)
+
+        self.btn_ok.clicked.connect(self._on_accept)
+        self.btn_cancel.clicked.connect(self._on_reject)
 
         # Populate the tree
         self._load_file()
@@ -53,9 +62,6 @@ class HDF5BrowserDialog(QDialog, Ui_HDF5BrowserDialog):
 
         is_mat     = (ext == '.mat')
         is_hdf5    = (ext in ('.h5', '.hdf5')) or (is_mat and self._is_hdf5_file(self.filepath))
-
-        print(f'is_hdf5 ?: {is_hdf5}')
-        print(f'is_mat ?: {is_mat}')
 
         if is_mat and not is_hdf5:
             # Legacy MATLAB (< v7.3) via mat4py
@@ -114,6 +120,18 @@ class HDF5BrowserDialog(QDialog, Ui_HDF5BrowserDialog):
         if item:
             line_edit.setText(item.text(2))
 
+    def _on_accept(self):
+        self._accepted = True
+        self.accepted.emit()
+        if self.closable:
+            self.close()
+
+    def _on_reject(self):
+        self._accepted = False
+        self.rejected.emit()
+        if self.closable:
+            self.close()
+
     def get_selection(self):
         """Return {'cube_path','wl_path','meta_path'} (or None)."""
         return {
@@ -122,18 +140,44 @@ class HDF5BrowserDialog(QDialog, Ui_HDF5BrowserDialog):
             'meta_path': self.le_meta.text() or None,
         }
 
+    def load_file(self, filepath):
+        """
+        Point the browser at a new file and rebuild the tree.
+        """
+        self.filepath = filepath
+        self.le_cube.clear()
+        self.le_wl.clear()
+        self.le_meta.clear()
+        self._load_file()
+
+    def set_selection(self, cube_path=None, wl_path=None, meta_path=None):
+        """
+        Programmatically fill the three path‐fields.
+        """
+        self.le_cube.setText(cube_path or "")
+        self.le_wl.setText(wl_path or "")
+        self.le_meta.setText(meta_path or "")
+
 class Hypercube:
+
     """
     Hyperspectral cube loader supporting:
       • Legacy .mat (<v7.3) via mat4py.loadmat
       • HDF5 (.h5/.hdf5 or .mat v7.3) via h5py
       • ENVI (.hdr + raw) via spectral.io.envi
     """
+
     def __init__(self, filepath=None, data=None, wl=None, metadata=None, load_init=False):
         self.filepath = filepath
         self.data     = data
         self.wl       = wl
         self.metadata = metadata or {}
+
+        self.path = {
+            "cube_path":   None,    # or "DataCube"
+            "wl_path":     None,    # or None
+            "meta_path":   None     # or None
+        }
 
         if load_init:
             if self.filepath:
@@ -196,9 +240,29 @@ class Hypercube:
                     # rebuild metadata if any
                     self.metadata = {}
                     if "Metadata" in f:
-                        grp = f["Metadata"]
-                        for k, ds in grp.items():
-                            self.metadata[k] = ds[()]
+                        meta_grp = f["Metadata"]
+                        for name, ds in meta_grp.items():
+                            arr = ds[()]
+                            mclass = ds.attrs.get("MATLAB_class", b"").decode()
+
+                            if mclass == "char":
+                                # convertir codes ASCII en str
+                                bb = np.asarray(arr, np.uint8).flatten()
+                                bb = bb[bb != 0]  # retirer les zéros
+                                self.metadata[name] = bb.tobytes().decode("utf-8", errors="ignore")
+
+                            elif mclass == "logical":
+                                self.metadata[name] = np.asarray(arr, dtype=bool)
+
+                            else:
+                                # double, single, int, etc.
+                                self.metadata[name] = arr
+
+                        self.path = {
+                            "cube_path": "#refs#/d",  # or "DataCube"
+                            "wl_path": "#refs#/c",  # or None
+                            "meta_path": "Metadata"  # or None
+                        }
                     return  # success → no dialog
 
             except Exception:
@@ -212,6 +276,13 @@ class Hypercube:
                     self.data = np.transpose(raw, (2, 1, 0))
                     self.metadata = dict(f.attrs)
                     self.wl = self.metadata.get("wl")
+
+                    self.path = {
+                        "cube_path": "DataCube",  # or "DataCube"
+                        "wl_path": "@wl",  # or None
+                        "meta_path": "/"  # or None
+                    }
+
                     return  # success → no dialog
 
             except Exception:
@@ -222,13 +293,23 @@ class Hypercube:
 
         if ext in (".mat", ".h5", ".hdf5"):
             try:
-                app = QApplication.instance() or QApplication([])
-                dlg = HDF5BrowserDialog(filepath)
-                if dlg.exec_() != QDialog.Accepted:
+                widget = HDF5BrowserWidget(filepath,closable=True)
+                loop = QEventLoop()
+
+                widget.accepted.connect(loop.quit)
+                widget.rejected.connect(loop.quit)
+                widget.show()
+                loop.exec_()
+
+                # after loop, check whether user clicked OK
+                if not widget._accepted:
+                    # user cancelled
                     self.reinit_cube()
                     return
 
-                sel = dlg.get_selection()
+                # else retrieve their paths
+                sel = widget.get_selection()
+                self.path=sel
                 try:
                     mat_dict = loadmat(filepath)
 
@@ -481,10 +562,13 @@ if __name__ == '__main__':
     # sample   = '00001-VNIR-mock-up.mat'
     # folder   = r'C:\Users\Usuario\Documents\DOC_Yannick\Hyperdoc_Test\Samples\minicubes'
     # sample = 'jabon_guillermo_final.mat'
+    # sample = 'jabon_2-04-2025.mat'
     # folder = r'C:\Users\Usuario\Downloads'
+    # sample = 'MPD41a_SWIR.mat'
+    # folder = r'C:\Users\Usuario\Documents\DOC_Yannick\Hyperdoc_Test\Archivo chancilleria'
     # filepath = os.path.join(folder, sample)
-    filepath='C:/Users/Usuario/Documents/DOC_Yannick/Hyperdoc_Test/Samples/minicubes/00001-VNIR-mock-up.h5'
-    # filepath = None  # force dialog
+    # filepath='C:/Users/Usuario/Documents/DOC_Yannick/Hyperdoc_Test/Samples/minicubes/00001-VNIR-mock-up.h5'
+    filepath = None  # force dialog
 
     try:
         cube = Hypercube(filepath, load_init=True)

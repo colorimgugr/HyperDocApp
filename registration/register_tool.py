@@ -151,8 +151,8 @@ class ZoomableGraphicsView(QGraphicsView):
 class RegistrationApp(QMainWindow, Ui_MainWindow):
     # TODO: show number of features found
     # TODO : save cube with option of minicubes (selected zone)
-    def __init__(self):
-        super().__init__()
+    def __init__(self,parent=None):
+        super().__init__(parent)
         self.setupUi(self)
         self.setWindowTitle("Image Registration")
 
@@ -647,13 +647,12 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
             name=save_path_align.split('/')[-1].split('.')[0]
             save_path_temp=folder+'/'+name
             fixed_fn = save_path_temp+ext
-            folder = os.path.dirname(save_path_fixed)
-            name = save_path_fixed.split('/')[-1].split('.')[0]
-            save_path_temp = folder + '/' + name
-            aligned_fn = save_path_temp+ext
-            cv2.imwrite(aligned_fn, aligned_img)
+            folder = os.path.dirname(save_path_align)
             if save_both:
-                cv2.imwrite(fixed_fn, fixed_img)
+                name = save_path_fixed.split('/')[-1].split('.')[0]
+                save_path_temp = folder + '/' + name
+                aligned_fn = save_path_temp+ext
+                cv2.imwrite(aligned_fn, aligned_img)
 
         # 4) Export cubes
         fmt = opts['cube_format']

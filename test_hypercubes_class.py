@@ -13,7 +13,7 @@ from PyQt5.QtWidgets import (
     QTreeWidgetItem
 )
 from hypercubes.save_window import Ui_Save_Window
-from hypercubes.HDF5BrowserDialog import Ui_HDF5BrowserDialog
+from hypercubes.HDF5BrowserWidget import Ui_HDF5BrowserDialog
 
 
 def _is_hdf5_file(path: str) -> bool:

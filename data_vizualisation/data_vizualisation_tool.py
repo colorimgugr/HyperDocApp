@@ -39,8 +39,8 @@ from hypercubes.hypercube import*
 
 class Data_Viz_Window(QWidget,Ui_DataVizualisation):
     #TODO : make a widget window to edit metadata and add a button on all windows of the app
-    def __init__(self):
-        super().__init__()
+    def __init__(self,parent=None):
+        super().__init__(parent)
         self.setupUi(self)
 
         self.hyps = [Hypercube(),Hypercube()] # create hypercubes objects[VNIR,SWIR]
@@ -215,17 +215,14 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
         elif self.image_loaded[1]:
             file_GT=(path_SWIR[:-3] + '_GT.png').split('/')[-1]
 
-        print(f'before test : `{self.folder_GT}')
         if self.folder_GT:
             try:
                 path_GT = self.folder_GT + '/' + file_GT
-                print(f'path_GT from folder_GT : {path_GT}')
                 try : self.GT.load_image(path_GT)
                 except :
                     file_GT_bis=file_GT.replace('-VNIR','')
                     file_GT_bis=file_GT_bis.replace('-SWIR','')
                     path_GT = self.folder_GT + '/' + file_GT_bis
-                    print(f'path_GT from folder_GT EXCEPT : {path_GT}')
                     self.GT.load_image(path_GT)
 
                 self.image_loaded[2] = True
@@ -237,10 +234,8 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
             try:
                 if self.image_loaded[0]:
                     path_GT = path_VNIR[:-3] + '_GT.png'
-                    print(f'path GT from VNIR : {path_GT}')
                 elif self.image_loaded[1]:
                     path_GT = path_SWIR[:-3] + '_GT.png'
-                    print(f'path GT from SWNIR : {path_GT}')
                 self.GT.load_image(path_GT)
 
                 self.image_loaded[2]=True
@@ -262,14 +257,12 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
                     if ans==qm.Yes:
                         filepath, _ = QFileDialog.getOpenFileName(self, "Open Ground Truth PNG image",path_VNIR,
                                                                   "PNG (*.png)")
-                        print(f'path after ask : `{filepath}')
                         try:
                             path_GT = filepath
 
                             self.GT.load_image(path_GT)
                             self.image_loaded[2] = True
                             self.folder_GT=('/').join(filepath.split('/')[:-1])
-                            print(f'folder after ask : `{self.folder_GT}')
 
                         except:
                             msg = QMessageBox()
@@ -296,7 +289,6 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
         if not self.image_loaded[2]:
             self.horizontalSlider_transparency_GT.setEnabled(False)
 
-        print(f'image loaded : {self.image_loaded}')
 
         self.radioButton_VNIR.setAutoExclusive(True)
         self.radioButton_SWIR.setAutoExclusive(True)
