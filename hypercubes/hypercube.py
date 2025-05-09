@@ -433,6 +433,8 @@ class Hypercube:
         )
         default_filter = "HDF5 files (*.h5)"
 
+
+
         if filepath is None:
             app = QApplication.instance() or QApplication([])
             filepath,selected_filter= QFileDialog.getSaveFileName(
@@ -451,7 +453,6 @@ class Hypercube:
                 fmt = 'HDF5'
                 if not filepath.lower().endswith(".h5"):
                     filepath += ".h5"
-
             elif "matlab" in sel:
                 fmt = 'MATLAB'
                 if not filepath.lower().endswith(".mat"):
@@ -463,20 +464,27 @@ class Hypercube:
                 if not filepath.lower().endswith(".hdr"):
                     filepath += ".hdr"
 
-
         if fmt=='HDF5':
+            if not filepath.lower().endswith(".h5"):
+                filepath += ".h5"
             self.save_hdf5_cube(filepath)
 
         elif fmt=='MATLAB':
+            if not filepath.lower().endswith(".mat"):
+                filepath += ".mat"
             self.save_matlab_cube(filepath)
 
         elif fmt=='ENVI':
+            if not filepath.lower().endswith(".hdr"):
+                filepath += ".hdr"
             self.save_envi_cube(filepath)
 
     def save_hdf5_cube(self,filepath: str):
-        with h5py.File(filepath+'.h5', "w") as f:
+        #TODO : check size metadata before saving and make dialog to choose alternatives
+        with h5py.File(filepath, "w") as f:
             f.create_dataset("DataCube", data=self.data.transpose(2,1,0))
             for key, val in self.metadata.items():
+                print(key)
                 f.attrs[key] = val
 
     def save_envi_cube(self,filepath: str,

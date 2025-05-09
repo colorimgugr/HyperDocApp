@@ -4,13 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="Dockable window started.&#10;First test OK but widget not connected">
-      <change beforePath="$PROJECT_DIR$/.idea/Hypertool.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/Hypertool.iml" afterDir="false" />
+    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="Dockable window started.&#10;toolbar ok">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/MainWindow.py" beforeDir="false" afterPath="$PROJECT_DIR$/MainWindow.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data_vizualisation/data_vizualisation_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/data_vizualisation/data_vizualisation_tool.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/hypercubes/hypercube.py" beforeDir="false" afterPath="$PROJECT_DIR$/hypercubes/hypercube.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/interface/Hyperdoc_logo_transparente_CIMLab.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/hypercubes/save_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/hypercubes/save_window.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hypercubes/save_window.ui" beforeDir="false" afterPath="$PROJECT_DIR$/hypercubes/save_window.ui" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/registration/register_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/registration/register_tool.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -81,6 +79,7 @@
       <recent name="C:\Users\Usuario\Documents\GitHub\Hypertool\registration" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\Usuario\Documents\GitHub\Hypertool" />
       <recent name="C:\Users\Usuario\Documents\GitHub\Hypertool\registration" />
     </key>
   </component>
@@ -250,7 +249,15 @@
       <option name="project" value="LOCAL" />
       <updated>1746628584567</updated>
     </task>
-    <option name="localTasksCounter" value="17" />
+    <task id="LOCAL-00017" summary="Dockable window started.&#10;toolbar ok">
+      <option name="closed" value="true" />
+      <created>1746724499042</created>
+      <option name="number" value="00017" />
+      <option name="presentableId" value="LOCAL-00017" />
+      <option name="project" value="LOCAL" />
+      <updated>1746724499042</updated>
+    </task>
+    <option name="localTasksCounter" value="18" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -317,6 +324,7 @@
     <MESSAGE value="Load personal OK&#10;check if transpose needed" />
     <MESSAGE value="Load in VizTool OK" />
     <MESSAGE value="Dockable window started.&#10;First test OK but widget not connected" />
-    <option name="LAST_COMMIT_MESSAGE" value="Dockable window started.&#10;First test OK but widget not connected" />
+    <MESSAGE value="Dockable window started.&#10;toolbar ok" />
+    <option name="LAST_COMMIT_MESSAGE" value="Dockable window started.&#10;toolbar ok" />
   </component>
 </project>

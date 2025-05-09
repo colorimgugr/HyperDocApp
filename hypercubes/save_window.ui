@@ -65,7 +65,7 @@
        <widget class="QComboBox" name="comboBox_cube_format">
         <item>
          <property name="text">
-          <string>HDF5 </string>
+          <string>HDF5</string>
          </property>
         </item>
         <item>

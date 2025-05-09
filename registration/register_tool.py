@@ -272,42 +272,43 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
     def load_cube(self,i_mov=None,fname=None,switch=False):
 
         if switch:
-            old_fixed_cube=self.fixed_cube
-            self.fixed_cube=self.moving_cube
-            self.moving_cube=old_fixed_cube
+            # 1) swap the cubes
+            old_fixed_cube = self.fixed_cube
+            self.fixed_cube = self.moving_cube
+            self.moving_cube = old_fixed_cube
             self.cube = [self.fixed_cube, self.moving_cube]
 
-            for i_mov in range(2):
-                cube=self.cube[i_mov].data
-                self.slider_channel[i_mov].setMaximum(cube.shape[2] - 1)
-                self.spinBox_channel[i_mov].setMaximum(cube.shape[2] - 1)
-
-                if cube.shape[2] == 121:
-                    self.slider_channel[i_mov].setValue(60)
-                    self.spinBox_channel[i_mov].setValue(60)
-                elif cube.shape[2] == 161:
-                    self.slider_channel[i_mov].setValue(10)
-                    self.spinBox_channel[i_mov].setValue(10)
-
-                mode = ['one', 'whole'][self.radioButton_whole[i_mov].isChecked()]
-                chan = self.slider_channel[i_mov].value()
-                img = self.cube_to_img(cube, mode, chan)
-                img = (img * 256 / np.max(img)).astype('uint8')
-
-                # else:
-                #     img = cv2.imread(fname, cv2.IMREAD_GRAYSCALE)
-
-            self.viewer_img[i_mov].clear_rectangle()
-            self.viewer_img[i_mov].clear_rectangle()
-
-            if i_mov:
-                self.moving_img = img
-            else:
-                self.fixed_img = img
-
+            # 2) swap the images
+            old_fixed_img = self.fixed_img
+            self.fixed_img = self.moving_img
+            self.moving_img = old_fixed_img
             self.img = [self.fixed_img, self.moving_img]
 
-            self.viewer_img[i_mov].setImage(np_to_qpixmap(img))
+            # 3) update sliders & views for both fixed (idx=0) and moving (idx=1)
+            for idx in range(2):
+                cube_data = self.cube[idx].data
+                self.slider_channel[idx].setMaximum(cube_data.shape[2] - 1)
+                self.spinBox_channel[idx].setMaximum(cube_data.shape[2] - 1)
+
+                # reposition initial channel if needed
+                if cube_data.shape[2] == 121:
+                    self.slider_channel[idx].setValue(60)
+                    self.spinBox_channel[idx].setValue(60)
+                elif cube_data.shape[2] == 161:
+                    self.slider_channel[idx].setValue(10)
+                    self.spinBox_channel[idx].setValue(10)
+
+                # regenerate the image slice
+                mode = ['one', 'whole'][self.radioButton_whole[idx].isChecked()]
+                chan = self.slider_channel[idx].value()
+                img = self.cube_to_img(cube_data, mode, chan)
+                img = (img * 256 / np.max(img)).astype('uint8')
+
+                # clear previous rectangle and display
+                self.viewer_img[idx].clear_rectangle()
+                self.viewer_img[idx].setImage(np_to_qpixmap(img))
+
+            return  # important : on sort de la méthode après le switch
 
         else :
             if fname is None:
@@ -563,6 +564,9 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
     def update_display(self):
         if self.fixed_img is None or self.aligned_img is None:
             return
+        if self.fixed_img.shape != self.aligned_img.shape:
+            QMessageBox.warning(self,"Error", "Get feature and register before.")
+            return
 
         display_mode = self.overlay_selector.currentText()
         img=None
@@ -654,35 +658,35 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
 
                 return
 
-    def save_cube(self):
-
-        save_both=False
-
-        # Ouvre un QFileDialog pour sélectionner un dossier
-        save_dir = QFileDialog.getExistingDirectory(self, "Choisir un dossier de sauvegarde")
-        if not save_dir:
-            return  # L'utilisateur a annulé
-
-        y, x, dy, dx = self.viewer_aligned.get_rect_coords()
-        x, y, dx, dy = int(x), int(y), int(dx), int(dy)
-
-        # Rogner les images
-        fixed_crop = self.fixed_img[y:y + dy, x:x + dx]
-        aligned_crop = self.aligned_img[y:y + dy, x:x + dx]
-
-        cv2.imwrite(os.path.join(save_dir, "fixed_crop.png"), fixed_crop)
-        cv2.imwrite(os.path.join(save_dir, "aligned_crop.png"), aligned_crop)
-
-        # Rogner et sauvegarder les cubes
-        if hasattr(self, "aligned_cube"):
-            aligned_cube_crop = self.aligned_cube[y:y + dy, x:x + dx, :]
-            np.save(os.path.join(save_dir, "aligned_cube_crop.npy"), aligned_cube_crop)
-
-        if hasattr(self, "fixed_cube"):
-            fixed_cube_crop = self.fixed_cube[y:y + dy, x:x + dx, :]
-            np.save(os.path.join(save_dir, "fixed_cube_crop.npy"), fixed_cube_crop)
-
-        QMessageBox.information(self, "Succès", f"Images et cubes rognés sauvegardés dans:\n{save_dir}")
+    # def save_cube(self):
+    #
+    #     save_both=False
+    #
+    #     # Ouvre un QFileDialog pour sélectionner un dossier
+    #     save_dir = QFileDialog.getExistingDirectory(self, "Choisir un dossier de sauvegarde")
+    #     if not save_dir:
+    #         return  # L'utilisateur a annulé
+    #
+    #     y, x, dy, dx = self.viewer_aligned.get_rect_coords()
+    #     x, y, dx, dy = int(x), int(y), int(dx), int(dy)
+    #
+    #     # Rogner les images
+    #     fixed_crop = self.fixed_img[y:y + dy, x:x + dx]
+    #     aligned_crop = self.aligned_img[y:y + dy, x:x + dx]
+    #
+    #     cv2.imwrite(os.path.join(save_dir, "fixed_crop.png"), fixed_crop)
+    #     cv2.imwrite(os.path.join(save_dir, "aligned_crop.png"), aligned_crop)
+    #
+    #     # Rogner et sauvegarder les cubes
+    #     if hasattr(self, "aligned_cube"):
+    #         aligned_cube_crop = self.aligned_cube[y:y + dy, x:x + dx, :]
+    #         np.save(os.path.join(save_dir, "aligned_cube_crop.npy"), aligned_cube_crop)
+    #
+    #     if hasattr(self, "fixed_cube"):
+    #         fixed_cube_crop = self.fixed_cube[y:y + dy, x:x + dx, :]
+    #         np.save(os.path.join(save_dir, "fixed_cube_crop.npy"), fixed_cube_crop)
+    #
+    #     QMessageBox.information(self, "Succès", f"Images et cubes rognés sauvegardés dans:\n{save_dir}")
 
     def open_save_dialog(self):
         """Ouvre la dialog SaveWindow, récupère les options et déclenche la sauvegarde."""
@@ -691,6 +695,7 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
         if dlg.exec_() == QDialog.Accepted:
             opts = dlg.get_options()
             self.save_cube_with_options(opts)
+
 
     def save_cube_with_options(self, opts):
         """
@@ -715,39 +720,51 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
 
         # Crop
         if opts['crop_cube']:
-            y, x, dy, dx = self.viewer_aligned.get_rect_coords()
-            y, x, dy, dx = map(int, (y, x, dy, dx))
-            mini_fixed_cube.data = self.fixed_cube.data[y:y + dy, x:x + dx, :]
-            mini_align_cube.data = self.aligned_cube.data[y:y + dy, x:x + dx, :]
+            if self.viewer_aligned.get_rect_coords() is not None:
+                y, x, dy, dx = self.viewer_aligned.get_rect_coords()
+                y, x, dy, dx = map(int, (y, x, dy, dx))
+                mini_fixed_cube.data = self.fixed_cube.data[x:x + dx, y:y + dy, :]
+                mini_align_cube.data = self.aligned_cube.data[x:x + dx, y:y + dy, :]
 
-            fixed_img = self.fixed_img[x:x + dx, y:y + dy]
-            aligned_img = self.aligned_img[x:x + dx, y:y + dy]
+                fixed_img = self.fixed_img[x:x + dx, y:y + dy]
+                aligned_img = self.aligned_img[x:x + dx, y:y + dy]
         else:
             fixed_img = self.fixed_img
             aligned_img = self.aligned_img
 
         # Image
         if opts['export_images']:
-            ext = opts['image_format'].lower()
-            folder= os.path.dirname(save_path_align)
-            name=save_path_align.split('/')[-1].split('.')[0]
-            save_path_temp=folder+'/'+name
-            fixed_fn = save_path_temp+ext
+            # on s’assure d’avoir un “.” devant l’extension
+            ext = '.' + opts['image_format'].lower().lstrip('.')
+
+            # --- pour l’image alignée ---
             folder = os.path.dirname(save_path_align)
+            base = os.path.splitext(os.path.basename(save_path_align))[0]
+            save_path_image = os.path.join(folder, base + ext)
+            # cv2.imwrite renvoie False si ça a échoué
+            if not cv2.imwrite(save_path_image, aligned_img):
+                QMessageBox.warning(self, "Save Error",
+                                    f"Impossible d'enregistrer : {save_path_image}")
+
+            # --- si on veut sauvegarder aussi l’image fixe ---
             if save_both:
-                name = save_path_fixed.split('/')[-1].split('.')[0]
-                save_path_temp = folder + '/' + name
-                aligned_fn = save_path_temp+ext
-                cv2.imwrite(aligned_fn, aligned_img)
+                folder2 = os.path.dirname(save_path_fixed)
+                base2 = os.path.splitext(os.path.basename(save_path_fixed))[0]
+                save_path_image2 = os.path.join(folder2, base2 + ext)
+                if not cv2.imwrite(save_path_image2, fixed_img):
+                    QMessageBox.warning(self, "Save Error",
+                                        f"Impossible d'enregistrer : {save_path_image2}")
 
         # 4) Export cubes
         fmt = opts['cube_format']
-        try : mini_align_cube.save(save_path_align,fmt=fmt)
+        try :
+            mini_align_cube.save(save_path_align,fmt=fmt)
+            if not save_both:
+                QMessageBox.information(self, "Succès", f"Cube saved as {fmt} in :\n{save_path_align}")
+
         except :
             QMessageBox.warning(self, "Problem", f"Cube NOT SAVED as {fmt} in :\n{save_path_align}")
 
-        if not save_both:
-            QMessageBox.information(self, "Succès", f"Cube saved as {fmt} in :\n{save_path_align}")
         if save_both:
             mini_fixed_cube.save(save_path_fixed,fmt=fmt)
             QMessageBox.information(self, "Succès", f"Cubes saved as {fmt} in :\n{save_path_align} \n{save_path_fixed} ")
