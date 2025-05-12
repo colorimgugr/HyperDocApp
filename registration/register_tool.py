@@ -701,7 +701,6 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
         """
         Sauvegarde les cubes et images selon le dict opts retourné par SaveWindow.get_options().
         """
-
         save_path_align=None
         save_path_fixed=None
         save_both = opts['save_both']

@@ -12,8 +12,9 @@ from PyQt5.QtCore    import pyqtSignal, QEventLoop
 from hypercubes.save_window import Ui_Save_Window
 from hypercubes.HDF5BrowserWidget import Ui_HDF5BrowserWidget
 
-#TODO : finish to check transpose at loading and add other classical open idem than saving option in matlab
+# TODO : finish to check transpose at loading and add other classical open idem than saving option in matlab
 # TODO : sortir HDF5BrowserWidget du fichier de la classe hypercube ?
+# TODO : si metadata à la racine, alors on garde toute la racine sauf le cube (ou une selection ?)
 
 class HDF5BrowserWidget(QWidget, Ui_HDF5BrowserWidget):
     """
@@ -138,6 +139,7 @@ class HDF5BrowserWidget(QWidget, Ui_HDF5BrowserWidget):
             'cube_path': self.le_cube.text() or None,
             'wl_path':   self.le_wl.text()   or None,
             'meta_path': self.le_meta.text() or None,
+            'wl_dim':self.comboBox_channel_wl.currentText()=='First' or None,
         }
 
     def load_file(self, filepath):
@@ -326,7 +328,11 @@ class Hypercube:
                                              f"Expected 3D array, got shape {data_arr.shape}.")
                         self.reinit_cube()
                         return
-                    self.data = np.transpose(data_arr, (2, 1, 0))
+
+                    if sel['wl_dim']:
+                        self.data = np.transpose(data_arr, (2, 1, 0))
+                    else:
+                        self.data=data_arr
 
                     # wavelengths
                     if sel['wl_path']:
@@ -479,13 +485,81 @@ class Hypercube:
                 filepath += ".hdr"
             self.save_envi_cube(filepath)
 
-    def save_hdf5_cube(self,filepath: str):
-        #TODO : check size metadata before saving and make dialog to choose alternatives
+    def save_hdf5_cube(self, filepath: str):
+        from PyQt5.QtWidgets import QMessageBox, QCheckBox
+
+        full_meta = self.metadata.copy()
+        filtered_meta = {}
+        ask_all = False
+        default_drop = False
+
         with h5py.File(filepath, "w") as f:
-            f.create_dataset("DataCube", data=self.data.transpose(2,1,0))
-            for key, val in self.metadata.items():
-                print(key)
-                f.attrs[key] = val
+            # création du dataset principal
+            f.create_dataset("DataCube", data=self.data.transpose(2, 1, 0))
+
+            # itération sur les métadonnées
+            for key, val in full_meta.items():
+                # si on a déjà coché “Do this for all”, on applique la même décision
+                if ask_all and default_drop:
+                    # on droppe sans rien écrire
+                    continue
+
+                try:
+                    # tentative d’écriture
+                    f.attrs[key] = val
+                    # si ça passe, on conserve la valeur pour la mémoire
+                    filtered_meta[key] = val
+
+                except OSError as e:
+                    # seulement si c’est bien le header trop gros
+                    if "object header message is too large" not in str(e):
+                        raise  # autre erreur → on remonte
+                    # prompt interactif
+                    msg = QMessageBox()
+                    msg.setIcon(QMessageBox.Question)
+                    msg.setWindowTitle("Metadata too large")
+                    msg.setText(f"The metadata '{key}' is too large to save in HDF5.")
+                    msg.setInformativeText("Do you want to save without this metadata?")
+                    yes_btn = msg.addButton("Yes", QMessageBox.AcceptRole)
+                    no_btn = msg.addButton("No", QMessageBox.RejectRole)
+                    dataset_btn = msg.addButton("Save as dataset", QMessageBox.ActionRole)
+                    cancel_btn = msg.addButton("Cancel", QMessageBox.DestructiveRole)
+                    cb = QCheckBox("Do this for all")
+                    msg.setCheckBox(cb)
+                    msg.exec_()
+
+                    # gestion de la réponse
+                    if msg.clickedButton() is cancel_btn:
+                        # on annule tout le save
+                        f.close()
+                        os.remove(filepath)  # ou on laisse le fichier incomplet
+                        return
+
+                    if msg.clickedButton() is dataset_btn:
+                        try:
+                            f.create_dataset(f"Meta_{key}", data=val)
+                        except Exception:
+                            pass
+                        filtered_meta[key] = val
+                        if cb.isChecked():
+                            ask_all = True
+                            default_drop = False
+                        continue
+
+                    drop = (msg.clickedButton() is yes_btn)
+                    if cb.isChecked():
+                        ask_all = True
+                        default_drop = drop
+                    if not drop:
+                        # user chose "Keep as attribute"
+                        try:
+                            f.attrs[key] = val
+                            filtered_meta[key] = val
+                        except:
+                            pass
+
+            # Optionnel : mettre à jour self.metadata pour refléter ce qui a été écrit
+            self.metadata = filtered_meta
 
     def save_envi_cube(self,filepath: str,
                        interleave: str = "bil",
