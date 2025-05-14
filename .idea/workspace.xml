@@ -4,12 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="Added size column in FileBrowser">
+    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="Gestion par CubeInfoTemp des infos des cubes pseudo chargés">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/MainWindow.py" beforeDir="false" afterPath="$PROJECT_DIR$/MainWindow.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hypercubes/HDF5BrowserWidget.ui" beforeDir="false" afterPath="$PROJECT_DIR$/hypercubes/HDF5BrowserWidget.ui" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hypercubes/hypercube.py" beforeDir="false" afterPath="$PROJECT_DIR$/hypercubes/hypercube.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/interface/HypercubeManager.py" beforeDir="false" afterPath="$PROJECT_DIR$/interface/HypercubeManager.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -302,7 +299,15 @@
       <option name="project" value="LOCAL" />
       <updated>1747146781655</updated>
     </task>
-    <option name="localTasksCounter" value="22" />
+    <task id="LOCAL-00022" summary="Gestion par CubeInfoTemp des infos des cubes pseudo chargés">
+      <option name="closed" value="true" />
+      <created>1747225537795</created>
+      <option name="number" value="00022" />
+      <option name="presentableId" value="LOCAL-00022" />
+      <option name="project" value="LOCAL" />
+      <updated>1747225537795</updated>
+    </task>
+    <option name="localTasksCounter" value="23" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -374,6 +379,7 @@
     <MESSAGE value="Save H5% en new dataset OK" />
     <MESSAGE value="Manager with filepath OK&#10;Get path of Registered cube in Main OK&#10;send to Register and File Browser OK" />
     <MESSAGE value="Added size column in FileBrowser" />
-    <option name="LAST_COMMIT_MESSAGE" value="Added size column in FileBrowser" />
+    <MESSAGE value="Gestion par CubeInfoTemp des infos des cubes pseudo chargés" />
+    <option name="LAST_COMMIT_MESSAGE" value="Gestion par CubeInfoTemp des infos des cubes pseudo chargés" />
   </component>
 </project>

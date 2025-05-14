@@ -84,7 +84,7 @@ class MainApp(QtWidgets.QMainWindow):
         self.setWindowIcon(QIcon(os.path.join(ICONS_DIR,icon_main)))
 
         # add docks
-        self.file_browser_dock=self._add_dock("File Browser",   HDF5BrowserWidget,   QtCore.Qt.LeftDockWidgetArea)
+        self.file_browser_dock = self._add_file_browser_dock()
         self.data_viz_dock =self._add_dock("Data Visualization", Data_Viz_Window,  QtCore.Qt.RightDockWidgetArea)
         self.reg_dock=self._add_dock("Registration",   RegistrationApp,     QtCore.Qt.BottomDockWidgetArea)
 
@@ -133,9 +133,9 @@ class MainApp(QtWidgets.QMainWindow):
         self.cubeBtn.setMenu(self.cubeMenu)
 
         # Hypercube Manager
-        self.hc_manager = HypercubeManager()
+        self.hypercube_manager = HypercubeManager()
         reg_widget = self.reg_dock.widget()
-        reg_widget.alignedCubeReady.connect(self.hc_manager.addCube)  # get signal from register tool
+        reg_widget.alignedCubeReady.connect(self.hypercube_manager.addCube)  # get signal from register tool
 
         # Action Add File in list of cubes
         act_add = QAction("Add Cubes", self)
@@ -143,8 +143,8 @@ class MainApp(QtWidgets.QMainWindow):
         toolbar.addAction(act_add)
 
         # Mise à jour du menu à chaque modification
-        self.hc_manager.cubesChanged.connect(self._update_cube_menu)
-        self._update_cube_menu(self.hc_manager.paths)
+        self.hypercube_manager.cubesChanged.connect(self._update_cube_menu)
+        self._update_cube_menu(self.hypercube_manager.paths)
 
         act_open_previous = QAction("<", self)
         act_open_previous.setToolTip("Open previous cube in current folder")
@@ -158,12 +158,71 @@ class MainApp(QtWidgets.QMainWindow):
         self.file_browser_dock.hide()
         self.reg_dock.hide()
 
+    def _on_file_browser_accepted(self, updated_ci: CubeInfoTemp):
+        '''
+        get OK pressed button of browser with
+        '''
+        self.hypercube_manager.cubesChanged.emit(self.hypercube_manager.paths)
+
+    def _open_file_browser_for_index(self, index: int):
+        """
+        Injecte le CubeInfoTemp existant dans le widget,
+        pré-remplit les champs, recharge l'arbre et l'affiche.
+        """
+        ci     = self.hypercube_manager.getCubeInfo(index)
+        widget = self.file_browser_dock.widget()
+
+        # 1) Ré-associe l'objet métier et le filepath
+        widget.cube_info = ci
+        widget.filepath  = ci.filepath
+
+        # 2) Pré-remplissage des QLineEdit
+        widget.le_cube.setText       (ci.data_path       or "")
+        widget.le_wl.setText         (ci.wl_path         or "")
+        widget.le_meta.setText       (ci.metadata_path   or "")
+        # comboBox_channel_wl : 0 = First, 1 = Other (à ajuster)
+        widget.comboBox_channel_wl.setCurrentIndex(0 if ci.wl_trans else 1)
+
+        # 3) Rebuild de l'arbre HDF5/MAT
+        widget._load_file()
+
+        # 4) Affichage du dock
+        self.file_browser_dock.show()
+        widget.show()
+
+
     def _add_dock(self, title, WidgetClass, area):
         widget = WidgetClass(parent=self)
         dock   =  QtWidgets.QDockWidget(title, self)
         dock.setWidget(widget)
         self.addDockWidget(area, dock)
         return dock
+
+    def _add_file_browser_dock(self) -> QtWidgets.QDockWidget:
+        """
+        Initialise le File Browser avec un CubeInfoTemp vide,
+        connecte son signal accepted, puis l'ajoute en dock.
+        """
+        # 1) crée un CubeInfoTemp vierge
+        ci = CubeInfoTemp(filepath=None)
+
+        # 2) instancie le widget
+        widget = HDF5BrowserWidget(
+            cube_info=ci,
+            filepath=None,
+            parent=self,
+            closable=True
+        )
+        # 3) connecte le signal accepted
+        widget.accepted.connect(self._on_file_browser_accepted)
+        widget.rejected.connect(lambda: None)  # si tu veux réagir à l'annulation
+
+        # 4) création du dock
+        dock = QtWidgets.QDockWidget("File Browser", self)
+        dock.setWidget(widget)
+        self.addDockWidget(QtCore.Qt.LeftDockWidgetArea, dock)
+        return dock
+
 
     def _on_add_cube(self,paths=None):
         if not isinstance(paths, (list, tuple)) or len(paths) == 0:
@@ -178,7 +237,7 @@ class MainApp(QtWidgets.QMainWindow):
             return
 
         for path in paths:
-            self.hc_manager.addCube(path)
+            self.hypercube_manager.addCube(path)
 
     def _update_cube_menu(self, paths):
         """Met à jour le menu de cubes avec sous-menus et actions fonctionnelles."""
@@ -194,25 +253,25 @@ class MainApp(QtWidgets.QMainWindow):
             menu_load_reg=QtWidgets.QMenu("Send to Register Tool", sub)
             act_fix = QtWidgets.QAction("Fixed Cube", self)
             act_fix.triggered.connect(
-                lambda _, i=idx: self.reg_dock.widget().load_cube(0,self.hc_manager.paths[i])
+                lambda _, i=idx: self.reg_dock.widget().load_cube(0,self.hypercube_manager.paths[i])
             )
             menu_load_reg.addAction(act_fix)
             # Action Moving
             act_mov = QtWidgets.QAction("Moving Cube", self)
             act_mov.triggered.connect(
-                lambda _, i=idx: self.reg_dock.widget().load_cube(1,self.hc_manager.paths[i])
+                lambda _, i=idx: self.reg_dock.widget().load_cube(1,self.hypercube_manager.paths[i])
             )
             menu_load_reg.addAction(act_mov)
             sub.addMenu(menu_load_reg)
             # Envoyer au dock3
             act_browser = QtWidgets.QAction("Send to File Browser", self)
-            act_browser.triggered.connect(lambda checked, i=idx: self.file_browser_dock.widget()._update(self.hc_manager.paths[i]))
+            act_browser.triggered.connect(lambda checked, i=idx: self._open_file_browser_for_index(i))
             sub.addAction(act_browser)
             # Séparateur
             sub.addSeparator()
             # Supprimer de la liste
             act_rm = QtWidgets.QAction("Remove from list", self)
-            act_rm.triggered.connect(lambda checked, i=idx: self.hc_manager.removeCube(i))
+            act_rm.triggered.connect(lambda checked, i=idx: self.hypercube_manager.removeCube(i))
             sub.addAction(act_rm)
             # Ajouter sous-menu au menu principal
             self.cubeMenu.addMenu(sub)
