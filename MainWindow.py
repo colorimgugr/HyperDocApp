@@ -14,6 +14,7 @@ from hypercubes.hypercube      import HDF5BrowserWidget
 from data_vizualisation.data_vizualisation_tool import Data_Viz_Window
 from registration.register_tool        import RegistrationApp
 from interface.HypercubeManager import HypercubeManager
+from hypercubes.hypercube import CubeInfoTemp
 
 # TODO : initier dans MainWindow les hypercubes et connecter les champs de chaque widget (yeah...big deal)
 
@@ -193,19 +194,19 @@ class MainApp(QtWidgets.QMainWindow):
             menu_load_reg=QtWidgets.QMenu("Send to Register Tool", sub)
             act_fix = QtWidgets.QAction("Fixed Cube", self)
             act_fix.triggered.connect(
-                lambda _, i=idx: self.reg_dock.widget().load_cube(0,self.hc_manager.getCube_path(i))
+                lambda _, i=idx: self.reg_dock.widget().load_cube(0,self.hc_manager.paths[i])
             )
             menu_load_reg.addAction(act_fix)
             # Action Moving
             act_mov = QtWidgets.QAction("Moving Cube", self)
             act_mov.triggered.connect(
-                lambda _, i=idx: self.reg_dock.widget().load_cube(1,self.hc_manager.getCube_path(i))
+                lambda _, i=idx: self.reg_dock.widget().load_cube(1,self.hc_manager.paths[i])
             )
             menu_load_reg.addAction(act_mov)
             sub.addMenu(menu_load_reg)
             # Envoyer au dock3
             act_browser = QtWidgets.QAction("Send to File Browser", self)
-            act_browser.triggered.connect(lambda checked, i=idx: self.file_browser_dock.widget()._update(self.hc_manager.getCube_path(i)))
+            act_browser.triggered.connect(lambda checked, i=idx: self.file_browser_dock.widget()._update(self.hc_manager.paths[i]))
             sub.addAction(act_browser)
             # Séparateur
             sub.addSeparator()

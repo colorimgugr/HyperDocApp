@@ -13,8 +13,25 @@ from hypercubes.save_window import Ui_Save_Window
 from hypercubes.HDF5BrowserWidget import Ui_HDF5BrowserWidget
 import sys
 
+from dataclasses import dataclass, field
+from typing import Optional, List, Union
+import numpy as np
+
 # TODO : sortir HDF5BrowserWidget du fichier de la classe hypercube ?
 # TODO : si metadata à la racine, alors on garde toute la racine sauf le cube (ou une selection ?)
+
+@dataclass
+class CubeInfoTemp:
+    """
+    Container for per-cube working data.
+    """
+    filepath: str
+    data_path: Optional[str] = None
+    metadata_path: Optional[str] = None
+    wl_path: Optional[str] = None
+    metadata_temp: dict = field(default_factory=dict)
+    crop: Optional[Union[List[float], np.ndarray]] = None
+    wl_trans:Optional[str]= None
 
 class Hypercube:
 
@@ -31,11 +48,7 @@ class Hypercube:
         self.wl       = wl
         self.metadata = metadata or {}
 
-        self.path = {
-            "cube_path":   None,    # or "DataCube"
-            "wl_path":     None,    # or None
-            "meta_path":   None     # or None
-        }
+        self.cube_info=CubeInfoTemp(filepath=filepath)
 
         if load_init:
             if self.filepath is not None:
@@ -121,11 +134,12 @@ class Hypercube:
                                 # double, single, int, etc.
                                 self.metadata[name] = arr
 
-                        self.path = {
-                            "cube_path": "#refs#/d",  # or "DataCube"
-                            "wl_path": "#refs#/c",  # or None
-                            "meta_path": "Metadata"  # or None
-                        }
+                    self.cube_info.data_path = "#refs#/d"
+                    self.cube_info.wl_path = "#refs#/c"
+                    self.cube_info.metadata_path = "Metadata"
+                    self.cube_info.metadata_temp = self.metadata.copy()
+                    self.cube_info.wl_dim = True
+
                     return  # success → no dialog
 
             except Exception:
@@ -140,11 +154,11 @@ class Hypercube:
                     self.metadata = dict(f.attrs)
                     self.wl = self.metadata.get("wl")
 
-                    self.path = {
-                        "cube_path": "DataCube",  # or "DataCube"
-                        "wl_path": "@wl",  # or None
-                        "meta_path": "/"  # or None
-                    }
+                    self.cube_info.data_path = "DataCube"
+                    self.cube_info.wl_path = "@wl"
+                    self.cube_info.metadata_path = "/"
+                    self.cube_info.metadata_temp = self.metadata.copy()
+                    self.cube_info.wl_trans = True
 
                     return  # success → no dialog
 
@@ -156,10 +170,12 @@ class Hypercube:
 
         if ext in (".mat", ".h5", ".hdf5"):
             try:
-                widget = HDF5BrowserWidget(filepath,closable=True)
+
+                widget = HDF5BrowserWidget(cube_info=self.cube_info,
+                                           filepath = filepath,closable = True)
                 loop = QEventLoop()
 
-                widget.accepted.connect(loop.quit)
+                widget.accepted.connect(lambda ci: loop.quit())
                 widget.rejected.connect(loop.quit)
                 widget.show()
                 loop.exec_()
@@ -171,16 +187,15 @@ class Hypercube:
                     return
 
                 # else retrieve their paths
-                sel = widget.get_selection()
-                self.path=sel
+
                 try:
                     mat_dict = loadmat(filepath)
 
                     # data cube
-                    arr = mat_dict.get(sel['cube_path'])
+                    arr = mat_dict.get(self.cube_info.data_path)
                     if arr is None:
                         QMessageBox.critical(None, "Error",
-                                             f"Variable '{sel['cube_path']}' not found.")
+                                             f"Variable '{self.cube_info.data_path}' not found.")
                         self.reinit_cube()
                         return
                     data_arr = np.array(arr)
@@ -190,22 +205,22 @@ class Hypercube:
                         self.reinit_cube()
                         return
 
-                    if sel['wl_dim']:
+                    if self.cube_info.wl_trans:
                         self.data = np.transpose(data_arr, (2, 1, 0))
                     else:
                         self.data=data_arr
 
                     # wavelengths
-                    if sel['wl_path']:
-                        wl_arr = mat_dict.get(sel['wl_path'])
+                    if self.cube_info.wl_path:
+                        wl_arr = mat_dict.get(self.cube_info.wl_path)
                         self.wl = np.array(wl_arr).flatten() if wl_arr is not None else None
                     else:
                         self.wl = None
 
                     # metadata
                     self.metadata = {}
-                    if sel['meta_path']:
-                        meta_val = mat_dict.get(sel['meta_path'])
+                    if self.cube_info.metadata_path:
+                        meta_val = mat_dict.get(self.cube_info.metadata_path)
                         if meta_val is not None:
                             key = sel['meta_path'].split('/')[-1]
                             self.metadata[key] = meta_val
@@ -213,11 +228,11 @@ class Hypercube:
                 except:
                     #HDF5 or MAT v7.3
                     with h5py.File(filepath, 'r') as f:
-                        raw = f[sel['cube_path']][:]
+                        raw = f[self.cube_info.data_path][:]
                         self.data = np.transpose(raw, (2, 1, 0))
 
                         # wavelengths
-                        wl_sel = sel.get('wl_path') or ""
+                        wl_sel = self.cube_info.wl_path or ""
                         if wl_sel:
                             if '@' in wl_sel:
                                 grp, _, attr = wl_sel.rpartition('@')
@@ -231,7 +246,7 @@ class Hypercube:
 
                         # metadata
                         self.metadata = {}
-                        meta_sel = sel.get('meta_path') or ""
+                        meta_sel = self.cube_info.metadata_path or ""
                         if meta_sel == '/':
                             self.metadata = {k: f.attrs[k] for k in f.attrs}
                         elif '@' in meta_sel:
@@ -451,29 +466,41 @@ class HDF5BrowserWidget(QWidget, Ui_HDF5BrowserWidget):
     Emits `accepted` when OK is clicked, `rejected` on Cancel.
     """
 
-    accepted = pyqtSignal()
+    accepted = pyqtSignal(object)
     rejected = pyqtSignal()
 
-    def __init__(self, filepath=None, parent=None,closable=False):
+    def __init__(self,cube_info: CubeInfoTemp, filepath:Optional[str]=None, parent=None,closable=False):
         super().__init__(parent)
         self.setupUi(self)
-        self.treeWidget.setColumnCount(4)
-        self.treeWidget.setHeaderLabels(['Name', 'Type', 'Path', 'Size'])
+
+        # attributes
         self.filepath = filepath
+        self.cube_info  = cube_info
         self._accepted = False
         self.closable=closable
+
+        # tree
+        self.treeWidget.setColumnCount(4)
+        self.treeWidget.setHeaderLabels(['Name', 'Type', 'Path', 'Size'])
 
         # Connect buttons
         self.btn_select_cube.clicked.connect(lambda: self._assign(self.le_cube))
         self.btn_select_wl.clicked.connect(lambda: self._assign(self.le_wl))
         self.btn_select_meta.clicked.connect(lambda: self._assign(self.le_meta))
-
         self.btn_ok.clicked.connect(self._on_accept)
         self.btn_cancel.clicked.connect(self._on_reject)
 
         # Populate the tree
         if filepath is not None:
             self._load_file()
+
+        # 2) Prérémplir depuis cube_info
+        if cube_info.data_path:
+            self.le_cube.setText(cube_info.data_path)
+        if cube_info.wl_path:
+            self.le_wl.setText(cube_info.wl_path)
+        if cube_info.metadata_path:
+            self.le_meta.setText(cube_info.metadata_path)
 
     def _is_hdf5_file(self, path: str) -> bool:
         """True if `path` can be opened by h5py (including .mat v7.3)."""
@@ -559,8 +586,16 @@ class HDF5BrowserWidget(QWidget, Ui_HDF5BrowserWidget):
             line_edit.setText(item.text(2))
 
     def _on_accept(self):
+        # Met à jour directement l'objet dataclass
+        self.cube_info.data_path = self.le_cube.text().strip() or None
+        self.cube_info.wl_path = self.le_wl.text().strip() or None
+        self.cube_info.metadata_path = self.le_meta.text().strip() or None
+        self.cube_info.wl_trans = self.comboBox_channel_wl.currentText()=='First'
+
         self._accepted = True
-        self.accepted.emit()
+
+        self.accepted.emit(self.cube_info)
+
         if self.closable:
             self.close()
 
@@ -569,15 +604,6 @@ class HDF5BrowserWidget(QWidget, Ui_HDF5BrowserWidget):
         self.rejected.emit()
         if self.closable:
             self.close()
-
-    def get_selection(self):
-        """Return {'cube_path','wl_path','meta_path'} (or None)."""
-        return {
-            'cube_path': self.le_cube.text() or None,
-            'wl_path':   self.le_wl.text()   or None,
-            'meta_path': self.le_meta.text() or None,
-            'wl_dim':self.comboBox_channel_wl.currentText()=='First' or None,
-        }
 
     def load_file(self, filepath):
         """
@@ -588,14 +614,6 @@ class HDF5BrowserWidget(QWidget, Ui_HDF5BrowserWidget):
         self.le_wl.clear()
         self.le_meta.clear()
         self._load_file()
-
-    def set_selection(self, cube_path=None, wl_path=None, meta_path=None):
-        """
-        Programmatically fill the three path‐fields.
-        """
-        self.le_cube.setText(cube_path or "")
-        self.le_wl.setText(wl_path or "")
-        self.le_meta.setText(meta_path or "")
 
     def _format_bytes(self, num, suffix='B'):
         for unit in ['', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi']:

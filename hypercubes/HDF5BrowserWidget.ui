@@ -154,7 +154,7 @@
         <string notr="true">background-color: rgb(194, 194, 194);</string>
        </property>
        <property name="text">
-        <string>OK</string>
+        <string>Valid Paths</string>
        </property>
       </widget>
      </item>
