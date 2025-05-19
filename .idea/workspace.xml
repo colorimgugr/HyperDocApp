@@ -4,12 +4,14 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="Outils Metadata OK en lecture.">
+    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="On avance sur le metada. OK pour alidation str et numpy 1D">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/MainWindow.py" beforeDir="false" afterPath="$PROJECT_DIR$/MainWindow.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/data_vizualisation/metadata_dock.ui" beforeDir="false" afterPath="$PROJECT_DIR$/data_vizualisation/metadata_dock.ui" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/data_vizualisation/metadata_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/data_vizualisation/metadata_tool.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/hypercubes/hypercube.py" beforeDir="false" afterPath="$PROJECT_DIR$/hypercubes/hypercube.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/interface/HypercubeManager.py" beforeDir="false" afterPath="$PROJECT_DIR$/interface/HypercubeManager.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/registration/register_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/registration/register_tool.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -326,7 +328,15 @@
       <option name="project" value="LOCAL" />
       <updated>1747241902458</updated>
     </task>
-    <option name="localTasksCounter" value="25" />
+    <task id="LOCAL-00025" summary="On avance sur le metada. OK pour alidation str et numpy 1D">
+      <option name="closed" value="true" />
+      <created>1747320353703</created>
+      <option name="number" value="00025" />
+      <option name="presentableId" value="LOCAL-00025" />
+      <option name="project" value="LOCAL" />
+      <updated>1747320353703</updated>
+    </task>
+    <option name="localTasksCounter" value="26" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -401,6 +411,7 @@
     <MESSAGE value="Gestion par CubeInfoTemp des infos des cubes pseudo chargés" />
     <MESSAGE value="Gestion par CubeInfoTemp des infos des cubes pseudo chargés - extension au MainWindow" />
     <MESSAGE value="Outils Metadata OK en lecture." />
-    <option name="LAST_COMMIT_MESSAGE" value="Outils Metadata OK en lecture." />
+    <MESSAGE value="On avance sur le metada. OK pour alidation str et numpy 1D" />
+    <option name="LAST_COMMIT_MESSAGE" value="On avance sur le metada. OK pour alidation str et numpy 1D" />
   </component>
 </project>

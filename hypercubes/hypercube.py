@@ -31,7 +31,7 @@ class CubeInfoTemp:
     wl_path: Optional[str] = None
     metadata_temp: dict = field(default_factory=dict)
     crop: Optional[Union[List[float], np.ndarray]] = None
-    wl_trans:Optional[str]= None
+    wl_trans:Optional[str]= None #if need to transpose wl dim from dim 1 to dim 3
 
 class Hypercube:
 
@@ -42,13 +42,13 @@ class Hypercube:
       • ENVI (.hdr + raw) via spectral.io.envi
     """
 
-    def __init__(self, filepath=None, data=None, wl=None, metadata=None, load_init=False):
+    def __init__(self, filepath=None, data=None, wl=None, metadata=None, load_init=False,cube_info=CubeInfoTemp()):
         self.filepath = filepath
         self.data     = data
         self.wl       = wl
         self.metadata = metadata or {}
 
-        self.cube_info=CubeInfoTemp(filepath=filepath)
+        self.cube_info=cube_info
 
         if load_init:
             if self.filepath is not None:

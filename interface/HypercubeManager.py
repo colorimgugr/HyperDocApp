@@ -14,16 +14,17 @@ class HypercubeManager(QtCore.QObject):
         # store CubeInfoTemp instances
         self._cubes: List[CubeInfoTemp] = []
 
-    def addCube(self, filepath: str):
+    def addCube(self, cube_info :CubeInfoTemp):
         """
         Add a new cube if not already present. Emits updated list of filepaths.
         """
+        filepath=cube_info.filepath
         if not filepath:
             return
         # prevent duplicates
         if any(ci.filepath == filepath for ci in self._cubes):
             return
-        cube = CubeInfoTemp(filepath=filepath)
+        cube = cube_info # CubeInfoTemp(filepath=filepath)
         self._cubes.append(cube)
         self.cubesChanged.emit(self.paths)
 

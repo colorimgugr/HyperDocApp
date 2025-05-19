@@ -237,7 +237,8 @@ class MainApp(QtWidgets.QMainWindow):
             return
 
         for path in paths:
-            self.hypercube_manager.addCube(path)
+            ci=CubeInfoTemp(filepath=path)
+            self.hypercube_manager.addCube(ci)
 
     def _update_cube_menu(self, paths):
         """Met à jour le menu de cubes avec sous-menus et actions fonctionnelles."""

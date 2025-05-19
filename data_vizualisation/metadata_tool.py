@@ -1,3 +1,5 @@
+import re
+
 from hypercubes.hypercube import*
 from data_vizualisation.metadata_dock import*
 
@@ -20,7 +22,7 @@ class MetadataTool(QWidget, Ui_Metadata_tool):
 
         # stacked param init
         self.stacked_metadata.setCurrentIndex(0)
-        self.lineEdit_metadata.setReadOnly(True)
+        self.textEdit_metadata.setReadOnly(True)
 
         #connect to edit
         self.checkBox_edit.toggled.connect(self._toggle_edit_metadata)
@@ -28,7 +30,7 @@ class MetadataTool(QWidget, Ui_Metadata_tool):
         # connect buttons
         self.pushButton_save.pressed.connect(self.keep_metadata)
         self.pushButton_cancel.pressed.connect(self.reset_metadata)
-        self.lineEdit_metadata.returnPressed.connect(self.keep_metadata)
+        self.pushButton_reset_one.pressed.connect(self.reset_metadatum)
 
     def update_combo_meta(self,init=False):
 
@@ -59,18 +61,23 @@ class MetadataTool(QWidget, Ui_Metadata_tool):
         self.cube_info = cube
         self.meta_load = cube.metadata_temp.copy()
 
+    def reset_metadatum(self):
+        key = self.comboBox_metadata.currentText()
+        self.cube_info.metadata_temp[key] = self.meta_load[key]
+        self.update_metadata_label()
+
     def reset_metadata(self):
         self.cube_info.metadata_temp=self.meta_load
         self.update_metadata_label()
 
     def update_metadata_label(self):
-        self.lineEdit_metadata.setStyleSheet("QLineEdit { color: black; }")
+        self.textEdit_metadata.setStyleSheet("QTextEdit  { color: black; }")
         key = self.comboBox_metadata.currentText()
         if key=='':
             key='cubeinfo'
         raw = self.cube_info.metadata_temp[key]
         match key:
-            case 'GTLabels':
+            case 'GTLabels' | 'gtlabels':
                 if len(raw.shape)==2:
                     st=f'GT indexes : <b>{(' , ').join(raw[0])}</b>  <br>  GT names : <b>{(' , ').join(raw[1])}</b>'
                     disp = str(raw)
@@ -140,20 +147,18 @@ class MetadataTool(QWidget, Ui_Metadata_tool):
 
             case _:
                 st=f'<b>{self.cube_info.metadata_temp[key]}</b>'
-
         self.label_metadata.setText(st)
 
         try:
             disp=raw
-            self.lineEdit_metadata.setText(disp)
+            self.textEdit_metadata.setText(disp)
         except :
             disp = str(raw)
             try:
-                self.lineEdit_metadata.setText(disp)
+                self.textEdit_metadata.setText(disp)
 
             except:
-                self.lineEdit_metadata.setText(repr(type(raw)))
-
+                self.textEdit_metadata.setText(repr(type(raw)))
 
         if isinstance(raw, np.ndarray):
             # par exemple : forme et dtype
@@ -166,7 +171,8 @@ class MetadataTool(QWidget, Ui_Metadata_tool):
 
     def keep_metadata(self):
         key = self.comboBox_metadata.currentText()
-        raw_in=self.lineEdit_metadata.text()
+        raw_in=self.textEdit_metadata.toPlainText()
+        print(raw_in)
         meta_init = self.cube_info.metadata_temp[key]
         meta_valid=False
 
@@ -178,6 +184,7 @@ class MetadataTool(QWidget, Ui_Metadata_tool):
             if len(meta_init.shape)==1:
                 raw_in=raw_in.replace('[','')
                 raw_in=raw_in.replace(']','')
+                raw_in = raw_in.replace('\n', '')
                 list_temp=raw_in.split(' ')
                 print(list_temp)
                 try :
@@ -190,25 +197,35 @@ class MetadataTool(QWidget, Ui_Metadata_tool):
                     except:
                         meta_valid = False
 
+            elif len(meta_init.shape) == 2:
+                rows=re.findall(r"\[([^\]]+)\]", raw_in)
+                list_temp=[]
+                for r in rows:
+                    elem=re.findall(r"'([^']*)'", r)
+                    list_temp.append(elem)
+
+                self.cube_info.metadata_temp[key] = np.array(list_temp, dtype=meta_init.dtype)
+                meta_valid=True
+
         if not meta_valid:
             QMessageBox.warning(self,
                                 "Warnings",  # titre de la fenêtre
                                 "Metadata has not been keeped. Check structure."  # texte du message
                                 )
-            self.lineEdit_metadata.setStyleSheet("QLineEdit { color: red; }")
+            self.textEdit_metadata.setStyleSheet("QTextEdit  { color: red; }")
 
         else:
-            self.lineEdit_metadata.setStyleSheet("QLineEdit { color: green; }")
+            self.textEdit_metadata.setStyleSheet("QTextEdit  { color: green; }")
 
     def _toggle_edit_metadata(self, editable: bool):
         """
-        Basculer entre mode lecture (QLabel) et mode édition (QLineEdit).
+        Basculer entre mode lecture (QLabel) et mode édition (QTextEdit ).
         """
         self.stacked_metadata.setCurrentIndex(1 if editable else 0)
-        self.lineEdit_metadata.setReadOnly(not editable)
+        self.textEdit_metadata.setReadOnly(not editable)
         self.pushButton_save.setEnabled(editable)
         self.update_metadata_label()
-        self.lineEdit_metadata.setStyleSheet("QLineEdit { color: black; }")
+        self.textEdit_metadata.setStyleSheet("QTextEdit  { color: black; }")
 
 if __name__ == '__main__':
     sample   = '00001-VNIR-mock-up.h5'

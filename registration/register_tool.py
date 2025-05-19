@@ -2,6 +2,8 @@
 # python -m PyQt5.uic.pyuic -o registration_window.py registration_window.ui
 
 import sys
+from importlib.metadata import metadata
+
 import numpy as np
 import cv2
 from IPython.core.display_functions import update_display
@@ -162,7 +164,7 @@ class ZoomableGraphicsView(QGraphicsView):
 class RegistrationApp(QMainWindow, Ui_MainWindow):
     # TODO: show number of features found
 
-    alignedCubeReady = pyqtSignal(str) # send signal to main
+    alignedCubeReady = pyqtSignal(CubeInfoTemp) # send signal to main
 
     def __init__(self,parent=None):
         super().__init__(parent)
@@ -258,12 +260,28 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
 
     def valid_registration(self):
         # save aligned to temp dir
+
+        name_moving = self.moving_cube.filepath.split('/')[-1].split('.')[0]
+
+        if self.viewer_aligned.get_rect_coords() is not None:
+            valid_crop = QMessageBox.question(self, 'Croped zone', "Do you want to valid only croped zone ?",
+                                               QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+
+            if valid_crop:
+                y, x, dy, dx = self.viewer_aligned.get_rect_coords()
+                y, x, dy, dx = map(int, (y, x, dy, dx))
+                self.aligned_cube.cube_info.metadata_temp['position'] =[y, x, dy, dx]
+                self.aligned_cube.cube_info.metadata_temp['parent_cube']=name_moving
+
         try :
-            temp_path = os.path.join(tempfile.gettempdir(), "aligned_cube.h5")
+            temp_path = os.path.join(tempfile.gettempdir(), name_moving+"_aligned_cube.h5")
             print(temp_path)
+            self.aligned_cube.filepath=temp_path
+            self.aligned_cube.cube_info.filepath=temp_path
+
             self.aligned_cube.save(filepath=temp_path,fmt='HDF5')
-            self.alignedCubeReady.emit(temp_path)
-            self.pushButton_validRegistration.setEnabled(False)
+            self.alignedCubeReady.emit(self.aligned_cube.cube_info)
+            # self.pushButton_validRegistration.setEnabled(False)
         except:
             print('Problem in registration validation')
 
@@ -454,6 +472,8 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
         dst_pts = np.float32([self.kp1[m.queryIdx].pt for m in self.matches]).reshape(-1, 1, 2)
 
         transform_type = self.transform_selector.currentText()
+        registration_done=False
+
         if transform_type == "Affine":
             # Need at least 3 point pairs for affine
             if len(self.matches) < 3:
@@ -491,10 +511,7 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
                 slice_k = np.asarray(self.moving_cube.data[:, :, k])
                 aligned_arr[:, :, k] = cv2.warpAffine(slice_k, matrix, (w, h))
 
-            # Replace aligned_cube with a proper Hypercube
-            self.aligned_cube = Hypercube(data=aligned_arr,
-                                          wl=self.moving_cube.wl,
-                                          metadata=self.moving_cube.metadata)
+            registration_done=True
 
         elif transform_type == "Perspective":
 
@@ -549,17 +566,18 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
 
                 aligned_arr[:, :, k] = cv2.warpPerspective(slice_k, matrix, (w, h))
 
-            # Replace aligned_cube with a proper Hypercube
-
-            self.aligned_cube = Hypercube(data=aligned_arr,
-
-                                          wl=self.moving_cube.wl,
-
-                                          metadata=self.moving_cube.metadata)
+            registration_done=True
 
         else:
             QMessageBox.warning(self, "Error", "Unsupported transformation.")
             return
+
+        if registration_done:
+            # Replace aligned_cube with a proper Hypercube
+            self.aligned_cube = Hypercube(data=aligned_arr,
+                                          wl=self.moving_cube.wl,
+                                          metadata=self.moving_cube.metadata)
+            self.aligned_cube.cube_info=self.moving_cube.cube_info
 
         self.update_display()
         self.pushButton_register.setEnabled(True)
