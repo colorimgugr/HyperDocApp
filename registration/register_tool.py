@@ -2,6 +2,8 @@
 # python -m PyQt5.uic.pyuic -o registration_window.py registration_window.ui
 
 import sys
+from importlib.metadata import metadata
+
 import numpy as np
 import cv2
 from IPython.core.display_functions import update_display
@@ -11,13 +13,15 @@ from PyQt5.QtWidgets import (
     QGraphicsView, QGraphicsScene, QGraphicsPixmapItem,QRubberBand
 )
 from PyQt5.QtGui import QPixmap, QImage, QTransform,  QPen, QColor
-from PyQt5.QtCore import Qt, QPointF, QRectF, QRect, QPoint,QSize
+from PyQt5.QtCore import Qt, QPointF, QRectF, QRect, QPoint,QSize,pyqtSignal,QStandardPaths
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
-import os
+import os, uuid, tempfile
 import random
 
 # TODO : Manual outling features
+# TODO : Clean Cache to to well od close and save as.
+# TODO : Trier les save depuis tool et depuis main -> Metadatas a bien reflechir.
 
 from registration.registration_window import*
 from hypercubes.hypercube import*
@@ -55,7 +59,6 @@ def overlay_checkerboard(fixed, aligned, tile_size=20):
     return result
 
 class ZoomableGraphicsView(QGraphicsView):
-    # TODO: add file title above image
     def __init__(self):
         super().__init__()
         self.setScene(QGraphicsScene())
@@ -160,7 +163,9 @@ class ZoomableGraphicsView(QGraphicsView):
 
 class RegistrationApp(QMainWindow, Ui_MainWindow):
     # TODO: show number of features found
-    # TODO : save cube with option of minicubes (selected zone)
+
+    alignedCubeReady = pyqtSignal(CubeInfoTemp) # send signal to main
+
     def __init__(self,parent=None):
         super().__init__(parent)
         self.setupUi(self)
@@ -189,12 +194,14 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
         self.slider_channel=[self.horizontalSlider_ref_channel,self.horizontalSlider_mov_channel]
         self.spinBox_channel=[self.spinBox_ref_channel,self.spinBox_mov_channel]
 
-        self.pushButton_open_ref_hypercube.clicked.connect(self.load_fixed)
-        self.pushButton_open_mov_hypercube.clicked.connect(self.load_moving)
+        self.pushButton_open_ref_hypercube.clicked.connect(self.load_fixed_btn)
+        self.pushButton_open_mov_hypercube.clicked.connect(self.load_moving_btn)
         self.pushButton_getFeatures.clicked.connect(self.choose_register_method)
         self.pushButton_register.clicked.connect(self.register_imageAndCube)
         self.checkBox_crop.clicked.connect(self.check_selected_zones)
         self.pushButton_save_cube.clicked.connect(self.open_save_dialog)
+        self.pushButton_validRegistration.clicked.connect(self.valid_registration)
+
         self.pushButton_switch_images.clicked.connect(self.switch_fixe_mov)
 
         self.overlay_selector.currentIndexChanged.connect(self.update_display)
@@ -211,6 +218,7 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
         self.viewer_moving = ZoomableGraphicsView()
         self.left_layout.addWidget(self.viewer_moving, stretch=1)
         self.viewer_img=[self.viewer_fixed,self.viewer_moving,self.viewer_aligned]
+        self.viewer_label=[self.label_fixed,self.label_moving]
 
         self.setLayout(self.main_layout)
 
@@ -249,6 +257,33 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
             self.spinBox_mov_channel.setEnabled(True)
 
         self.update_images()
+
+    def valid_registration(self):
+        # save aligned to temp dir
+
+        name_moving = self.moving_cube.filepath.split('/')[-1].split('.')[0]
+
+        if self.viewer_aligned.get_rect_coords() is not None:
+            valid_crop = QMessageBox.question(self, 'Croped zone', "Do you want to valid only croped zone ?",
+                                               QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+
+            if valid_crop:
+                y, x, dy, dx = self.viewer_aligned.get_rect_coords()
+                y, x, dy, dx = map(int, (y, x, dy, dx))
+                self.aligned_cube.cube_info.metadata_temp['position'] =[y, x, dy, dx]
+                self.aligned_cube.cube_info.metadata_temp['parent_cube']=name_moving
+
+        try :
+            temp_path = os.path.join(tempfile.gettempdir(), name_moving+"_aligned_cube.h5")
+            print(temp_path)
+            self.aligned_cube.filepath=temp_path
+            self.aligned_cube.cube_info.filepath=temp_path
+
+            self.aligned_cube.save(filepath=temp_path,fmt='HDF5')
+            self.alignedCubeReady.emit(self.aligned_cube.cube_info)
+            # self.pushButton_validRegistration.setEnabled(False)
+        except:
+            print('Problem in registration validation')
 
     def update_images(self):
 
@@ -307,6 +342,8 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
                 # clear previous rectangle and display
                 self.viewer_img[idx].clear_rectangle()
                 self.viewer_img[idx].setImage(np_to_qpixmap(img))
+                suffixe_label=[" (fixed)"," (moving)"][idx]
+                self.viewer_label[idx].setText(self.cube[idx].filepath.split('/')[-1]+suffixe_label)
 
             return  # important : on sort de la méthode après le switch
 
@@ -351,13 +388,16 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
                 self.img = [self.fixed_img, self.moving_img]
 
                 self.viewer_img[i_mov].setImage(np_to_qpixmap(img))
+                suffixe_label = [" (fixed)", " (moving)"][i_mov]
+                self.viewer_label[i_mov].setText(self.cube[i_mov].filepath.split('/')[-1] + suffixe_label)
+
 
         self.pushButton_register.setEnabled(False)
 
-    def load_fixed(self):
+    def load_fixed_btn(self,fname=None):
         self.load_cube(0)
 
-    def load_moving(self):
+    def load_moving_btn(self,fname=None):
         self.load_cube(1)
 
     def cube_to_img(self,cube,mode,chan):
@@ -421,8 +461,6 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
         self.matches_all = sorted(matches, key=lambda x: x.distance)
 
         self.register_imageAndCube()
-        self.pushButton_register.setEnabled(True)
-        self.pushButton_save_cube.setEnabled(True)
 
     def register_imageAndCube(self):
         # Keep only the top percentage of matches
@@ -434,6 +472,8 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
         dst_pts = np.float32([self.kp1[m.queryIdx].pt for m in self.matches]).reshape(-1, 1, 2)
 
         transform_type = self.transform_selector.currentText()
+        registration_done=False
+
         if transform_type == "Affine":
             # Need at least 3 point pairs for affine
             if len(self.matches) < 3:
@@ -471,12 +511,7 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
                 slice_k = np.asarray(self.moving_cube.data[:, :, k])
                 aligned_arr[:, :, k] = cv2.warpAffine(slice_k, matrix, (w, h))
 
-            # Replace aligned_cube with a proper Hypercube
-            self.aligned_cube = Hypercube(data=aligned_arr,
-                                          wl=self.moving_cube.wl,
-                                          metadata=self.moving_cube.metadata)
-
-
+            registration_done=True
 
         elif transform_type == "Perspective":
 
@@ -531,19 +566,23 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
 
                 aligned_arr[:, :, k] = cv2.warpPerspective(slice_k, matrix, (w, h))
 
-            # Replace aligned_cube with a proper Hypercube
-
-            self.aligned_cube = Hypercube(data=aligned_arr,
-
-                                          wl=self.moving_cube.wl,
-
-                                          metadata=self.moving_cube.metadata)
+            registration_done=True
 
         else:
             QMessageBox.warning(self, "Error", "Unsupported transformation.")
             return
 
+        if registration_done:
+            # Replace aligned_cube with a proper Hypercube
+            self.aligned_cube = Hypercube(data=aligned_arr,
+                                          wl=self.moving_cube.wl,
+                                          metadata=self.moving_cube.metadata)
+            self.aligned_cube.cube_info=self.moving_cube.cube_info
+
         self.update_display()
+        self.pushButton_register.setEnabled(True)
+        self.pushButton_save_cube.setEnabled(True)
+        self.pushButton_validRegistration.setEnabled(True)
 
     def choose_register_method_ecc(self):
         try:
@@ -658,36 +697,6 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
 
                 return
 
-    # def save_cube(self):
-    #
-    #     save_both=False
-    #
-    #     # Ouvre un QFileDialog pour sélectionner un dossier
-    #     save_dir = QFileDialog.getExistingDirectory(self, "Choisir un dossier de sauvegarde")
-    #     if not save_dir:
-    #         return  # L'utilisateur a annulé
-    #
-    #     y, x, dy, dx = self.viewer_aligned.get_rect_coords()
-    #     x, y, dx, dy = int(x), int(y), int(dx), int(dy)
-    #
-    #     # Rogner les images
-    #     fixed_crop = self.fixed_img[y:y + dy, x:x + dx]
-    #     aligned_crop = self.aligned_img[y:y + dy, x:x + dx]
-    #
-    #     cv2.imwrite(os.path.join(save_dir, "fixed_crop.png"), fixed_crop)
-    #     cv2.imwrite(os.path.join(save_dir, "aligned_crop.png"), aligned_crop)
-    #
-    #     # Rogner et sauvegarder les cubes
-    #     if hasattr(self, "aligned_cube"):
-    #         aligned_cube_crop = self.aligned_cube[y:y + dy, x:x + dx, :]
-    #         np.save(os.path.join(save_dir, "aligned_cube_crop.npy"), aligned_cube_crop)
-    #
-    #     if hasattr(self, "fixed_cube"):
-    #         fixed_cube_crop = self.fixed_cube[y:y + dy, x:x + dx, :]
-    #         np.save(os.path.join(save_dir, "fixed_cube_crop.npy"), fixed_cube_crop)
-    #
-    #     QMessageBox.information(self, "Succès", f"Images et cubes rognés sauvegardés dans:\n{save_dir}")
-
     def open_save_dialog(self):
         """Ouvre la dialog SaveWindow, récupère les options et déclenche la sauvegarde."""
         dlg = SaveWindow(self)
@@ -695,7 +704,6 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
         if dlg.exec_() == QDialog.Accepted:
             opts = dlg.get_options()
             self.save_cube_with_options(opts)
-
 
     def save_cube_with_options(self, opts):
         """
@@ -771,6 +779,15 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
     def switch_fixe_mov(self):
         self.load_cube(switch=True)
 
+    def clean_cache(self):
+        import glob
+        cache = tempfile.gettempdir()
+        for f in glob.glob(os.path.join(cache, "aligned_*.h5")):
+            try:
+                os.remove(f)
+            except:
+                pass
+
 # TODO : clean different load and save function in data_viz and register and openSave
 
 def save_cropped_registered_images(self):
@@ -806,6 +823,7 @@ if __name__ == '__main__':
 
     window = RegistrationApp()
     window.show()
+    window.clean_cache()
     app.setStyle('Fusion')
 
     folder_cube=r'C:\Users\Usuario\Documents\DOC_Yannick\Hyperdoc_Test\Archivo chancilleria/'

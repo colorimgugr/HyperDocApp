@@ -37,6 +37,8 @@ from matplotlib.pyplot import fill_between
 from data_vizualisation.data_vizualisation_window import*
 from hypercubes.hypercube import*
 
+# TODO : clean this ugly  open_hypercubes_and_GT and open_UVIS and connect to main
+
 class Data_Viz_Window(QWidget,Ui_DataVizualisation):
     #TODO : make a widget window to edit metadata and add a button on all windows of the app
     def __init__(self,parent=None):

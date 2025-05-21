@@ -4,10 +4,20 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="Registration saving OK&#10;look metadata size problem with .h5">
+    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="metadata not editable from metadata tool blocked">
+      <change afterPath="$PROJECT_DIR$/ground_truth/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ground_truth/ground_truth_tool_chatGPT.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ground_truth/ground_truth_window.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ground_truth/ground_truth_window.ui" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/MainWindow.py" beforeDir="false" afterPath="$PROJECT_DIR$/MainWindow.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data_vizualisation/metadata_dock.py" beforeDir="false" afterPath="$PROJECT_DIR$/data_vizualisation/metadata_dock.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data_vizualisation/metadata_dock.ui" beforeDir="false" afterPath="$PROJECT_DIR$/data_vizualisation/metadata_dock.ui" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data_vizualisation/metadata_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/data_vizualisation/metadata_tool.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/hypercubes/hypercube.py" beforeDir="false" afterPath="$PROJECT_DIR$/hypercubes/hypercube.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/registration/register_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/registration/register_tool.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/interface/HypercubeManager.py" beforeDir="false" afterPath="$PROJECT_DIR$/interface/HypercubeManager.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/registration/register_images_with_chatGPT.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/test.py" beforeDir="false" afterPath="$PROJECT_DIR$/test.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -25,9 +35,22 @@
     <option name="BRANCH" value="Registration" />
   </component>
   <component name="Git.Settings">
+    <excluded-from-favorite>
+      <branch-storage>
+        <map>
+          <entry type="LOCAL">
+            <value>
+              <list>
+                <branch-info repo="$PROJECT_DIR$" source="main" />
+              </list>
+            </value>
+          </entry>
+        </map>
+      </branch-storage>
+    </excluded-from-favorite>
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
-        <entry key="$PROJECT_DIR$" value="Registration" />
+        <entry key="$PROJECT_DIR$" value="main" />
       </map>
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -65,7 +88,7 @@
     &quot;Python.register_images.executor&quot;: &quot;Run&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;feature/only-cube-in-main&quot;,
     &quot;last_opened_file_path&quot;: &quot;C:/Users/Usuario/Documents/GitHub/Hypertool&quot;,
     &quot;settings.editor.selected.configurable&quot;: &quot;preferences.externalTools&quot;
   }
@@ -263,7 +286,79 @@
       <option name="project" value="LOCAL" />
       <updated>1746783057446</updated>
     </task>
-    <option name="localTasksCounter" value="19" />
+    <task id="LOCAL-00019" summary="Save H5% en new dataset OK">
+      <option name="closed" value="true" />
+      <created>1747045822102</created>
+      <option name="number" value="00019" />
+      <option name="presentableId" value="LOCAL-00019" />
+      <option name="project" value="LOCAL" />
+      <updated>1747045822102</updated>
+    </task>
+    <task id="LOCAL-00020" summary="Manager with filepath OK&#10;Get path of Registered cube in Main OK&#10;send to Register and File Browser OK">
+      <option name="closed" value="true" />
+      <created>1747145526456</created>
+      <option name="number" value="00020" />
+      <option name="presentableId" value="LOCAL-00020" />
+      <option name="project" value="LOCAL" />
+      <updated>1747145526456</updated>
+    </task>
+    <task id="LOCAL-00021" summary="Added size column in FileBrowser">
+      <option name="closed" value="true" />
+      <created>1747146781655</created>
+      <option name="number" value="00021" />
+      <option name="presentableId" value="LOCAL-00021" />
+      <option name="project" value="LOCAL" />
+      <updated>1747146781655</updated>
+    </task>
+    <task id="LOCAL-00022" summary="Gestion par CubeInfoTemp des infos des cubes pseudo chargés">
+      <option name="closed" value="true" />
+      <created>1747225537795</created>
+      <option name="number" value="00022" />
+      <option name="presentableId" value="LOCAL-00022" />
+      <option name="project" value="LOCAL" />
+      <updated>1747225537795</updated>
+    </task>
+    <task id="LOCAL-00023" summary="Gestion par CubeInfoTemp des infos des cubes pseudo chargés - extension au MainWindow">
+      <option name="closed" value="true" />
+      <created>1747228825039</created>
+      <option name="number" value="00023" />
+      <option name="presentableId" value="LOCAL-00023" />
+      <option name="project" value="LOCAL" />
+      <updated>1747228825039</updated>
+    </task>
+    <task id="LOCAL-00024" summary="Outils Metadata OK en lecture.">
+      <option name="closed" value="true" />
+      <created>1747241902458</created>
+      <option name="number" value="00024" />
+      <option name="presentableId" value="LOCAL-00024" />
+      <option name="project" value="LOCAL" />
+      <updated>1747241902458</updated>
+    </task>
+    <task id="LOCAL-00025" summary="On avance sur le metada. OK pour alidation str et numpy 1D">
+      <option name="closed" value="true" />
+      <created>1747320353703</created>
+      <option name="number" value="00025" />
+      <option name="presentableId" value="LOCAL-00025" />
+      <option name="project" value="LOCAL" />
+      <updated>1747320353703</updated>
+    </task>
+    <task id="LOCAL-00026" summary="le register_tool envoie un cube_info dans le signal">
+      <option name="closed" value="true" />
+      <created>1747664241381</created>
+      <option name="number" value="00026" />
+      <option name="presentableId" value="LOCAL-00026" />
+      <option name="project" value="LOCAL" />
+      <updated>1747664241381</updated>
+    </task>
+    <task id="LOCAL-00027" summary="metadata not editable from metadata tool blocked">
+      <option name="closed" value="true" />
+      <created>1747665666661</created>
+      <option name="number" value="00027" />
+      <option name="presentableId" value="LOCAL-00027" />
+      <option name="project" value="LOCAL" />
+      <updated>1747665666661</updated>
+    </task>
+    <option name="localTasksCounter" value="28" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -302,7 +397,7 @@
                   <entry key="branch">
                     <value>
                       <list>
-                        <option value="origin/main" />
+                        <option value="origin/feature/only-cube-in-main" />
                       </list>
                     </value>
                   </entry>
@@ -315,7 +410,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Initial commit" />
     <MESSAGE value="Test updating GitHub from Pycharm" />
     <MESSAGE value="Reorganisation en dossier" />
     <MESSAGE value="Working on opening matlab files with hypercube objects." />
@@ -332,6 +426,15 @@
     <MESSAGE value="Dockable window started.&#10;First test OK but widget not connected" />
     <MESSAGE value="Dockable window started.&#10;toolbar ok" />
     <MESSAGE value="Registration saving OK&#10;look metadata size problem with .h5" />
-    <option name="LAST_COMMIT_MESSAGE" value="Registration saving OK&#10;look metadata size problem with .h5" />
+    <MESSAGE value="Save H5% en new dataset OK" />
+    <MESSAGE value="Manager with filepath OK&#10;Get path of Registered cube in Main OK&#10;send to Register and File Browser OK" />
+    <MESSAGE value="Added size column in FileBrowser" />
+    <MESSAGE value="Gestion par CubeInfoTemp des infos des cubes pseudo chargés" />
+    <MESSAGE value="Gestion par CubeInfoTemp des infos des cubes pseudo chargés - extension au MainWindow" />
+    <MESSAGE value="Outils Metadata OK en lecture." />
+    <MESSAGE value="On avance sur le metada. OK pour alidation str et numpy 1D" />
+    <MESSAGE value="le register_tool envoie un cube_info dans le signal" />
+    <MESSAGE value="metadata not editable from metadata tool blocked" />
+    <option name="LAST_COMMIT_MESSAGE" value="metadata not editable from metadata tool blocked" />
   </component>
 </project>

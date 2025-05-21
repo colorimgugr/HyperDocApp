@@ -15,6 +15,13 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
+    <widget class="QLabel" name="label_filename">
+     <property name="text">
+      <string>File</string>
+     </property>
+    </widget>
+   </item>
+   <item>
     <widget class="QTreeWidget" name="treeWidget">
      <property name="headerLabels" stdset="0">
       <stringlist>
@@ -147,7 +154,7 @@
         <string notr="true">background-color: rgb(194, 194, 194);</string>
        </property>
        <property name="text">
-        <string>OK</string>
+        <string>Valid Paths</string>
        </property>
       </widget>
      </item>

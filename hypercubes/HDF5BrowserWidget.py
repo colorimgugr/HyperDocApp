@@ -17,6 +17,9 @@ class Ui_HDF5BrowserWidget(object):
         HDF5BrowserWidget.resize(522, 362)
         self.verticalLayout = QtWidgets.QVBoxLayout(HDF5BrowserWidget)
         self.verticalLayout.setObjectName("verticalLayout")
+        self.label_filename = QtWidgets.QLabel(HDF5BrowserWidget)
+        self.label_filename.setObjectName("label_filename")
+        self.verticalLayout.addWidget(self.label_filename)
         self.treeWidget = QtWidgets.QTreeWidget(HDF5BrowserWidget)
         self.treeWidget.setProperty("headerLabels", ['Nom', 'Type', 'Chemin'])
         self.treeWidget.setObjectName("treeWidget")
@@ -88,6 +91,7 @@ class Ui_HDF5BrowserWidget(object):
     def retranslateUi(self, HDF5BrowserWidget):
         _translate = QtCore.QCoreApplication.translate
         HDF5BrowserWidget.setWindowTitle(_translate("HDF5BrowserWidget", "Navigateur HDF5"))
+        self.label_filename.setText(_translate("HDF5BrowserWidget", "File"))
         self.labelCube.setText(_translate("HDF5BrowserWidget", "Cube path :"))
         self.btn_select_cube.setText(_translate("HDF5BrowserWidget", "→ Cube"))
         self.labelWl.setText(_translate("HDF5BrowserWidget", "Wavelength path"))

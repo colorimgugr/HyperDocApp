@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1162</width>
+    <width>838</width>
     <height>1088</height>
    </rect>
   </property>
@@ -388,20 +388,16 @@
                   <string>Visualization</string>
                  </property>
                  <layout class="QGridLayout" name="gridLayout_2" columnstretch="1,1">
-                  <item row="0" column="1">
-                   <widget class="QLabel" name="label_packetToShow">
-                    <property name="text">
-                     <string>#packets to show</string>
+                  <item row="1" column="1">
+                   <widget class="QSlider" name="horizontalSlider_keyPacketToShow">
+                    <property name="pageStep">
+                     <number>1</number>
                     </property>
-                    <property name="alignment">
-                     <set>Qt::AlignCenter</set>
+                    <property name="orientation">
+                     <enum>Qt::Horizontal</enum>
                     </property>
-                   </widget>
-                  </item>
-                  <item row="0" column="0">
-                   <widget class="QLabel" name="label_3">
-                    <property name="text">
-                     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;keypoints per packet&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                    <property name="tickPosition">
+                     <enum>QSlider::NoTicks</enum>
                     </property>
                    </widget>
                   </item>
@@ -429,35 +425,6 @@
                     </item>
                    </widget>
                   </item>
-                  <item row="1" column="1">
-                   <widget class="QSlider" name="horizontalSlider_keyPacketToShow">
-                    <property name="pageStep">
-                     <number>1</number>
-                    </property>
-                    <property name="orientation">
-                     <enum>Qt::Horizontal</enum>
-                    </property>
-                    <property name="tickPosition">
-                     <enum>QSlider::NoTicks</enum>
-                    </property>
-                   </widget>
-                  </item>
-                  <item row="1" column="0">
-                   <widget class="QSpinBox" name="spinBox_keypointPerPacket">
-                    <property name="wrapping">
-                     <bool>false</bool>
-                    </property>
-                    <property name="alignment">
-                     <set>Qt::AlignCenter</set>
-                    </property>
-                    <property name="maximum">
-                     <number>100</number>
-                    </property>
-                    <property name="value">
-                     <number>10</number>
-                    </property>
-                   </widget>
-                  </item>
                   <item row="3" column="0">
                    <widget class="QLabel" name="label_5">
                     <property name="text">
@@ -481,7 +448,50 @@
                     </property>
                    </spacer>
                   </item>
-                  <item row="7" column="0" colspan="2">
+                  <item row="0" column="0">
+                   <widget class="QLabel" name="label_3">
+                    <property name="text">
+                     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;keypoints per packet&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="1" column="0">
+                   <widget class="QSpinBox" name="spinBox_keypointPerPacket">
+                    <property name="wrapping">
+                     <bool>false</bool>
+                    </property>
+                    <property name="alignment">
+                     <set>Qt::AlignCenter</set>
+                    </property>
+                    <property name="maximum">
+                     <number>100</number>
+                    </property>
+                    <property name="value">
+                     <number>10</number>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="0" column="1">
+                   <widget class="QLabel" name="label_packetToShow">
+                    <property name="text">
+                     <string>#packets to show</string>
+                    </property>
+                    <property name="alignment">
+                     <set>Qt::AlignCenter</set>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="5" column="0">
+                   <widget class="QPushButton" name="pushButton_validRegistration">
+                    <property name="enabled">
+                     <bool>false</bool>
+                    </property>
+                    <property name="text">
+                     <string>Valid registation</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="5" column="1">
                    <widget class="QPushButton" name="pushButton_save_cube">
                     <property name="enabled">
                      <bool>false</bool>
@@ -566,7 +576,6 @@
   <tabstop>spinBox_mov_channel</tabstop>
   <tabstop>transform_selector</tabstop>
   <tabstop>method_selector</tabstop>
-  <tabstop>pushButton_save_cube</tabstop>
  </tabstops>
  <resources/>
  <connections>

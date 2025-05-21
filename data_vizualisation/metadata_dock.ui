@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Metadata_tool</class>
+ <widget class="QWidget" name="Metadata_tool">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>315</width>
+    <height>544</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Metadata</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout_2">
+   <item>
+    <widget class="QFrame" name="frame">
+     <layout class="QVBoxLayout" name="verticalLayout_7" stretch="0,0,0,8">
+      <item alignment="Qt::AlignHCenter">
+       <widget class="QLabel" name="label_file_name_meta">
+        <property name="text">
+         <string>filepath of cube</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QFrame" name="frame_label_key">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>20</height>
+         </size>
+        </property>
+        <layout class="QGridLayout" name="gridLayout">
+         <property name="spacing">
+          <number>0</number>
+         </property>
+         <item row="0" column="1">
+          <widget class="QToolButton" name="toolButton_up">
+           <property name="text">
+            <string/>
+           </property>
+           <property name="autoRepeat">
+            <bool>true</bool>
+           </property>
+           <property name="arrowType">
+            <enum>Qt::UpArrow</enum>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <widget class="QToolButton" name="toolButton_down">
+           <property name="text">
+            <string/>
+           </property>
+           <property name="arrowType">
+            <enum>Qt::DownArrow</enum>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="0" rowspan="2">
+          <widget class="QComboBox" name="comboBox_metadata">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="frame">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="checkBox_edit">
+        <property name="text">
+         <string>Edit Metadata</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QStackedWidget" name="stacked_metadata">
+        <property name="currentIndex">
+         <number>0</number>
+        </property>
+        <widget class="QWidget" name="page_view">
+         <layout class="QVBoxLayout" name="verticalLayout_view">
+          <item>
+           <widget class="QLabel" name="label_metadata">
+            <property name="text">
+             <string>Votre texte ici…</string>
+            </property>
+            <property name="wordWrap">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+        <widget class="QWidget" name="page_edit">
+         <layout class="QVBoxLayout" name="verticalLayout_edit">
+          <item>
+           <widget class="QTextEdit" name="textEdit_metadata"/>
+          </item>
+          <item>
+           <layout class="QGridLayout" name="gridLayout_2">
+            <item row="1" column="0">
+             <widget class="QPushButton" name="pushButton_add">
+              <property name="text">
+               <string>Add New Metadata</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QPushButton" name="pushButton_generateMeta">
+              <property name="text">
+               <string>Generate Metadata</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QPushButton" name="pushButton_save">
+              <property name="text">
+               <string>Valid Changes</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="0">
+             <widget class="QPushButton" name="pushButton_copyMetadata">
+              <property name="text">
+               <string>Copy from other cube</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="0">
+             <widget class="QPushButton" name="pushButton_reset_one">
+              <property name="text">
+               <string>Reset this metadata</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="1">
+             <widget class="QPushButton" name="pushButton_cancel">
+              <property name="text">
+               <string>Reset All</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </widget>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
