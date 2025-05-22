@@ -5,18 +5,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="metadata not editable from metadata tool blocked">
-      <change afterPath="$PROJECT_DIR$/ground_truth/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ground_truth/ground_truth_tool_chatGPT.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ground_truth/ground_truth_window.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ground_truth/ground_truth_window.ui" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/MainWindow.py" beforeDir="false" afterPath="$PROJECT_DIR$/MainWindow.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data_vizualisation/metadata_dock.py" beforeDir="false" afterPath="$PROJECT_DIR$/data_vizualisation/metadata_dock.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data_vizualisation/metadata_dock.ui" beforeDir="false" afterPath="$PROJECT_DIR$/data_vizualisation/metadata_dock.ui" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data_vizualisation/metadata_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/data_vizualisation/metadata_tool.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hypercubes/hypercube.py" beforeDir="false" afterPath="$PROJECT_DIR$/hypercubes/hypercube.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/interface/HypercubeManager.py" beforeDir="false" afterPath="$PROJECT_DIR$/interface/HypercubeManager.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/registration/register_images_with_chatGPT.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ground_truth/ground_truth_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/ground_truth/ground_truth_tool.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ground_truth/ground_truth_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/ground_truth/ground_truth_window.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ground_truth/ground_truth_window.ui" beforeDir="false" afterPath="$PROJECT_DIR$/ground_truth/ground_truth_window.ui" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/test.py" beforeDir="false" afterPath="$PROJECT_DIR$/test.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -75,24 +67,24 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;Python.HyperdocApp_core_v3.5.1.executor&quot;: &quot;Run&quot;,
-    &quot;Python.HyperdocApp_main_.executor&quot;: &quot;Run&quot;,
-    &quot;Python.Hyperdoc_GUI_design.executor&quot;: &quot;Run&quot;,
-    &quot;Python.Run in console.executor&quot;: &quot;Run&quot;,
-    &quot;Python.Test_update.executor&quot;: &quot;Run&quot;,
-    &quot;Python.Unnamed.executor&quot;: &quot;Run&quot;,
-    &quot;Python.hypercube_app_v26.executor&quot;: &quot;Run&quot;,
-    &quot;Python.open.executor&quot;: &quot;Run&quot;,
-    &quot;Python.register_images.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;feature/only-cube-in-main&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Users/Usuario/Documents/GitHub/Hypertool&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.externalTools&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Python.HyperdocApp_core_v3.5.1.executor": "Run",
+    "Python.HyperdocApp_main_.executor": "Run",
+    "Python.Hyperdoc_GUI_design.executor": "Run",
+    "Python.Run in console.executor": "Run",
+    "Python.Test_update.executor": "Run",
+    "Python.Unnamed.executor": "Run",
+    "Python.hypercube_app_v26.executor": "Run",
+    "Python.open.executor": "Run",
+    "Python.register_images.executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "feature/ground__truth__tool",
+    "last_opened_file_path": "C:/Users/Usuario/Documents/GitHub/Hypertool",
+    "settings.editor.selected.configurable": "preferences.externalTools"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="C:\Users\Usuario\Documents\GitHub\Hypertool" />

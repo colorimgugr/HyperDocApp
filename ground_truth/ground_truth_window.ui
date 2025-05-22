@@ -6,11 +6,11 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>865</width>
+    <width>916</width>
     <height>597</height>
    </rect>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout" stretch="1,2,2">
+  <layout class="QVBoxLayout" name="verticalLayout" stretch="1,6">
    <item>
     <widget class="QFrame" name="frame">
      <property name="autoFillBackground">
@@ -22,22 +22,22 @@
      <property name="frameShadow">
       <enum>QFrame::Raised</enum>
      </property>
-     <layout class="QHBoxLayout" name="horizontalLayout_2">
+     <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="2,2,1,2,1,2">
       <item>
-       <widget class="QGroupBox" name="groupBox_image_type_3">
+       <widget class="QGroupBox" name="groupBox_image_type">
         <property name="title">
          <string>Image Choice</string>
         </property>
         <layout class="QVBoxLayout" name="verticalLayout_5">
          <item>
-          <widget class="QRadioButton" name="radioButton_rgb_default_3">
+          <widget class="QRadioButton" name="radioButton_rgb_default">
            <property name="text">
             <string>RGB default</string>
            </property>
           </widget>
          </item>
          <item>
-          <widget class="QRadioButton" name="radioButton_rgb_user_3">
+          <widget class="QRadioButton" name="radioButton_rgb_user">
            <property name="enabled">
             <bool>true</bool>
            </property>
@@ -50,7 +50,7 @@
           </widget>
          </item>
          <item>
-          <widget class="QRadioButton" name="radioButton_grayscale_3">
+          <widget class="QRadioButton" name="radioButton_grayscale">
            <property name="text">
             <string>Grayscale</string>
            </property>
@@ -62,7 +62,7 @@
       <item>
        <layout class="QGridLayout" name="gridLayout_RGBchannels_3">
         <item row="1" column="2">
-         <widget class="QSlider" name="horizontalSlider_green_channel_3">
+         <widget class="QSlider" name="horizontalSlider_green_channel">
           <property name="maximum">
            <number>149</number>
           </property>
@@ -75,7 +75,7 @@
          </widget>
         </item>
         <item row="0" column="2">
-         <widget class="QSlider" name="horizontalSlider_red_channel_3">
+         <widget class="QSlider" name="horizontalSlider_red_channel">
           <property name="minimumSize">
            <size>
             <width>60</width>
@@ -94,7 +94,7 @@
          </widget>
         </item>
         <item row="2" column="2">
-         <widget class="QSlider" name="horizontalSlider_blue_channel_3">
+         <widget class="QSlider" name="horizontalSlider_blue_channel">
           <property name="maximum">
            <number>149</number>
           </property>
@@ -107,7 +107,7 @@
          </widget>
         </item>
         <item row="0" column="0">
-         <widget class="QLabel" name="label_red_channel_3">
+         <widget class="QLabel" name="label_red_channel">
           <property name="text">
            <string>Red</string>
           </property>
@@ -117,7 +117,7 @@
          </widget>
         </item>
         <item row="1" column="1">
-         <widget class="QSpinBox" name="spinBox_green_channel_3">
+         <widget class="QSpinBox" name="spinBox_green_channel">
           <property name="maximum">
            <number>149</number>
           </property>
@@ -127,7 +127,7 @@
          </widget>
         </item>
         <item row="0" column="1">
-         <widget class="QSpinBox" name="spinBox_red_channel_3">
+         <widget class="QSpinBox" name="spinBox_red_channel">
           <property name="maximum">
            <number>149</number>
           </property>
@@ -140,7 +140,7 @@
          </widget>
         </item>
         <item row="1" column="0">
-         <widget class="QLabel" name="label_green_channel_3">
+         <widget class="QLabel" name="label_green_channel">
           <property name="text">
            <string>Green</string>
           </property>
@@ -150,7 +150,7 @@
          </widget>
         </item>
         <item row="2" column="1">
-         <widget class="QSpinBox" name="spinBox_blue_channel_3">
+         <widget class="QSpinBox" name="spinBox_blue_channel">
           <property name="maximum">
            <number>149</number>
           </property>
@@ -160,7 +160,7 @@
          </widget>
         </item>
         <item row="2" column="0">
-         <widget class="QLabel" name="label_blue_channel_3">
+         <widget class="QLabel" name="label_blue_channel">
           <property name="text">
            <string>Blue</string>
           </property>
@@ -193,24 +193,17 @@
           </property>
          </widget>
         </item>
+        <item row="2" column="0">
+         <widget class="QPushButton" name="load_btn">
+          <property name="text">
+           <string>Load Cube</string>
+          </property>
+         </widget>
+        </item>
         <item row="2" column="3">
          <widget class="QLabel" name="nclass_label">
           <property name="text">
            <string># Classes:</string>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="4">
-         <widget class="QPushButton" name="ss_btn">
-          <property name="text">
-           <string>Semi-super</string>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="3">
-         <widget class="QPushButton" name="unsup_btn">
-          <property name="text">
-           <string>Unsuper</string>
           </property>
          </widget>
         </item>
@@ -221,11 +214,18 @@
           </property>
          </widget>
         </item>
-        <item row="2" column="0">
-         <widget class="QPushButton" name="load_btn">
-          <property name="text">
-           <string>Load Cube</string>
-          </property>
+        <item row="0" column="3">
+         <widget class="QComboBox" name="comboBox_ClassifMode">
+          <item>
+           <property name="text">
+            <string>Unsupervised</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Supervised</string>
+           </property>
+          </item>
          </widget>
         </item>
        </layout>
@@ -239,8 +239,18 @@
       </item>
       <item>
        <layout class="QGridLayout" name="gridLayout_4">
+        <item row="1" column="2">
+         <widget class="QLabel" name="label_GT_3">
+          <property name="text">
+           <string>GT transparency</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+          </property>
+         </widget>
+        </item>
         <item row="1" column="3">
-         <widget class="QSlider" name="horizontalSlider_transparency_GT_3">
+         <widget class="QSlider" name="horizontalSlider_transparency_GT">
           <property name="minimumSize">
            <size>
             <width>60</width>
@@ -261,20 +271,20 @@
           </property>
          </widget>
         </item>
-        <item row="1" column="2">
-         <widget class="QLabel" name="label_GT_3">
-          <property name="text">
-           <string>GT transparency</string>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-          </property>
-         </widget>
-        </item>
         <item row="2" column="2" colspan="2">
          <widget class="QCheckBox" name="live_cb">
           <property name="text">
            <string>Spectrum live visualization</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="2" colspan="2">
+         <widget class="QCheckBox" name="checkBox_seeGTspectra">
+          <property name="text">
+           <string>See GT spectra</string>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
           </property>
          </widget>
         </item>
@@ -284,28 +294,45 @@
     </widget>
    </item>
    <item>
-    <layout class="QHBoxLayout" name="viewLayout">
-     <item>
-      <widget class="QWidget" name="viewer_left" native="true">
-       <property name="toolTip">
-        <string>Promote to ZoomableGraphicsView</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QWidget" name="viewer_right" native="true">
-       <property name="toolTip">
-        <string>Promote to ZoomableGraphicsView</string>
-       </property>
-      </widget>
-     </item>
-    </layout>
-   </item>
-   <item>
-    <widget class="QWidget" name="spec_canvas" native="true">
-     <property name="toolTip">
-      <string>Promote to FigureCanvas</string>
+    <widget class="QFrame" name="frame_2">
+     <property name="frameShape">
+      <enum>QFrame::StyledPanel</enum>
      </property>
+     <property name="frameShadow">
+      <enum>QFrame::Raised</enum>
+     </property>
+     <layout class="QHBoxLayout" name="horizontalLayout_4">
+      <item>
+       <widget class="QSplitter" name="splitter">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <widget class="QWidget" name="verticalLayoutWidget">
+         <layout class="QVBoxLayout" name="verticalLayout_2">
+          <item>
+           <widget class="QWidget" name="viewer_left" native="true">
+            <property name="toolTip">
+             <string>Promote to ZoomableGraphicsView</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QWidget" name="viewer_right" native="true">
+            <property name="toolTip">
+             <string>Promote to ZoomableGraphicsView</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+        <widget class="QWidget" name="spec_canvas" native="true">
+         <property name="toolTip">
+          <string>Promote to FigureCanvas</string>
+         </property>
+        </widget>
+       </widget>
+      </item>
+     </layout>
     </widget>
    </item>
   </layout>
