@@ -5,6 +5,8 @@ from PyQt5.QtWidgets import QWidget, QFileDialog, QMessageBox,QInputDialog , QSp
 from PyQt5.QtCore import Qt, QEvent
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
+from matplotlib import cm
+
 from hypercubes.hypercube import Hypercube
 from registration.register_tool import ZoomableGraphicsView
 # Import the compiled UI
@@ -23,6 +25,7 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         super().__init__(parent)
         # Set up UI from compiled .py
         self.setupUi(self)
+
 
         # Replace placeholders with custom widgets
         self._replace_placeholder('viewer_left', ZoomableGraphicsView)
@@ -49,6 +52,8 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         self.mode = 'Unsupervised'
         self.hyps_rgb_chan_DEFAULT=[0,0,0] #default rgb channels (in int nm)
         self.hyps_rgb_chan=[0,0,0] #current rgb (in int nm)
+        self.class_means = {} #for spectra of classes
+
 
         # Connect widget signals
         self.load_btn.clicked.connect(self.load_cube)
@@ -165,7 +170,16 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
                 if 0 <= x < self.data.shape[1] and 0 <= y < self.data.shape[0]:
                     spectrum = self.data[y, x, :]
                     self.spec_ax.clear()
-                    self.spec_ax.plot(spectrum)
+                    # tracé du spectre live
+                    self.spec_ax.plot(spectrum, label='Pixel')
+                    if self.checkBox_seeGTspectra.isChecked() and hasattr(self, 'class_means'):
+                        for c, mu in self.class_means.items():
+                            # récupère un RGBA entre 0 et 1, puis passe en RGB matplotlib
+                            rgba = self._cmap(c)
+                            # trace en trait pointillé
+                            self.spec_ax.plot(mu, linestyle='--', color=rgba, label=f'Classe {c}')
+                        self.spec_ax.legend(loc='upper right', fontsize='small')
+
                     self.spec_ax.set_title(f'Spectrum @ ({x},{y})')
                     self.spec_canvas.setVisible(True)
                     self.spec_canvas.draw()
@@ -298,19 +312,32 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
             QMessageBox.warning(self, "Attention", "Chargez d'abord un cube !")
             return
         flat = self.data.reshape(-1, self.data.shape[2])
+
         if self.mode == 'Unsupervised':
             from sklearn.cluster import KMeans
-            labels = KMeans(n_clusters=self.nclass_box.value()).fit_predict(flat)
+            n = self.nclass_box.value()
+            kmeans = KMeans(n_clusters=n).fit(flat)
+            labels = kmeans.labels_
+            # ← NOUVEAU : on stocke les centres de clusters
+            self.class_means = {i: kmeans.cluster_centers_[i] for i in range(n)}
+
         else:
             if not self.samples:
                 QMessageBox.warning(self, "Attention", "Sélectionnez des pixels pour chaque classe !")
                 return
+            # calcul des moyennes par classe
             means = {c: np.mean(np.vstack(sp), axis=0) for c, sp in self.samples.items()}
             labels = np.zeros((flat.shape[0],), dtype=int)
             for i, pix in enumerate(flat):
                 angles = {c: spectral_angle(pix, mu) for c, mu in means.items()}
                 labels[i] = min(angles, key=angles.get)
+            self.class_means = means
+
+        self._cmap = cm.get_cmap('jet', len(self.class_means))
         self.cls_map = labels.reshape(self.data.shape[0], self.data.shape[1])
+        n = len(self.class_means)
+        self._cmap = cm.get_cmap('jet', n)
+
         self.show_image()
 
     def _np2pixmap(self, img):
