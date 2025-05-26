@@ -2,10 +2,12 @@ import os
 import numpy as np
 import cv2
 from PyQt5.QtWidgets import QWidget, QFileDialog, QMessageBox,QInputDialog , QSplitter
-from PyQt5.QtCore import Qt, QEvent
+from PyQt5.QtCore import Qt, QEvent, QRect
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from matplotlib import cm
+
+from scipy.spatial import distance as spdist
 
 from hypercubes.hypercube import Hypercube
 from registration.register_tool import ZoomableGraphicsView
@@ -13,12 +15,12 @@ from registration.register_tool import ZoomableGraphicsView
 from ground_truth.ground_truth_window import Ui_GroundTruthWidget
 
 # Todo : initialisation des default RGB channel comme vizualisation data
-# Todo : gestions des zones de sélection pour la classification supervisée
+# Todo : gestion des zones de sélection pour la classification supervisée
 # Todo : gestion de la selection semi-supervisée
-# Todo : multiple distance choice
 # todo : manual correction pixel by pixel (or pixel groups)
-# todo : show average spectrum (and std) in graph zone
-# todo : add normalize possibility for
+# todo : show average spectrum (and std) in graph zone A DISPARU
+#todo : finish selection : multiple pixel and lasso
+# todo : semi-supervised
 
 def spectral_angle(p, m):
     """
@@ -34,6 +36,14 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         # Set up UI from compiled .py
         self.setupUi(self)
         self.selecting_pixels = False
+
+        self.selecting_pixels = False
+        self.selection_mask = None
+        self.class_colors = {}  # color of each class
+        self._cmap = None
+        n0 = self.nclass_box.value()
+        self._cmap = cm.get_cmap('jet', n0)         # same jet as final segmentation
+
 
         # Replace placeholders with custom widgets
         self._replace_placeholder('viewer_left', ZoomableGraphicsView)
@@ -60,7 +70,7 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         self.mode = 'Unsupervised'
         self.hyps_rgb_chan_DEFAULT=[0,0,0] #default rgb channels (in int nm)
         self.hyps_rgb_chan=[0,0,0] #current rgb (in int nm)
-        self.class_means = {} #for spectra of classes
+        self.class_means = {} #for spectra of classe
 
 
         # Connect widget signals
@@ -88,6 +98,31 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
 
         # Live spectrum checkbox
         self.live_cb.stateChanged.connect(self.toggle_live)
+
+        self.distance_funcs = {
+            'sqeuclidean': spdist.sqeuclidean,
+            'cosine': spdist.cosine,
+            'correlation': spdist.correlation,
+            'canberra': spdist.canberra,
+            'spectral_angle': spectral_angle
+        }
+
+    def start_pixel_selection(self):
+
+        if len(self.samples)>0 :
+            reply = QMessageBox.question(
+                self, "Erase selection?",
+                "Do you want to erase previous selection?",
+                QMessageBox.Yes | QMessageBox.No
+            )
+            if reply == QMessageBox.Yes:
+                H, W = self.selection_mask_map.shape
+                # Réinitialise à -1 (aucune classe)
+                self.selection_mask_map[:] = -1
+                self.samples.clear()
+
+        self.selecting_pixels = True
+        self.show_image()
 
     def modif_sliders(self):
         max_wl = int(self.wl[-1])
@@ -143,11 +178,6 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
 
             self.show_image()
 
-    def start_pixel_selection(self):
-        # on active le mode sélection ; le drag/zoom sera bloqué par eventFilter
-        self.selecting_pixels = True
-        QMessageBox.information(self, "Mode Sélection",
-                                "Cliquez sur les pixels pour les classer. Cliquez sur 'Non' dans la boîte de dialogue pour sortir.")
 
     def _init_spectrum_canvas(self):
         placeholder = getattr(self, 'spec_canvas')
@@ -176,47 +206,101 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
             self.verticalLayout.addWidget(self.spec_canvas)
 
         self.spec_canvas.setVisible(False)
+        self.comboBox_pixel_selection_mode
+    def _handle_selection(self, coords):
+        """Prompt for class and store spectra of the given coordinates."""
+        cls, ok = QInputDialog.getInt(
+            self, "Class", "Class label number:", 0, 0, self.nclass_box.value() - 1
+        )
+        if not ok:
+            return
+        # append spectra
+        if cls not in self.class_colors:
+            # si _cmap n'existe pas encore, on le crée à la volée
+            if self._cmap is None:
+                from matplotlib import cm
+                n = self.nclass_box.value()
+                self._cmap = cm.get_cmap('jet', n)
+            rgba = self._cmap(cls)
+            r, g, b = (int(255 * rgba[i]) for i in range(3))
+            self.class_colors[cls] = (b, g, r)
+
+        for x, y in coords:
+            if 0 <= x < self.data.shape[1] and 0 <= y < self.data.shape[0]:
+                self.samples.setdefault(cls, []).append(self.data[y, x, :])
+                self.selection_mask_map[y, x] = cls
+
+        self.show_image()
+
+        # ask to continue
+        reply = QMessageBox.question(
+            self, "Continue ?", "Continue selecting pixels?",
+            QMessageBox.Yes | QMessageBox.No
+        )
+        if reply == QMessageBox.No:
+            self.selecting_pixels = False
 
     def eventFilter(self, source, event):
-        if source is self.viewer_left.viewport():
-            # 1) Clic pour sélection de pixel uniquement si on est en mode selecting_pixels
-            if event.type() == QEvent.MouseButtonPress and event.button() == Qt.LeftButton:
-                if self.selecting_pixels and self.data is not None:
-                    pos = self.viewer_left.mapToScene(event.pos())
-                    x, y = int(pos.x()), int(pos.y())
-                    H, W = self.data.shape[:2]
-                    if 0 <= x < W and 0 <= y < H:
-                        cls, ok = QInputDialog.getInt(
-                            self, "Classe", "Numéro de la classe :", 0, 0, self.nclass_box.value() - 1
-                        )
-                        if ok:
-                            self.samples.setdefault(cls, []).append(self.data[y, x, :])
-                            # demander si on continue
-                            reply = QMessageBox.question(
-                                self, "Continuer ?",
-                                "Continue selecting pixels ?",
-                                QMessageBox.Yes | QMessageBox.No
-                            )
-                            if reply == QMessageBox.No:
-                                # désactivation du mode sélection et retour au drag
-                                self.selecting_pixels = False
-                    # On consomme l’événement pour empêcher le drag
-                    return True
+        mode = self.comboBox_pixel_selection_mode.currentText()
 
-            # 2) Mouvement souris pour le live spectrum (déjà en place)
-            if event.type() == QEvent.MouseMove:
-                if self.live_cb.isChecked() and self.data is not None:
-                    pos = self.viewer_left.mapToScene(event.pos())
-                    x, y = int(pos.x()), int(pos.y())
-                    if 0 <= x < self.data.shape[1] and 0 <= y < self.data.shape[0]:
-                        spectrum = self.data[y, x, :]
-                        self.spec_ax.clear()
-                        self.spec_ax.plot(spectrum, label='Pixel')
-                        # éventuellement tracé des class_means et class_stds...
-                        self.spec_ax.set_title(f'Spectrum @ ({x},{y})')
-                        self.spec_canvas.setVisible(True)
-                        self.spec_canvas.draw()
-                return False
+        # 1) Clic souris
+        if event.type() == QEvent.MouseButtonPress and event.button() == Qt.LeftButton:
+            pos = self.viewer_left.mapToScene(event.pos())
+            x0, y0 = int(pos.x()), int(pos.y())
+            if mode == 'pixel':
+                self._handle_selection([(x0, y0)])
+                return True
+            elif mode == 'rectangle':
+                # début du drag
+                from PyQt5.QtWidgets import QRubberBand
+                self.origin = event.pos()
+                self.rubberBand = QRubberBand(QRubberBand.Rectangle,
+                                              self.viewer_left.viewport())
+                self.rubberBand.setGeometry(self.origin.x(),
+                                            self.origin.y(), 1, 1)
+                self.rubberBand.show()
+                return True
+
+        # 2) Mouvement souris → mise à jour du cadre
+        if event.type() == QEvent.MouseMove and hasattr(self, 'rubberBand'):
+            self.rubberBand.setGeometry(
+                QRect(self.origin, event.pos()).normalized()
+            )
+            return True
+
+        # 3) Relâchement souris → calcul de la sélection
+        if event.type() == QEvent.MouseButtonRelease and hasattr(self, 'rubberBand'):
+            rect = self.rubberBand.geometry()
+            self.rubberBand.hide()
+            # coins en coordonnées image
+            tl = self.viewer_left.mapToScene(rect.topLeft())
+            br = self.viewer_left.mapToScene(rect.bottomRight())
+            x0, y0 = int(tl.x()), int(tl.y())
+            x1, y1 = int(br.x()), int(br.y())
+            # liste de tous les pixels dans le rectangle
+            coords = [
+                (xx, yy)
+                for yy in range(max(0, min(y0, y1)), min(self.data.shape[0], max(y0, y1) + 1))
+                for xx in range(max(0, min(x0, x1)), min(self.data.shape[1], max(x0, x1) + 1))
+            ]
+            self._handle_selection(coords)
+            del self.rubberBand
+            return True
+
+        # 4) Mouvement souris pour le live spectrum
+        if event.type() == QEvent.MouseMove:
+            if self.live_cb.isChecked() and self.data is not None:
+                pos = self.viewer_left.mapToScene(event.pos())
+                x, y = int(pos.x()), int(pos.y())
+                if 0 <= x < self.data.shape[1] and 0 <= y < self.data.shape[0]:
+                    spectrum = self.data[y, x, :]
+                    self.spec_ax.clear()
+                    self.spec_ax.plot(spectrum, label='Pixel')
+                    # éventuellement tracé des class_means et class_stds...
+                    self.spec_ax.set_title(f'Spectrum @ ({x},{y})')
+                    self.spec_canvas.setVisible(True)
+                    self.spec_canvas.draw()
+            return False
 
         return super().eventFilter(source, event)
 
@@ -246,7 +330,8 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
             else:
                 mid=int(len(self.wl)/2)
                 self.hyps_rgb_chan_DEFAULT = [self.wl[0], self.wl[mid], self.wl[-1]]
-
+            H, W, _ = self.data.shape
+            self.selection_mask_map = np.full((H, W), -1, dtype=int) #init mask
             self.modif_sliders()
             self.show_image()
         except Exception as e:
@@ -254,8 +339,10 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
 
     def set_mode(self):
         self.mode = self.comboBox_ClassifMode.currentText()
-        self.samples.clear()
-        self.nclass_box.setEnabled(self.mode == 'Unsupervised')
+
+        self.nclass_box.setEnabled(self.mode in ['Unsupervised', 'Semi-supervised'])
+        self.pushButton_class_selection.setEnabled(self.mode in ['Supervised', 'Semi-supervised'])
+
         self.spec_canvas.setVisible(False)
         self.show_image()
 
@@ -290,6 +377,25 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
             seg8 = (self.cls_map.astype(np.float32) / (self.nclass_box.value() - 1) * 255).astype(np.uint8)
             pix2 = self._np2pixmap(cv2.applyColorMap(seg8, cv2.COLORMAP_JET))
         self.viewer_right.setImage(pix2)
+
+        if self.selection_mask_map is not None:
+            mixed = overlay.copy()
+            α = self.alpha
+
+            for cls, color in self.class_colors.items():
+                mask2d = (self.selection_mask_map == cls)
+                if not mask2d.any():
+                    continue
+
+                layer = np.zeros_like(overlay)
+                layer[:] = color
+
+                blended = cv2.addWeighted(overlay, 1 - α, layer, α, 0)
+
+                mask3 = mask2d[:, :, None]
+                mixed = np.where(mask3, blended, mixed)
+            self.viewer_left.setImage(self._np2pixmap(mixed))
+            return
 
     def _replace_placeholder(self, name, widget_cls, **kwargs):
         placeholder = getattr(self, name)
@@ -342,43 +448,68 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         self.spec_ax.set_title('Spectrum')
         canvas.setVisible(False)
 
+    def compute_distance(self, u, v):
+        name = self.comboBox_distance.currentText()
+        fn   = self.distance_funcs.get(name, spectral_angle)
+        return fn(u, v)
+
+
     def run(self):
         if self.data is None:
-            QMessageBox.warning(self, "Attention", "Chargez d'abord un cube !")
+            QMessageBox.warning(self, "Warning", "Load a cube !")
             return
+
         flat = self.data.reshape(-1, self.data.shape[2])
 
+        # 1) Unsupervised
         if self.mode == 'Unsupervised':
             from sklearn.cluster import KMeans
             n = self.nclass_box.value()
             kmeans = KMeans(n_clusters=n).fit(flat)
             labels = kmeans.labels_
-            # ← NOUVEAU : on stocke les centres de clusters
+            # stocke moyennes, écarts et colormap
             self.class_means = {i: kmeans.cluster_centers_[i] for i in range(n)}
-            self.class_stds = {}
-            for i in range(n):
-                spectra_i = flat[labels == i]
-                self.class_stds[i] = np.std(spectra_i, axis=0)
-
-            n = len(self.class_means)
+            self.class_stds = {i: np.std(flat[labels == i], axis=0) for i in range(n)}
             self._cmap = cm.get_cmap('jet', n)
 
+        # 2) Supervised pur
+        elif self.mode == 'Supervised':
+            classes = sorted(self.samples.keys())
+            if not classes:
+                QMessageBox.warning(self, "Warning", "Sélect at least one pixel !")
+                return
+            # moyennes par classe labellisée
+            means = {c: np.mean(np.vstack(self.samples[c]), axis=0) for c in classes}
+            # classification SAM
+            labels = np.zeros(flat.shape[0], dtype=int)
+            for i, pix in enumerate(flat):
+                dists = {c: self.compute_distance(pix, mu) for c, mu in means.items()}
+                labels[i] = min(dists, key=dists.get)
+            # renumérote en 0..len(classes)-1
+            cls_to_idx = {c: idx for idx, c in enumerate(classes)}
+            labels = np.vectorize(cls_to_idx.get)(labels)
+            # stocke pour l’affichage
+            self.class_means = means
+            self.class_stds = {c: np.std(np.vstack(self.samples[c]), axis=0) for c in classes}
+            self._cmap = cm.get_cmap('jet', len(classes))
+
+        # 3) Semi-supervised
         else:
             if not self.samples:
-                QMessageBox.warning(self, "Attention", "Sélectionnez des pixels pour chaque classe !")
+                QMessageBox.warning(self,"Warning", "Sélect at least one pixel !")
                 return
-            # calcul des moyennes par classe
             means = {c: np.mean(np.vstack(sp), axis=0) for c, sp in self.samples.items()}
-            stds = {c: np.std(np.vstack(sp), axis=0) for c, sp in self.samples.items()}
-            labels = np.zeros((flat.shape[0],), dtype=int)
+            labels = np.zeros(flat.shape[0], dtype=int)
             for i, pix in enumerate(flat):
                 angles = {c: spectral_angle(pix, mu) for c, mu in means.items()}
                 labels[i] = min(angles, key=angles.get)
             self.class_means = means
-            self.class_stds = stds
+            self.class_stds = {c: np.std(np.vstack(sp), axis=0) for c, sp in self.samples.items()}
             self._cmap = cm.get_cmap('jet', len(self.class_means))
 
-        self.cls_map = labels.reshape(self.data.shape[0], self.data.shape[1])
+        # Final : reshape et affichage
+        H, W = self.data.shape[:2]
+        self.cls_map = labels.reshape(H, W)
         self.show_image()
 
     def _np2pixmap(self, img):
@@ -403,3 +534,4 @@ if __name__=='__main__':
     w.load_cube(filepath)
     w.show()
     sys.exit(app.exec_())
+

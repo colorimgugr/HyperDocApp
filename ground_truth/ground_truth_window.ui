@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1005</width>
-    <height>597</height>
+    <width>993</width>
+    <height>600</height>
    </rect>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout" stretch="1,6">
@@ -22,7 +22,7 @@
      <property name="frameShadow">
       <enum>QFrame::Raised</enum>
      </property>
-     <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="2,2,1,2,1,2">
+     <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="2,2,1,0,1,2">
       <item>
        <widget class="QGroupBox" name="groupBox_image_type">
         <property name="title">
@@ -61,38 +61,6 @@
       </item>
       <item>
        <layout class="QGridLayout" name="gridLayout_RGBchannels_3">
-        <item row="1" column="2">
-         <widget class="QSlider" name="horizontalSlider_green_channel">
-          <property name="maximum">
-           <number>149</number>
-          </property>
-          <property name="value">
-           <number>0</number>
-          </property>
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="2">
-         <widget class="QSlider" name="horizontalSlider_red_channel">
-          <property name="minimumSize">
-           <size>
-            <width>60</width>
-            <height>0</height>
-           </size>
-          </property>
-          <property name="maximum">
-           <number>149</number>
-          </property>
-          <property name="value">
-           <number>0</number>
-          </property>
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-         </widget>
-        </item>
         <item row="2" column="2">
          <widget class="QSlider" name="horizontalSlider_blue_channel">
           <property name="maximum">
@@ -126,16 +94,35 @@
           </property>
          </widget>
         </item>
-        <item row="0" column="1">
-         <widget class="QSpinBox" name="spinBox_red_channel">
+        <item row="1" column="2">
+         <widget class="QSlider" name="horizontalSlider_green_channel">
           <property name="maximum">
            <number>149</number>
           </property>
-          <property name="singleStep">
-           <number>1</number>
+          <property name="value">
+           <number>0</number>
+          </property>
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="2">
+         <widget class="QSlider" name="horizontalSlider_red_channel">
+          <property name="minimumSize">
+           <size>
+            <width>60</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="maximum">
+           <number>149</number>
           </property>
           <property name="value">
            <number>0</number>
+          </property>
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
           </property>
          </widget>
         </item>
@@ -153,6 +140,19 @@
          <widget class="QSpinBox" name="spinBox_blue_channel">
           <property name="maximum">
            <number>149</number>
+          </property>
+          <property name="value">
+           <number>0</number>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QSpinBox" name="spinBox_red_channel">
+          <property name="maximum">
+           <number>149</number>
+          </property>
+          <property name="singleStep">
+           <number>1</number>
           </property>
           <property name="value">
            <number>0</number>
@@ -180,40 +180,6 @@
       </item>
       <item>
        <layout class="QGridLayout" name="gridLayout">
-        <item row="2" column="4">
-         <widget class="QSpinBox" name="nclass_box">
-          <property name="minimum">
-           <number>2</number>
-          </property>
-          <property name="maximum">
-           <number>20</number>
-          </property>
-          <property name="value">
-           <number>3</number>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="0">
-         <widget class="QPushButton" name="load_btn">
-          <property name="text">
-           <string>Load Cube</string>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="3">
-         <widget class="QLabel" name="nclass_label">
-          <property name="text">
-           <string># Classes:</string>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="5">
-         <widget class="QPushButton" name="run_btn">
-          <property name="text">
-           <string>Segment</string>
-          </property>
-         </widget>
-        </item>
         <item row="0" column="3">
          <widget class="QComboBox" name="comboBox_ClassifMode">
           <item>
@@ -226,12 +192,106 @@
             <string>Supervised</string>
            </property>
           </item>
+          <item>
+           <property name="text">
+            <string>Semi-supervised</string>
+           </property>
+          </item>
+         </widget>
+        </item>
+        <item row="2" column="0">
+         <widget class="QLabel" name="nclass_label">
+          <property name="text">
+           <string># Classes:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="3">
+         <widget class="QSpinBox" name="nclass_box">
+          <property name="minimum">
+           <number>2</number>
+          </property>
+          <property name="maximum">
+           <number>20</number>
+          </property>
+          <property name="value">
+           <number>3</number>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="5">
+         <widget class="QPushButton" name="pushButton_class_selection">
+          <property name="text">
+           <string>Select Ref</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="4">
+         <widget class="QPushButton" name="load_btn">
+          <property name="text">
+           <string>Load Cube</string>
+          </property>
          </widget>
         </item>
         <item row="0" column="4">
-         <widget class="QPushButton" name="pushButton_class_selection">
+         <widget class="QComboBox" name="comboBox_distance">
+          <item>
+           <property name="text">
+            <string>cosine</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>sqeuclidean</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>correlation</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>canberra</string>
+           </property>
+          </item>
+         </widget>
+        </item>
+        <item row="0" column="6">
+         <widget class="QComboBox" name="comboBox_pixel_selection_mode">
+          <item>
+           <property name="text">
+            <string>rectangle</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>pixel</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>lasso</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>ellipse</string>
+           </property>
+          </item>
+         </widget>
+        </item>
+        <item row="0" column="0">
+         <widget class="QPushButton" name="pushButton_manual">
           <property name="text">
-           <string>Classification class selection</string>
+           <string>Manual assign</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="6">
+         <widget class="QPushButton" name="run_btn">
+          <property name="text">
+           <string>Segment</string>
           </property>
          </widget>
         </item>
@@ -246,16 +306,6 @@
       </item>
       <item>
        <layout class="QGridLayout" name="gridLayout_4">
-        <item row="1" column="2">
-         <widget class="QLabel" name="label_GT_3">
-          <property name="text">
-           <string>GT transparency</string>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-          </property>
-         </widget>
-        </item>
         <item row="1" column="3">
          <widget class="QSlider" name="horizontalSlider_transparency_GT">
           <property name="minimumSize">
@@ -282,6 +332,16 @@
          <widget class="QCheckBox" name="live_cb">
           <property name="text">
            <string>Spectrum live visualization</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="2">
+         <widget class="QLabel" name="label_GT_3">
+          <property name="text">
+           <string>GT transparency</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
           </property>
          </widget>
         </item>

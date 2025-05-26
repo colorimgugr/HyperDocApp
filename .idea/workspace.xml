@@ -4,7 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="Ground truth tool : ok for rgb visualisation + live spectrum">
+    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="Added GT spectrum to live spectrum + std deviation.&#10;Resolve conflict between pixel selection and draggable.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ground_truth/ground_truth_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/ground_truth/ground_truth_tool.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ground_truth/ground_truth_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/ground_truth/ground_truth_window.py" afterDir="false" />
@@ -357,7 +357,15 @@
       <option name="project" value="LOCAL" />
       <updated>1747924637084</updated>
     </task>
-    <option name="localTasksCounter" value="29" />
+    <task id="LOCAL-00029" summary="Added GT spectrum to live spectrum + std deviation.&#10;Resolve conflict between pixel selction and draggable.">
+      <option name="closed" value="true" />
+      <created>1748011389316</created>
+      <option name="number" value="00029" />
+      <option name="presentableId" value="LOCAL-00029" />
+      <option name="project" value="LOCAL" />
+      <updated>1748011389316</updated>
+    </task>
+    <option name="localTasksCounter" value="30" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -409,7 +417,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Reorganisation en dossier" />
     <MESSAGE value="Working on opening matlab files with hypercube objects." />
     <MESSAGE value="Open OK with mat v7.3&#10;Strating registration" />
     <MESSAGE value="Regisration GUI from chatGPT to adapt" />
@@ -434,6 +441,7 @@
     <MESSAGE value="le register_tool envoie un cube_info dans le signal" />
     <MESSAGE value="metadata not editable from metadata tool blocked" />
     <MESSAGE value="Ground truth tool : ok for rgb visualisation + live spectrum" />
-    <option name="LAST_COMMIT_MESSAGE" value="Ground truth tool : ok for rgb visualisation + live spectrum" />
+    <MESSAGE value="Added GT spectrum to live spectrum + std deviation.&#10;Resolve conflict between pixel selction and draggable." />
+    <option name="LAST_COMMIT_MESSAGE" value="Added GT spectrum to live spectrum + std deviation.&#10;Resolve conflict between pixel selction and draggable." />
   </component>
 </project>
