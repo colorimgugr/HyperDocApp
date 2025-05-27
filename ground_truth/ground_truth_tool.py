@@ -2,7 +2,7 @@ import os
 import numpy as np
 import cv2
 from PyQt5.QtWidgets import QWidget, QFileDialog, QMessageBox,QInputDialog , QSplitter,QGraphicsView
-from PyQt5.QtCore import Qt, QEvent, QRect
+from PyQt5.QtCore import Qt, QEvent, QRect, QRectF
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from matplotlib import cm
@@ -15,13 +15,11 @@ from registration.register_tool import ZoomableGraphicsView
 # Import the compiled UI
 from ground_truth.ground_truth_window import Ui_GroundTruthWidget
 
-# Todo : initialisation des default RGB channel comme vizualisation data
-# Todo : gestion des zones de sélection pour la classification supervisée
+# Todo : gestion des zones de sélection pour la classification supervisée -> erase zone
 # Todo : gestion de la selection semi-supervisée
 # todo : manual correction pixel by pixel (or pixel groups)
-# todo : show average spectrum (and std) in graph zone A DISPARU
-# todo : finish selection : multiple pixel and lasso
 # todo : semi-supervised
+# todo : toggle or quit layout GT solo ?
 
 class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
     def __init__(self, parent=None):
@@ -31,6 +29,7 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
 
         self.selecting_pixels = False # mode selection ref activated
         self._pixel_selecting = False  # for manual pixel selection for dragging mode
+        self.erase_selection = False # erase mode on or off
         self._pixel_coords = []  # collected  (x,y) during dragging
         self._preview_mask = None # temp mask during dragging pixel selection
         self.class_colors = {}  # color of each class
@@ -61,7 +60,8 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         self.data = None
         self.wl= None
         self.cls_map = None
-        self.samples = {}
+        self.samples = {} # to save pixels spectra samples for GT
+        self.sample_coords = {c: set() for c in self.samples.keys()} # to remember coord of pixel samples
         self.alpha = self.horizontalSlider_transparency_GT.value() / 100.0
         self.mode = 'Unsupervised'
         self.hyps_rgb_chan_DEFAULT=[0,0,0] #default rgb channels (in int nm)
@@ -73,6 +73,7 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         self.run_btn.clicked.connect(self.run)
         self.comboBox_ClassifMode.currentIndexChanged.connect(self.set_mode)
         self.pushButton_class_selection.toggled.connect(self.on_toggle_selection)
+        self.pushButton_erase_selected_pix.toggled.connect(self.on_toggle_erase)
 
         # RGB sliders <-> spinboxes
         self.sliders_rgb = [self.horizontalSlider_red_channel, self.horizontalSlider_green_channel,
@@ -102,7 +103,6 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         }
 
     def start_pixel_selection(self):
-
         self.pushButton_class_selection.setText("Stop Selection")
         self.pushButton_class_selection.setStyleSheet(
             "background-color: green; color: black;"
@@ -146,10 +146,25 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         # enfin, on affiche l'image normale (sans preview ni sélection en cours)
         self.show_image()
 
+    def on_toggle_erase(self, checked):
+        self.erase_selection = checked
+        if checked:
+            self._pixel_selecting=False
+            self.stop_pixel_selection()
+
+            self.pushButton_erase_selected_pix.setText("Stop Erasing")
+            self.pushButton_class_selection.setChecked(False)
+            self.viewer_left.setDragMode(QGraphicsView.NoDrag)
+            self.viewer_left.setCursor(Qt.CrossCursor)
+        else:
+            self.pushButton_erase_selected_pix.setText("Erase Pixels")
+            self.viewer_left.setDragMode(QGraphicsView.ScrollHandDrag)
+            self.viewer_left.unsetCursor()
+
     def on_toggle_selection(self, checked: bool):
 
         if checked:
-
+            self.erase_selection=False
             self.start_pixel_selection()
         else:
             # fin du mode sélection
@@ -263,11 +278,35 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
 
         self.show_image()
 
+    def _handle_erasure(self, coords):
+        """
+        Supprime des pixels leurs labels et spectres.
+        coords = liste de (x,y) à effacer.
+        """
+        for x, y in coords:
+            cls = self.selection_mask_map[y, x]
+            if cls >= 0:
+                # enlève du mask
+                self.selection_mask_map[y, x] = -1
+                # enlève des sets et listes
+                if (x, y) in self.sample_coords.get(cls, set()):
+                    self.sample_coords[cls].remove((x, y))
+                # reconstruit self.samples[cls]
+                self.samples[cls] = [
+                    self.data[yy, xx, :]
+                    for (xx, yy) in self.sample_coords.get(cls, [])
+                ]
+                # si plus d'exemples pour cette classe, tu peux aussi
+                # nettoyer class_colors, class_means, class_stds si tu veux
+        # rafraîchis l'affichage
+        self.show_image()
+
     def eventFilter(self, source, event):
         mode = self.comboBox_pixel_selection_mode.currentText()
 
         # 1) Clic souris
-        if event.type() == QEvent.MouseButtonPress and event.button() == Qt.LeftButton and self.selecting_pixels:
+        if event.type() == QEvent.MouseButtonPress and event.button() == Qt.LeftButton and (self.selecting_pixels or self.erase_selection):
+            print('Clicked OK')
             pos = self.viewer_left.mapToScene(event.pos())
             x0, y0 = int(pos.x()), int(pos.y())
             if mode == 'pixel':
@@ -284,6 +323,18 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
                 self.rubberBand.setGeometry(self.origin.x(),
                                             self.origin.y(), 1, 1)
                 self.rubberBand.show()
+                return True
+            elif mode == 'ellipse':
+                from PyQt5.QtWidgets import QGraphicsEllipseItem
+                from PyQt5.QtGui import QPen
+
+                self.origin = event.pos()
+                pen = QPen(Qt.red)
+                pen.setStyle(Qt.DashLine)
+                self.ellipse_item = QGraphicsEllipseItem()
+                self.ellipse_item.setPen(pen)
+                self.ellipse_item.setBrush(Qt.transparent)
+                self.viewer_left.scene().addItem(self.ellipse_item)
                 return True
 
         # 2) Mouvement souris → mise à jour du cadre
@@ -308,9 +359,19 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
             )
             return True
 
+        if event.type() == QEvent.MouseMove and mode == 'ellipse' and hasattr(self, 'ellipse_item'):
+            sc_orig = self.viewer_left.mapToScene(self.origin)
+            sc_now = self.viewer_left.mapToScene(event.pos())
+            x0, y0 = sc_orig.x(), sc_orig.y()
+            x1, y1 = sc_now.x(), sc_now.y()
+            rect = QRectF(min(x0, x1), min(y0, y1), abs(x1 - x0), abs(y1 - y0))
+            self.ellipse_item.setRect(rect)
+            return True
+
         # 3) Relâchement souris → calcul de la sélection
 
         if event.type() == QEvent.MouseButtonRelease and event.button() == Qt.LeftButton and mode == 'pixel' and self._pixel_selecting :
+            print('realeased OK')
             # get pixels
             coords = self._pixel_coords.copy()
             #  Si au moins 3 points, propose de fermer le cheminif min 3 points, propose contour
@@ -331,7 +392,6 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
                         for xx in range(x0, x1 + 1):
                             if poly.contains_point((xx, yy)):
                                 filled.append((xx, yy))
-                    coords = filled
 
                     # to avoid dobbles
                     seen = set()
@@ -341,11 +401,14 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
                             seen.add(p)
                             coords.append(p)
 
-
-            self._handle_selection(coords) # close selection
+            if self.erase_selection:
+                self._handle_erasure(coords)
+            else :
+                self._handle_selection(coords) # close selection
 
             # ready to new selection
             self._pixel_selecting = False
+            self._erase_selecting = False
             self._preview_mask = None
             return True
 
@@ -363,11 +426,35 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
                 for yy in range(max(0, min(y0, y1)), min(self.data.shape[0], max(y0, y1) + 1))
                 for xx in range(max(0, min(x0, x1)), min(self.data.shape[1], max(x0, x1) + 1))
             ]
-            self._handle_selection(coords)
+
+            if self.erase_selection:
+                self._handle_erasure(coords)
+            else:
+                self._handle_selection(coords)  # close selection
+
             del self.rubberBand
-            self.viewer_left.setDragMode(QGraphicsView.ScrollHandDrag)
-            self.viewer_left.setCursor(Qt.ArrowCursor)
-            self.viewer_left.viewport().setCursor(Qt.ArrowCursor)
+            return True
+
+        if event.type() == QEvent.MouseButtonRelease and hasattr(self, 'ellipse_item'):
+            rect = self.ellipse_item.rect()
+            self.viewer_left.scene().removeItem(self.ellipse_item)
+            del self.ellipse_item
+
+            cx, cy = rect.center().x(), rect.center().y()
+            rx, ry = rect.width() / 2, rect.height() / 2
+            x0, x1 = int(rect.left()), int(rect.right())
+            y0, y1 = int(rect.top()), int(rect.bottom())
+
+            coords = []
+            for yy in range(max(0, y0), min(self.data.shape[0], y1 + 1)):
+                for xx in range(max(0, x0), min(self.data.shape[1], x1 + 1)):
+                    if ((xx - cx) ** 2 / rx ** 2 + (yy - cy) ** 2 / ry ** 2) <= 1:
+                        coords.append((xx, yy))
+
+            if self.erase_selection:
+                self._handle_erasure(coords)
+            else:
+                self._handle_selection(coords)  # close selection
             return True
 
         # 4) Mouvement souris pour le live spectrum
@@ -443,7 +530,7 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         self.spec_canvas.setVisible(False)
         self.show_image()
 
-    def show_image(self, preview=False):
+    def show_image(self, preview=False ,preview_erase=False):
         if self.data is None:
             return
         H, W, B = self.data.shape
@@ -484,6 +571,17 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
             mask3 = self._preview_mask[:, :, None]
             overlay_pv = np.where(mask3, mixed, overlay_pv)
             self.viewer_left.setImage(self._np2pixmap(overlay_pv))
+            return
+
+        if preview_erase and hasattr(self, '_erase_mask'):
+            overlay_e = overlay.copy()
+            # couche rouge vif
+            layer = np.zeros_like(overlay_e);
+            layer[..., 2] = 255
+            mixed = cv2.addWeighted(overlay_e, 1 - 0.3, layer, 0.3, 0)
+            mask3 = self._erase_mask[:, :, None]
+            overlay_e = np.where(mask3, mixed, overlay_e)
+            self.viewer_left.setImage(self._np2pixmap(overlay_e))
             return
 
         if self.selection_mask_map is not None:
