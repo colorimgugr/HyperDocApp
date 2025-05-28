@@ -15,11 +15,10 @@ from registration.register_tool import ZoomableGraphicsView
 # Import the compiled UI
 from ground_truth.ground_truth_window import Ui_GroundTruthWidget
 
-# Todo : gestion des zones de sélection pour la classification supervisée -> erase zone
-# Todo : gestion de la selection semi-supervisée
 # todo : manual correction pixel by pixel (or pixel groups)
-# todo : semi-supervised
-# todo : toggle or quit layout GT solo ?
+# todo : give GT labels names and number for RGB code ? -> save GT in new dataset of file + png
+# todo : check if dobbles in samples at end of selection process -> keep last selection.
+# todo : band selection on spectra graph
 
 class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
     def __init__(self, parent=None):
@@ -40,6 +39,7 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         # Replace placeholders with custom widgets
         self._replace_placeholder('viewer_left', ZoomableGraphicsView)
         self._replace_placeholder('viewer_right', ZoomableGraphicsView)
+
         self._promote_canvas('spec_canvas', FigureCanvas)
 
         self.viewer_left.viewport().installEventFilter(self)
@@ -52,8 +52,8 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         # Promote spec_canvas placeholder to FigureCanvas
         self.spec_canvas_layout = self.spec_canvas.layout() if hasattr(self.spec_canvas, 'layout') else None
         self._init_spectrum_canvas()
-        self.splitter.setStretchFactor(1, 1)
         self.spec_canvas.setVisible(False)
+        self.show_selection=True
 
         # State variables
         self.cube = None
@@ -74,6 +74,7 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         self.comboBox_ClassifMode.currentIndexChanged.connect(self.set_mode)
         self.pushButton_class_selection.toggled.connect(self.on_toggle_selection)
         self.pushButton_erase_selected_pix.toggled.connect(self.on_toggle_erase)
+        self.checkBox_see_selection_overlay.toggled.connect(self.toggle_show_selection)
 
         # RGB sliders <-> spinboxes
         self.sliders_rgb = [self.horizontalSlider_red_channel, self.horizontalSlider_green_channel,
@@ -102,7 +103,15 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
             'canberra': spdist.canberra,
         }
 
+        # init stretch of each layout in QSplitters
+        self.splitter_2.setStretchFactor(0,9 ) #init stretch of image hyp and GT
+        self.splitter_2.setStretchFactor(1, 1)
+        self.splitter.setStretchFactor(0, 1) #init stretch of images and spectra
+        self.splitter.setStretchFactor(1, 1)
+
     def start_pixel_selection(self):
+
+        self.show_selection=True
         self.pushButton_class_selection.setText("Stop Selection")
         self.pushButton_class_selection.setStyleSheet(
             "background-color: green; color: black;"
@@ -124,6 +133,11 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         self.viewer_left.setDragMode(QGraphicsView.NoDrag)
         self.viewer_left.setCursor(Qt.CrossCursor)
         self.viewer_left.viewport().setCursor(Qt.CrossCursor)
+        self.show_image()
+
+    def toggle_show_selection(self):
+
+        self.show_selection = self.checkBox_see_selection_overlay.isChecked()
         self.show_image()
 
     def stop_pixel_selection(self):
@@ -151,6 +165,8 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         if checked:
             self._pixel_selecting=False
             self.stop_pixel_selection()
+
+            self.show_selection = True
 
             self.pushButton_erase_selected_pix.setText("Stop Erasing")
             self.pushButton_class_selection.setChecked(False)
@@ -279,10 +295,7 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         self.show_image()
 
     def _handle_erasure(self, coords):
-        """
-        Supprime des pixels leurs labels et spectres.
-        coords = liste de (x,y) à effacer.
-        """
+
         for x, y in coords:
             cls = self.selection_mask_map[y, x]
             if cls >= 0:
@@ -298,7 +311,7 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
                 ]
                 # si plus d'exemples pour cette classe, tu peux aussi
                 # nettoyer class_colors, class_means, class_stds si tu veux
-        # rafraîchis l'affichage
+
         self.show_image()
 
     def eventFilter(self, source, event):
@@ -533,6 +546,8 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
     def show_image(self, preview=False):
         if self.data is None:
             return
+
+        #hyp image
         H, W, B = self.data.shape
                 # Get band indices from spinboxes for RGB
         self.hyps_rgb_chan = [self.spinBox_red_channel.value(),
@@ -545,6 +560,8 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
 
         rgb = self.data[:, :, idx]
         rgb = (rgb / np.max(rgb) * 255).astype(np.uint8)
+
+        # overlay of GT
 
         if self.cls_map is None:
             overlay = rgb.copy()
@@ -561,10 +578,12 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
             pix2 = self._np2pixmap(cv2.applyColorMap(seg8, cv2.COLORMAP_JET))
         self.viewer_right.setImage(pix2)
 
+        # overlay of selection blended to GT overlay
+
         current = overlay.copy()
-        if self.selection_mask_map is not None:
+        if self.selection_mask_map is not None and self.show_selection:
             mixed = overlay.copy()
-            α = self.alpha
+            α = 0.7
             for cls, color in self.class_colors.items():
                 mask2d = (self.selection_mask_map == cls)
                 if not mask2d.any():
@@ -665,46 +684,55 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
             self.class_means = {i: kmeans.cluster_centers_[i] for i in range(n)}
             self.class_stds = {i: np.std(flat[labels == i], axis=0) for i in range(n)}
             self._cmap = cm.get_cmap('jet', n)
+            # Final : reshape et affichage
+            H, W = self.data.shape[:2]
+            self.cls_map = labels.reshape(H, W)
+            self.show_image()
 
-        # 2) Supervised pur
+
         elif self.mode == 'Supervised':
+            # 1) Récupère les prototypes des classes labellisées
             classes = sorted(self.samples.keys())
             if not classes:
-                QMessageBox.warning(self, "Warning", "Select at least one pixel !")
+                QMessageBox.warning(self, "Attention", "Sélectionnez au moins un pixel !")
                 return
-            # moyennes par classe labellisée
+
             means = {c: np.mean(np.vstack(self.samples[c]), axis=0) for c in classes}
-            # classification SAM
-            labels = np.zeros(flat.shape[0], dtype=int)
+
+            thr_pct = self.slider_class_thr.value()
+            thr_frac = thr_pct / 100.0  # 0.0–1.0
+
+            other_label = len(classes)
+            labels = np.full(flat.shape[0], other_label, dtype=int)
+
             for i, pix in enumerate(flat):
-                dists = {c: self.compute_distance(pix, mu) for c, mu in means.items()}
-                labels[i] = min(dists, key=dists.get)
-            # renumérote en 0..len(classes)-1
-            cls_to_idx = {c: idx for idx, c in enumerate(classes)}
-            labels = np.vectorize(cls_to_idx.get)(labels)
-            # stocke pour l’affichage
+                dists = np.array([self.compute_distance(pix, means[c])
+                                  for c in classes])
+                min_idx = np.argmin(dists)
+                min_dist = dists[min_idx]
+
+                if thr_pct == 100:
+                    labels[i] = classes[min_idx]
+                else:
+                    # on normalise la distance entre 0 et 1 sur cet exemple
+                    max_dist = dists.max() if dists.max() > 0 else 1.0
+                    norm_dist = min_dist / max_dist
+                    if norm_dist <= thr_frac:
+                        labels[i] = classes[min_idx]
+
             self.class_means = means
             self.class_stds = {c: np.std(np.vstack(self.samples[c]), axis=0) for c in classes}
-            self._cmap = cm.get_cmap('jet', len(classes))
 
-        # 3) Semi-supervised
-        else:
-            if not self.samples:
-                QMessageBox.warning(self,"Warning", "Sélect at least one pixel !")
-                return
-            means = {c: np.mean(np.vstack(sp), axis=0) for c, sp in self.samples.items()}
-            labels = np.zeros(flat.shape[0], dtype=int)
-            for i, pix in enumerate(flat):
-                dists = {c: self.compute_distance(pix, mu) for c, mu in means.items()}
-                labels[i] = min(dists, key=dists.get)
-            self.class_means = means
-            self.class_stds = {c: np.std(np.vstack(sp), axis=0) for c, sp in self.samples.items()}
-            self._cmap = cm.get_cmap('jet', len(self.class_means))
+            # 5) reshape et préparation de l’affichage
+            H, W = self.data.shape[:2]
+            self.cls_map = labels.reshape(H, W)
 
-        # Final : reshape et affichage
-        H, W = self.data.shape[:2]
-        self.cls_map = labels.reshape(H, W)
-        self.show_image()
+            # on prend K = nombre de classes + 1 for “other”
+            n_colors = other_label + 1
+            self._cmap = cm.get_cmap('jet', n_colors)
+
+            self.show_image()
+            return
 
     def _np2pixmap(self, img):
         from PyQt5.QtGui import QImage, QPixmap

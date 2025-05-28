@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>993</width>
+    <width>1052</width>
     <height>600</height>
    </rect>
   </property>
@@ -183,65 +183,6 @@
       </item>
       <item>
        <layout class="QGridLayout" name="gridLayout">
-        <item row="0" column="3">
-         <widget class="QComboBox" name="comboBox_ClassifMode">
-          <item>
-           <property name="text">
-            <string>Unsupervised</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Supervised</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Semi-supervised</string>
-           </property>
-          </item>
-         </widget>
-        </item>
-        <item row="2" column="0">
-         <widget class="QLabel" name="nclass_label">
-          <property name="text">
-           <string># Classes:</string>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="3">
-         <widget class="QSpinBox" name="nclass_box">
-          <property name="minimum">
-           <number>2</number>
-          </property>
-          <property name="maximum">
-           <number>20</number>
-          </property>
-          <property name="value">
-           <number>3</number>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="5">
-         <widget class="QPushButton" name="pushButton_class_selection">
-          <property name="enabled">
-           <bool>true</bool>
-          </property>
-          <property name="text">
-           <string>Start selection</string>
-          </property>
-          <property name="checkable">
-           <bool>true</bool>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="4">
-         <widget class="QPushButton" name="load_btn">
-          <property name="text">
-           <string>Load Cube</string>
-          </property>
-         </widget>
-        </item>
         <item row="0" column="4">
          <widget class="QComboBox" name="comboBox_distance">
           <item>
@@ -285,6 +226,33 @@
           </item>
          </widget>
         </item>
+        <item row="0" column="3">
+         <widget class="QComboBox" name="comboBox_ClassifMode">
+          <item>
+           <property name="text">
+            <string>Unsupervised</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Supervised</string>
+           </property>
+          </item>
+         </widget>
+        </item>
+        <item row="0" column="5">
+         <widget class="QPushButton" name="pushButton_class_selection">
+          <property name="enabled">
+           <bool>true</bool>
+          </property>
+          <property name="text">
+           <string>Start selection</string>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
         <item row="0" column="0">
          <widget class="QPushButton" name="pushButton_manual">
           <property name="text">
@@ -292,14 +260,14 @@
           </property>
          </widget>
         </item>
-        <item row="2" column="6">
+        <item row="1" column="6">
          <widget class="QPushButton" name="run_btn">
           <property name="text">
            <string>Segment</string>
           </property>
          </widget>
         </item>
-        <item row="2" column="5">
+        <item row="1" column="5">
          <widget class="QPushButton" name="pushButton_erase_selected_pix">
           <property name="styleSheet">
            <string notr="true">background-color: rgb(255, 206, 206);</string>
@@ -309,6 +277,52 @@
           </property>
           <property name="checkable">
            <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="4">
+         <widget class="QPushButton" name="load_btn">
+          <property name="text">
+           <string>Load Cube</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="3">
+         <widget class="QSpinBox" name="nclass_box">
+          <property name="minimum">
+           <number>2</number>
+          </property>
+          <property name="maximum">
+           <number>20</number>
+          </property>
+          <property name="value">
+           <number>3</number>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QLabel" name="nclass_label">
+          <property name="text">
+           <string># Classes:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="7" rowspan="2">
+         <widget class="QSlider" name="slider_class_thr">
+          <property name="minimum">
+           <number>0</number>
+          </property>
+          <property name="maximum">
+           <number>100</number>
+          </property>
+          <property name="value">
+           <number>100</number>
+          </property>
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="tickPosition">
+           <enum>QSlider::NoTicks</enum>
           </property>
          </widget>
         </item>
@@ -345,13 +359,6 @@
           </property>
          </widget>
         </item>
-        <item row="2" column="2" colspan="2">
-         <widget class="QCheckBox" name="live_cb">
-          <property name="text">
-           <string>Spectrum live visualization</string>
-          </property>
-         </widget>
-        </item>
         <item row="1" column="2">
          <widget class="QLabel" name="label_GT_3">
           <property name="text">
@@ -362,13 +369,37 @@
           </property>
          </widget>
         </item>
-        <item row="3" column="2" colspan="2">
+        <item row="2" column="2">
+         <widget class="QCheckBox" name="live_cb">
+          <property name="text">
+           <string>Spectrum live visualization</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="2">
          <widget class="QCheckBox" name="checkBox_seeGTspectra">
           <property name="text">
            <string>See GT spectra</string>
           </property>
           <property name="checked">
-           <bool>false</bool>
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="3">
+         <widget class="QCheckBox" name="checkBox_see_selection_overlay">
+          <property name="text">
+           <string>See selection</string>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="3">
+         <widget class="QPushButton" name="pushButton_band_selection">
+          <property name="text">
+           <string>Band selection</string>
           </property>
          </widget>
         </item>
@@ -391,20 +422,23 @@
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
         </property>
-        <widget class="QWidget" name="verticalLayoutWidget">
+        <widget class="QFrame" name="verticalFrame">
          <layout class="QVBoxLayout" name="verticalLayout_2">
           <item>
-           <widget class="QWidget" name="viewer_left" native="true">
-            <property name="toolTip">
-             <string>Promote to ZoomableGraphicsView</string>
+           <widget class="QSplitter" name="splitter_2">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
             </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QWidget" name="viewer_right" native="true">
-            <property name="toolTip">
-             <string>Promote to ZoomableGraphicsView</string>
-            </property>
+            <widget class="QWidget" name="viewer_left" native="true">
+             <property name="toolTip">
+              <string>Promote to ZoomableGraphicsView</string>
+             </property>
+            </widget>
+            <widget class="QWidget" name="viewer_right" native="true">
+             <property name="toolTip">
+              <string>Promote to ZoomableGraphicsView</string>
+             </property>
+            </widget>
            </widget>
           </item>
          </layout>
