@@ -337,7 +337,7 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
                 self.viewer_left.scene().addItem(self.ellipse_item)
                 return True
 
-        # 2) Mouvement souris → mise à jour du cadre
+        # 2) Mouvement souris → mise à jour de la selection en cours
         if event.type() == QEvent.MouseMove and self._pixel_selecting and mode == 'pixel':
             pos = self.viewer_left.mapToScene(event.pos())
             x, y = int(pos.x()), int(pos.y())
@@ -530,7 +530,7 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         self.spec_canvas.setVisible(False)
         self.show_image()
 
-    def show_image(self, preview=False ,preview_erase=False):
+    def show_image(self, preview=False):
         if self.data is None:
             return
         H, W, B = self.data.shape
@@ -552,7 +552,6 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
             seg8 = (self.cls_map.astype(np.float32) / (self.nclass_box.value() - 1) * 255).astype(np.uint8)
             cmap = cv2.applyColorMap(seg8, cv2.COLORMAP_JET)
             overlay = cv2.addWeighted(rgb, 1-self.alpha, cmap, self.alpha, 0)
-        self.viewer_left.setImage(self._np2pixmap(overlay))
 
         if self.cls_map is None:
             blank = np.zeros((H, W, 3), dtype=np.uint8)
@@ -562,32 +561,10 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
             pix2 = self._np2pixmap(cv2.applyColorMap(seg8, cv2.COLORMAP_JET))
         self.viewer_right.setImage(pix2)
 
-        if preview and self._preview_mask is not None:
-            overlay_pv = overlay.copy()
-            # couleur de preview : jaune transparent
-            layer = np.zeros_like(overlay_pv)
-            layer[..., 1:] = 255, 255  # BGR = (0,255,255)
-            mixed = cv2.addWeighted(overlay_pv, 1 - 0.3, layer, 0.3, 0)
-            mask3 = self._preview_mask[:, :, None]
-            overlay_pv = np.where(mask3, mixed, overlay_pv)
-            self.viewer_left.setImage(self._np2pixmap(overlay_pv))
-            return
-
-        if preview_erase and hasattr(self, '_erase_mask'):
-            overlay_e = overlay.copy()
-            # couche rouge vif
-            layer = np.zeros_like(overlay_e);
-            layer[..., 2] = 255
-            mixed = cv2.addWeighted(overlay_e, 1 - 0.3, layer, 0.3, 0)
-            mask3 = self._erase_mask[:, :, None]
-            overlay_e = np.where(mask3, mixed, overlay_e)
-            self.viewer_left.setImage(self._np2pixmap(overlay_e))
-            return
-
+        current = overlay.copy()
         if self.selection_mask_map is not None:
             mixed = overlay.copy()
             α = self.alpha
-
             for cls, color in self.class_colors.items():
                 mask2d = (self.selection_mask_map == cls)
                 if not mask2d.any():
@@ -599,9 +576,21 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
                 blended = cv2.addWeighted(overlay, 1 - α, layer, α, 0)
 
                 mask3 = mask2d[:, :, None]
-                mixed = np.where(mask3, blended, mixed)
-            self.viewer_left.setImage(self._np2pixmap(mixed))
+                current = np.where(mask3, blended, current)
+
+        self.current_composite = current
+
+        if preview and self._preview_mask is not None:
+            base = self.current_composite
+            layer = np.zeros_like(base)
+            layer[..., :] = 0,0,255  # BGR = (0,0,0)
+            mixed = cv2.addWeighted(base, 1-0.1, layer, 0.1, 0)
+            mask3 = self._preview_mask[:, :, None]
+            result = np.where(mask3, mixed, base)
+            self.viewer_left.setImage(self._np2pixmap(result))
             return
+
+        self.viewer_left.setImage(self._np2pixmap(self.current_composite))
 
     def _replace_placeholder(self, name, widget_cls, **kwargs):
         placeholder = getattr(self, name)

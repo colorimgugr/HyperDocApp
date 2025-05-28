@@ -4,11 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="selection with pixel drag OK (with inside path in option)">
+    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="Erase Mode OK .. .BUT .. no se vee la selction anterior en pixel mode when drag">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ground_truth/ground_truth_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/ground_truth/ground_truth_tool.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ground_truth/ground_truth_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/ground_truth/ground_truth_window.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ground_truth/ground_truth_window.ui" beforeDir="false" afterPath="$PROJECT_DIR$/ground_truth/ground_truth_window.ui" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -381,7 +379,15 @@
       <option name="project" value="LOCAL" />
       <updated>1748351774202</updated>
     </task>
-    <option name="localTasksCounter" value="32" />
+    <task id="LOCAL-00032" summary="Erase Mode OK .. .BUT .. no se vee la selction anterior en pixel mode when drag">
+      <option name="closed" value="true" />
+      <created>1748356760842</created>
+      <option name="number" value="00032" />
+      <option name="presentableId" value="LOCAL-00032" />
+      <option name="project" value="LOCAL" />
+      <updated>1748356760842</updated>
+    </task>
+    <option name="localTasksCounter" value="33" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -433,7 +439,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Regisration GUI from chatGPT to adapt" />
     <MESSAGE value="registration_images OK for grey image&#10;to do : &#10;- load hypercubes&#10;- save transformed hypercube" />
     <MESSAGE value="scrolable images OK" />
     <MESSAGE value="matching OK&#10;adapt slider maxVal #packet and show #/total" />
@@ -458,6 +463,7 @@
     <MESSAGE value="Added GT spectrum to live spectrum + std deviation.&#10;Resolve conflict between pixel selction and draggable." />
     <MESSAGE value="OK for selection rectangle and pixel of different color, multiple distance." />
     <MESSAGE value="selection with pixel drag OK (with inside path in option)" />
-    <option name="LAST_COMMIT_MESSAGE" value="selection with pixel drag OK (with inside path in option)" />
+    <MESSAGE value="Erase Mode OK .. .BUT .. no se vee la selction anterior en pixel mode when drag" />
+    <option name="LAST_COMMIT_MESSAGE" value="Erase Mode OK .. .BUT .. no se vee la selction anterior en pixel mode when drag" />
   </component>
 </project>
