@@ -15,7 +15,6 @@ from registration.register_tool import ZoomableGraphicsView
 # Import the compiled UI
 from ground_truth.ground_truth_window import Ui_GroundTruthWidget
 
-# todo : manual correction pixel by pixel (or pixel groups)
 # todo : give GT labels names and number for RGB code ? -> save GT in new dataset of file + png
 # todo : check if dobbles in samples at end of selection process -> keep last selection.
 # todo : band selection on spectra graph
@@ -267,7 +266,6 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
             self.verticalLayout.addWidget(self.spec_canvas)
 
         self.spec_canvas.setVisible(False)
-        self.comboBox_pixel_selection_mode
 
     def _handle_selection(self, coords):
         """Prompt for class and store spectra of the given coordinates."""
@@ -276,6 +274,7 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         )
         if not ok:
             return
+
         # append spectra
         if cls not in self.class_colors:
             # si _cmap n'existe pas encore, on le crée à la volée
@@ -288,10 +287,29 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
             self.class_colors[cls] = (b, g, r)
 
         for x, y in coords:
-            if 0 <= x < self.data.shape[1] and 0 <= y < self.data.shape[0]:
-                self.samples.setdefault(cls, []).append(self.data[y, x, :])
-                self.selection_mask_map[y, x] = cls
+            if not (0 <= x < self.data.shape[1] and 0 <= y < self.data.shape[0]):
+                continue
 
+            # A) s’il appartenait déjà à une autre classe, on l’enlève
+            old = self.selection_mask_map[y, x]
+            if old >= 0 and old != cls:
+                # retirer coord de sample_coords[old] et de samples[old]
+                if (x, y) in self.sample_coords.get(old, set()):
+                    self.sample_coords[old].remove((x, y))
+                # reconstruire la liste des spectres pour old
+                self.samples[old] = [
+                    self.data[yy, xx, :]
+                    for (xx, yy) in self.sample_coords.get(old, ())
+                ]
+
+            # B) on (ré)assigne le pixel à la classe cls
+            self.selection_mask_map[y, x] = cls
+            # ajouter dans sample_coords et samples si pas déjà présent
+            if (x, y) not in self.sample_coords.setdefault(cls, set()):
+                self.sample_coords.setdefault(cls, set()).add((x, y))
+                self.samples.setdefault(cls, []).append(self.data[y, x, :])
+
+            # 3) rafraîchir l’affichage
         self.show_image()
 
     def _handle_erasure(self, coords):
