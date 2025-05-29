@@ -56,6 +56,7 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         self._init_spectrum_canvas()
         self.spec_canvas.setVisible(False)
         self.show_selection=True
+        self.live_spectra_update=True
 
         # State variables
         self.cube = None
@@ -65,7 +66,7 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         self.samples = {} # to save pixels spectra samples for GT
         self.sample_coords = {c: set() for c in self.samples.keys()} # to remember coord of pixel samples
         self.alpha = self.horizontalSlider_transparency_GT.value() / 100.0
-        self.mode = 'Unsupervised'
+        self.mode = self.comboBox_ClassifMode.currentText()
         self.hyps_rgb_chan_DEFAULT=[0,0,0] #default rgb channels (in int nm)
         self.hyps_rgb_chan=[0,0,0] #current rgb (in int nm)
         self.class_means = {} #for spectra of classe
@@ -107,10 +108,19 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         }
 
         # init stretch of each layout in QSplitters
-        self.splitter_2.setStretchFactor(0,9 ) #init stretch of image hyp and GT
-        self.splitter_2.setStretchFactor(1, 1)
         self.splitter.setStretchFactor(0, 1) #init stretch of images and spectra
         self.splitter.setStretchFactor(1, 1)
+        self.splitter.setSizes([600, 600])
+        self.splitter.setHandleWidth(2)
+
+        self.splitter_2.setStretchFactor(0,4) #init stretch of image hyp and GT
+        self.splitter_2.setStretchFactor(1, 1)
+
+        # style poignée QSplitter
+        self.splitter.setHandleWidth(2)
+        self.splitter_2.setHandleWidth(4)
+        self.splitter.setStyleSheet("""QSplitter::handle {background-color: darkgray;}""")
+        self.splitter_2.setStyleSheet("""QSplitter::handle {background-color: darkgray;}""")
 
     def start_pixel_selection(self):
 
@@ -321,7 +331,7 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
             placeholder.deleteLater()
             self.verticalLayout.addWidget(self.spec_canvas)
 
-        self.spec_canvas.setVisible(False)
+        self.spec_canvas.setVisible(True)
 
     def _handle_selection(self, coords):
         """Prompt for class and store spectra of the given coordinates."""
@@ -424,6 +434,9 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
                 self.ellipse_item.setBrush(Qt.transparent)
                 self.viewer_left.scene().addItem(self.ellipse_item)
                 return True
+
+        if event.type() == QEvent.MouseButtonPress and event.button() == Qt.MiddleButton:
+            self.live_spectra_update=not self.live_spectra_update
 
         # 2) Mouvement souris → mise à jour de la selection en cours
         if event.type() == QEvent.MouseMove and self._pixel_selecting and mode == 'pixel':
@@ -546,36 +559,41 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
             return True
 
         # 4) Mouvement souris pour le live spectrum
-        if source is self.viewer_left.viewport() and event.type() == QEvent.MouseMove:
+        if source is self.viewer_left.viewport() and event.type() == QEvent.MouseMove and self.live_spectra_update:
             if self.live_cb.isChecked() and self.data is not None:
-                x_graph = self.wl
                 pos = self.viewer_left.mapToScene(event.pos())
-                x, y = int(pos.x()), int(pos.y())
-                if 0 <= x < self.data.shape[1] and 0 <= y < self.data.shape[0]:
-                    spectrum = self.data[y, x, :]
-                    self.spec_ax.clear()
-                    # Spectre du pixel
-                    self.spec_ax.plot(x_graph, spectrum, label='Pixel')
+                self.update_spectra(x=int(pos.x()),y=int(pos.y()))
 
-                    # Spectres GT moyens ± std
-                    if self.checkBox_seeGTspectra.isChecked() and hasattr(self, 'class_means'):
-                        for c, mu in self.class_means.items():
-                            std = self.class_stds[c]
-                            color = self._cmap(c)
-                            self.spec_ax.fill_between(
-                                x_graph, mu - std, mu + std,
-                                color=color, alpha=0.3, linewidth=0
-                            )
-                            self.spec_ax.plot(
-                                x_graph, mu, '--',
-                                color=color, label=f'Classe {c}'
-                            )
-                        self.spec_ax.legend(loc='upper right', fontsize='small')
-
-                    self.spec_ax.set_title(f'Spectra @ ({x},{y})')
-                    self.spec_canvas.setVisible(True)
-                    self.spec_canvas.draw()
             return super().eventFilter(source, event)
+
+    def update_spectra(self,x=None,y=None):
+        self.spec_ax.clear()
+        x_graph = self.wl
+
+        if x is not None and y is not None:
+            if 0 <= x < self.data.shape[1] and 0 <= y < self.data.shape[0]:
+                spectrum = self.data[y, x, :]
+                # Spectre du pixel
+                self.spec_ax.plot(x_graph, spectrum, label='Pixel')
+
+        # Spectres GT moyens ± std
+        if self.checkBox_seeGTspectra.isChecked() and hasattr(self, 'class_means'):
+            for c, mu in self.class_means.items():
+                std = self.class_stds[c]
+                color = self._cmap(c)
+                self.spec_ax.fill_between(
+                    x_graph, mu - std, mu + std,
+                    color=color, alpha=0.3, linewidth=0
+                )
+                self.spec_ax.plot(
+                    x_graph, mu, '--',
+                    color=color, label=f'Classe {c}'
+                )
+            if self.spec_ax.get_legend_handles_labels()[1]:
+                self.spec_ax.legend(loc='upper right', fontsize='small')
+            self.spec_ax.set_title(f'Spectra')
+            self.spec_canvas.setVisible(True)
+            self.spec_canvas.draw()
 
     def on_alpha_change(self, val):
         self.alpha = val / 100.0
@@ -584,9 +602,14 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
     def toggle_live(self, state):
         if not state:
             self.spec_canvas.setVisible(False)
+        else:
+            self.update_spectra()
+            self.live_spectra_update=True
 
-    def load_cube(self,path):
-        if path is None :
+    def load_cube(self,path=None):
+
+        if not path :
+            print('Ask path for cube')
             path, _ = QFileDialog.getOpenFileName(
             self, "Ouvrir Hypercube", "", "Hypercube files (*.mat *.h5 *.hdr)"
             )
@@ -603,16 +626,53 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
             else:
                 mid=int(len(self.wl)/2)
                 self.hyps_rgb_chan_DEFAULT = [self.wl[0], self.wl[mid], self.wl[-1]]
-            H, W, _ = self.data.shape
-            self.selection_mask_map = np.full((H, W), -1, dtype=int) #init mask
+
+            self.reset_state()
             self.modif_sliders()
             self.show_image()
+
         except Exception as e:
             QMessageBox.critical(self, "Erreur", f"Impossible de charger le cube: {e}")
 
+    def reset_state(self):
+        """
+        Réinitialise tous les états liés au cube courant pour repartir d'un état vierge.
+        """
+        # 1. Segmentation algorithmique
+        self.cls_map = None
+        # 2. Sélection manuelle
+        if self.data is not None:
+            H, W = self.data.shape[:2]
+            self.selection_mask_map = np.full((H, W), -1, dtype=int)
+        # 3. Samples et prototypes
+        self.samples = {}
+        self.sample_coords = {}
+        self.class_means = {}
+        self.class_stds = {}
+        self.class_colors = {}
+        self._cmap = None
+        # 4. Masques de preview/erase
+        self._preview_mask = None
+        if hasattr(self, '_erase_mask'):
+            self._erase_mask = None
+        # 5. UI
+        # Masquer le canvas de spectres
+        self.spec_canvas.setVisible(False)
+        # Réinitialiser la légende
+        self.update_legend()
+        # Remettre le slider de threshold à 100%
+        if hasattr(self, 'horizontalSlider_threshold'):
+            self.horizontalSlider_threshold.setValue(100)
+        # Remettre toggles
+        self.selecting_pixels = False
+        self.erase_selection = False
+        self.pushButton_class_selection.setChecked(False)
+        self.pushButton_erase_selected_pix.setChecked(False)
+        # 6. Rafraîchir l'affichage
+        self.show_image()
+
     def set_mode(self):
         self.mode = self.comboBox_ClassifMode.currentText()
-
         self.spec_canvas.setVisible(False)
         self.show_image()
 
@@ -795,7 +855,6 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
             H, W = self.data.shape[:2]
             self.cls_map = labels.reshape(H, W)
             self.show_image()
-
 
         elif self.mode == 'Supervised':
             # 1) Récupère les prototypes des classes labellisées
