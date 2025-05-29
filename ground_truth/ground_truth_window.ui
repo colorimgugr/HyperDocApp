@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1052</width>
+    <width>1316</width>
     <height>600</height>
    </rect>
   </property>
@@ -22,7 +22,21 @@
      <property name="frameShadow">
       <enum>QFrame::Raised</enum>
      </property>
-     <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="2,2,1,0,1,2">
+     <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="0,0,4,4,1,0,0,1,4,2">
+      <item>
+       <widget class="QPushButton" name="load_btn">
+        <property name="text">
+         <string>Load Cube</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="Line" name="line_4">
+        <property name="orientation">
+         <enum>Qt::Vertical</enum>
+        </property>
+       </widget>
+      </item>
       <item>
        <widget class="QGroupBox" name="groupBox_image_type">
         <property name="title">
@@ -64,6 +78,39 @@
       </item>
       <item>
        <layout class="QGridLayout" name="gridLayout_RGBchannels_3">
+        <item row="1" column="1">
+         <widget class="QSpinBox" name="spinBox_green_channel">
+          <property name="maximum">
+           <number>149</number>
+          </property>
+          <property name="value">
+           <number>0</number>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1">
+         <widget class="QSpinBox" name="spinBox_blue_channel">
+          <property name="maximum">
+           <number>149</number>
+          </property>
+          <property name="value">
+           <number>0</number>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QSpinBox" name="spinBox_red_channel">
+          <property name="maximum">
+           <number>149</number>
+          </property>
+          <property name="singleStep">
+           <number>1</number>
+          </property>
+          <property name="value">
+           <number>0</number>
+          </property>
+         </widget>
+        </item>
         <item row="2" column="2">
          <widget class="QSlider" name="horizontalSlider_blue_channel">
           <property name="maximum">
@@ -77,6 +124,26 @@
           </property>
          </widget>
         </item>
+        <item row="1" column="0">
+         <widget class="QLabel" name="label_green_channel">
+          <property name="text">
+           <string>Green</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="0">
+         <widget class="QLabel" name="label_blue_channel">
+          <property name="text">
+           <string>Blue</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
         <item row="0" column="0">
          <widget class="QLabel" name="label_red_channel">
           <property name="text">
@@ -84,16 +151,6 @@
           </property>
           <property name="alignment">
            <set>Qt::AlignCenter</set>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="1">
-         <widget class="QSpinBox" name="spinBox_green_channel">
-          <property name="maximum">
-           <number>149</number>
-          </property>
-          <property name="value">
-           <number>0</number>
           </property>
          </widget>
         </item>
@@ -129,49 +186,6 @@
           </property>
          </widget>
         </item>
-        <item row="1" column="0">
-         <widget class="QLabel" name="label_green_channel">
-          <property name="text">
-           <string>Green</string>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignCenter</set>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="1">
-         <widget class="QSpinBox" name="spinBox_blue_channel">
-          <property name="maximum">
-           <number>149</number>
-          </property>
-          <property name="value">
-           <number>0</number>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="1">
-         <widget class="QSpinBox" name="spinBox_red_channel">
-          <property name="maximum">
-           <number>149</number>
-          </property>
-          <property name="singleStep">
-           <number>1</number>
-          </property>
-          <property name="value">
-           <number>0</number>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="0">
-         <widget class="QLabel" name="label_blue_channel">
-          <property name="text">
-           <string>Blue</string>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignCenter</set>
-          </property>
-         </widget>
-        </item>
        </layout>
       </item>
       <item>
@@ -183,7 +197,108 @@
       </item>
       <item>
        <layout class="QGridLayout" name="gridLayout">
-        <item row="0" column="4">
+        <item row="0" column="8">
+         <widget class="QLabel" name="label_selec_mode">
+          <property name="text">
+           <string>Select mode</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="8">
+         <widget class="QComboBox" name="comboBox_pixel_selection_mode">
+          <item>
+           <property name="text">
+            <string>rectangle</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>ellipse</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>pixel</string>
+           </property>
+          </item>
+         </widget>
+        </item>
+        <item row="2" column="3">
+         <widget class="QSpinBox" name="nclass_box">
+          <property name="minimum">
+           <number>2</number>
+          </property>
+          <property name="maximum">
+           <number>20</number>
+          </property>
+          <property name="value">
+           <number>3</number>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="2" colspan="2">
+         <widget class="QLabel" name="label_class_type">
+          <property name="text">
+           <string>Classification type</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="7" colspan="2">
+         <widget class="QCheckBox" name="checkBox_enable_segment">
+          <property name="text">
+           <string>Enable auto segmentation</string>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="7">
+         <widget class="QPushButton" name="pushButton_class_selection">
+          <property name="enabled">
+           <bool>true</bool>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: rgba(186, 255, 112, 125);</string>
+          </property>
+          <property name="text">
+           <string>Start selection</string>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="4">
+         <widget class="QPushButton" name="run_btn">
+          <property name="styleSheet">
+           <string notr="true">background-color: rgb(173, 173, 173);</string>
+          </property>
+          <property name="text">
+           <string>Segmentation</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="7">
+         <widget class="QPushButton" name="pushButton_erase_selected_pix">
+          <property name="styleSheet">
+           <string notr="true">background-color: rgb(255, 206, 206);</string>
+          </property>
+          <property name="text">
+           <string>Erase Selected</string>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="4">
          <widget class="QComboBox" name="comboBox_distance">
           <item>
            <property name="text">
@@ -207,107 +322,48 @@
           </item>
          </widget>
         </item>
-        <item row="0" column="6">
-         <widget class="QComboBox" name="comboBox_pixel_selection_mode">
-          <item>
-           <property name="text">
-            <string>pixel</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>rectangle</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>ellipse</string>
-           </property>
-          </item>
-         </widget>
-        </item>
-        <item row="0" column="3">
-         <widget class="QComboBox" name="comboBox_ClassifMode">
-          <item>
-           <property name="text">
-            <string>Unsupervised</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Supervised</string>
-           </property>
-          </item>
-         </widget>
-        </item>
-        <item row="0" column="5">
-         <widget class="QPushButton" name="pushButton_class_selection">
-          <property name="enabled">
-           <bool>true</bool>
-          </property>
+        <item row="0" column="4">
+         <widget class="QLabel" name="label_metric">
           <property name="text">
-           <string>Start selection</string>
+           <string>Spectral distance</string>
           </property>
-          <property name="checkable">
-           <bool>true</bool>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="0">
-         <widget class="QPushButton" name="pushButton_manual">
-          <property name="text">
-           <string>Manual assign</string>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
           </property>
          </widget>
         </item>
-        <item row="1" column="6">
-         <widget class="QPushButton" name="run_btn">
-          <property name="text">
-           <string>Segment</string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="5">
-         <widget class="QPushButton" name="pushButton_erase_selected_pix">
-          <property name="styleSheet">
-           <string notr="true">background-color: rgb(255, 206, 206);</string>
-          </property>
-          <property name="text">
-           <string>Erase Selected</string>
-          </property>
-          <property name="checkable">
-           <bool>true</bool>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="4">
-         <widget class="QPushButton" name="load_btn">
-          <property name="text">
-           <string>Load Cube</string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="3">
-         <widget class="QSpinBox" name="nclass_box">
-          <property name="minimum">
-           <number>2</number>
-          </property>
-          <property name="maximum">
-           <number>20</number>
-          </property>
-          <property name="value">
-           <number>3</number>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="0">
+        <item row="2" column="2">
          <widget class="QLabel" name="nclass_label">
           <property name="text">
            <string># Classes:</string>
           </property>
          </widget>
         </item>
-        <item row="0" column="7" rowspan="2">
+        <item row="0" column="6" rowspan="3">
+         <widget class="Line" name="line_2">
+          <property name="lineWidth">
+           <number>1</number>
+          </property>
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="2" colspan="2">
+         <widget class="QComboBox" name="comboBox_ClassifMode">
+          <item>
+           <property name="text">
+            <string>Supervised</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Unsupervised</string>
+           </property>
+          </item>
+         </widget>
+        </item>
+        <item row="1" column="5" rowspan="2">
          <widget class="QSlider" name="slider_class_thr">
           <property name="minimum">
            <number>0</number>
@@ -326,7 +382,25 @@
           </property>
          </widget>
         </item>
+        <item row="0" column="5">
+         <widget class="QLabel" name="label_thr">
+          <property name="text">
+           <string>thr</string>
+          </property>
+         </widget>
+        </item>
        </layout>
+      </item>
+      <item>
+       <widget class="QFrame" name="frame_legend">
+        <property name="frameShape">
+         <enum>QFrame::StyledPanel</enum>
+        </property>
+        <property name="frameShadow">
+         <enum>QFrame::Raised</enum>
+        </property>
+        <layout class="QVBoxLayout" name="verticalLayout_6"/>
+       </widget>
       </item>
       <item>
        <widget class="Line" name="line_3">
@@ -374,6 +448,9 @@
           <property name="text">
            <string>Spectrum live visualization</string>
           </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
          </widget>
         </item>
         <item row="3" column="2">
@@ -400,6 +477,31 @@
          <widget class="QPushButton" name="pushButton_band_selection">
           <property name="text">
            <string>Band selection</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QVBoxLayout" name="verticalLayout_3" stretch="0,0,0">
+        <item>
+         <widget class="QPushButton" name="pushButton_merge">
+          <property name="text">
+           <string>Merge GT and select</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="pushButton_class_name_assign">
+          <property name="text">
+           <string>Class name assign</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="pushButton_keep_GT">
+          <property name="text">
+           <string>Keep GT map</string>
           </property>
          </widget>
         </item>

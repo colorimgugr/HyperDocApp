@@ -1,8 +1,9 @@
 import os
 import numpy as np
 import cv2
-from PyQt5.QtWidgets import QWidget, QFileDialog, QMessageBox,QInputDialog , QSplitter,QGraphicsView
-from PyQt5.QtCore import Qt, QEvent, QRect, QRectF
+from PyQt5.QtGui    import QPixmap, QPainter, QColor
+from PyQt5.QtWidgets import QWidget, QFileDialog, QMessageBox,QInputDialog , QSplitter,QGraphicsView,QLabel
+from PyQt5.QtCore import Qt, QEvent, QRect, QRectF,QPointF
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from matplotlib import cm
@@ -18,6 +19,8 @@ from ground_truth.ground_truth_window import Ui_GroundTruthWidget
 # todo : give GT labels names and number for RGB code ? -> save GT in new dataset of file + png
 # todo : check if dobbles in samples at end of selection process -> keep last selection.
 # todo : band selection on spectra graph
+# todo : show number of pixel selected and number of pixel of each class after segmentation
+# todo : loading cube to solve
 
 class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
     def __init__(self, parent=None):
@@ -74,6 +77,7 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         self.pushButton_class_selection.toggled.connect(self.on_toggle_selection)
         self.pushButton_erase_selected_pix.toggled.connect(self.on_toggle_erase)
         self.checkBox_see_selection_overlay.toggled.connect(self.toggle_show_selection)
+        self.pushButton_merge.clicked.connect(self.merge_selec_GT)
 
         # RGB sliders <-> spinboxes
         self.sliders_rgb = [self.horizontalSlider_red_channel, self.horizontalSlider_green_channel,
@@ -112,9 +116,7 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
 
         self.show_selection=True
         self.pushButton_class_selection.setText("Stop Selection")
-        self.pushButton_class_selection.setStyleSheet(
-            "background-color: green; color: black;"
-        )
+        self.pushButton_erase_selected_pix.setChecked(False)
 
         if len(self.samples)>0 :
             reply = QMessageBox.question(
@@ -128,6 +130,7 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
                 self.selection_mask_map[:] = -1
                 self.samples.clear()
 
+        self.frame_legend.setVisible(True)
         self.selecting_pixels = True
         self.viewer_left.setDragMode(QGraphicsView.NoDrag)
         self.viewer_left.setCursor(Qt.CrossCursor)
@@ -142,6 +145,7 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
     def stop_pixel_selection(self):
 
         self.selecting_pixels = False
+        self.frame_legend.setVisible(False)
 
         # ready to select
         self.viewer_left.setDragMode(QGraphicsView.ScrollHandDrag)
@@ -150,7 +154,6 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
 
         # remet le bouton à l'état initial
         self.pushButton_class_selection.setText("Start Selection")
-        self.pushButton_class_selection.setStyleSheet("")
         self.pushButton_class_selection.setChecked(False)
 
         # efface tout preview en cours
@@ -161,6 +164,7 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
 
     def on_toggle_erase(self, checked):
         self.erase_selection = checked
+
         if checked:
             self._pixel_selecting=False
             self.stop_pixel_selection()
@@ -171,6 +175,7 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
             self.pushButton_class_selection.setChecked(False)
             self.viewer_left.setDragMode(QGraphicsView.NoDrag)
             self.viewer_left.setCursor(Qt.CrossCursor)
+
         else:
             self.pushButton_erase_selected_pix.setText("Erase Pixels")
             self.viewer_left.setDragMode(QGraphicsView.ScrollHandDrag)
@@ -181,9 +186,60 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         if checked:
             self.erase_selection=False
             self.start_pixel_selection()
+            self.update_legend()
+
         else:
             # fin du mode sélection
             self.stop_pixel_selection()
+
+    def merge_selec_GT(self):
+        """
+        Fusionne les annotations manuelles (selection_mask_map)
+        dans la carte de segmentation algorithmique (cls_map),
+        puis met à jour les prototypes (moyennes et écart-types).
+        """
+
+        if self.cls_map is None:
+            QMessageBox.warning(
+                self, "Warning",
+                "No segmentation done : Perform a segmentation and try again if needed."
+            )
+            return
+
+
+        mask = (self.selection_mask_map >= 0) ##mask of manual selected
+
+        if not mask.any():
+            QMessageBox.information(
+                self, "Info",
+                "Not selected pixel to mergi with segmented result"
+            )
+            return
+
+        self.checkBox_enable_segment.setChecked(False) # secure selection by disabled segmentation
+
+        self.cls_map[mask] = self.selection_mask_map[mask] # assign manual selecte class in segmented image
+
+        # update class prototypes
+        unique_labels = np.unique(self.cls_map)
+        new_means = {}
+        new_stds = {}
+        for c in unique_labels:
+            # collecte les coordonnées dont cls_map == c
+            ys, xs = np.where(self.cls_map == c)
+            # construit un tableau (N_c x B) de leurs spectres
+            spectra = np.stack([self.data[y, x, :] for x, y in zip(xs, ys)], axis=0)
+            # moyenne et écart-type
+            new_means[c] = np.mean(spectra, axis=0)
+            new_stds[c] = np.std(spectra, axis=0)
+
+        self.class_means = new_means
+        self.class_stds = new_stds
+
+        n = len(unique_labels)
+        self._cmap = cm.get_cmap('jet', n)
+
+        self.show_image()
 
     def modif_sliders(self):
         max_wl = int(self.wl[-1])
@@ -311,6 +367,7 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
 
             # 3) rafraîchir l’affichage
         self.show_image()
+        self.update_legend()
 
     def _handle_erasure(self, coords):
 
@@ -556,8 +613,6 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
     def set_mode(self):
         self.mode = self.comboBox_ClassifMode.currentText()
 
-        self.nclass_box.setEnabled(self.mode in ['Unsupervised', 'Semi-supervised'])
-
         self.spec_canvas.setVisible(False)
         self.show_image()
 
@@ -629,6 +684,35 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
 
         self.viewer_left.setImage(self._np2pixmap(self.current_composite))
 
+    def update_legend(self):
+        """
+        Construit un petit carré coloré + numéro de classe
+        dans frame_legend pour chaque classe actuelle.
+        """
+        # 1) Vider l’ancien contenu
+        for i in reversed(range(self.frame_legend.layout().count())):
+            w = self.frame_legend.layout().itemAt(i).widget()
+            self.frame_legend.layout().removeWidget(w)
+            w.deleteLater()
+
+        # Si pas en mode sélection, on ne montre rien
+        if not self.selecting_pixels:
+            return
+
+        # 2) Pour chaque classe, crée un QLabel avec un pixmap carré coloré
+        for c in sorted(self.class_colors):
+            b, g, r = self.class_colors[c]
+            lbl = QLabel(str(c))
+            lbl.setFixedSize(30, 20)
+            lbl.setAlignment(Qt.AlignCenter)
+            lbl.setStyleSheet(
+                f"background-color: rgb({r},{g},{b});"
+                "color: white;"
+                "border-radius: 3px;"
+                "font-weight: bold;"
+            )
+            self.frame_legend.layout().addWidget(lbl)
+
     def _replace_placeholder(self, name, widget_cls, **kwargs):
         placeholder = getattr(self, name)
         parent = placeholder.parent()
@@ -686,6 +770,11 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         return fn(u, v)
 
     def run(self):
+
+        if not self.checkBox_enable_segment.isChecked():
+            QMessageBox.warning(self, "Warning", "Enable segmentation with checkbox !")
+            return
+
         if self.data is None:
             QMessageBox.warning(self, "Warning", "Load a cube !")
             return
@@ -712,7 +801,7 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
             # 1) Récupère les prototypes des classes labellisées
             classes = sorted(self.samples.keys())
             if not classes:
-                QMessageBox.warning(self, "Attention", "Sélectionnez au moins un pixel !")
+                QMessageBox.warning(self, "Warning", "Select references pixels and try again !")
                 return
 
             means = {c: np.mean(np.vstack(self.samples[c]), axis=0) for c in classes}
@@ -750,6 +839,7 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
             self._cmap = cm.get_cmap('jet', n_colors)
 
             self.show_image()
+            self.update_legend()
             return
 
     def _np2pixmap(self, img):
