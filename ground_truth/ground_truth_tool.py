@@ -920,10 +920,6 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
             qimg = QImage(rgb.data, rgb.shape[1], rgb.shape[0], rgb.strides[0], fmt)
         return QPixmap.fromImage(qimg).copy()
 
-class ClassAssignmentWindow(QWidget,Ui_Class_assignment):
-    def __init__(self):
-
-
 
 if __name__=='__main__':
     import sys
