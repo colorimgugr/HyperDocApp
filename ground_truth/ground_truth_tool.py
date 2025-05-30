@@ -607,6 +607,14 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
             self.live_spectra_update=True
 
     def load_cube(self,path=None):
+        if self.cls_map : # if work done, stop to permit saving before continue.
+            reply = QMessageBox.question(
+                self, "Erase previous selection ?",
+                "Do you want to erase previous cube work ?",
+                QMessageBox.Yes | QMessageBox.No
+            )
+            if reply == QMessageBox.No:
+               return
 
         if not path :
             print('Ask path for cube')
@@ -911,6 +919,11 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
             fmt = QImage.Format_RGB888
             qimg = QImage(rgb.data, rgb.shape[1], rgb.shape[0], rgb.strides[0], fmt)
         return QPixmap.fromImage(qimg).copy()
+
+class ClassAssignmentWindow(QWidget,Ui_Class_assignment):
+    def __init__(self):
+
+
 
 if __name__=='__main__':
     import sys

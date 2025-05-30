@@ -4,13 +4,12 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="Merging GT and manual added&#10;add legend of color class when selecting">
-      <change beforePath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Checkout_at_22_05_2025_09_50_[Changes]/shelved.patch" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Checkout_at_22_05_2025_09_50__Changes_.xml" beforeDir="false" />
+    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="QSplitter OK&#10;Loading cube with reste state OK">
+      <change afterPath="$PROJECT_DIR$/ground_truth/GT_table_viz.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ground_truth/Materials labels and palette assignation - Materials_labels_palette.csv" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ground_truth/ground_truth_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/ground_truth/ground_truth_tool.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ground_truth/ground_truth_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/ground_truth/ground_truth_window.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ground_truth/ground_truth_window.ui" beforeDir="false" afterPath="$PROJECT_DIR$/ground_truth/ground_truth_window.ui" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/test.py" beforeDir="false" afterPath="$PROJECT_DIR$/test.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -93,6 +92,7 @@
       <recent name="C:\Users\Usuario\Documents\GitHub\Hypertool\registration" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\Usuario\Documents\GitHub\Hypertool\ground_truth" />
       <recent name="C:\Users\Usuario\Documents\GitHub\Hypertool" />
       <recent name="C:\Users\Usuario\Documents\GitHub\Hypertool\registration" />
     </key>
@@ -423,7 +423,15 @@
       <option name="project" value="LOCAL" />
       <updated>1748488219203</updated>
     </task>
-    <option name="localTasksCounter" value="37" />
+    <task id="LOCAL-00037" summary="QSplitter OK&#10;Loading cube with reste state OK">
+      <option name="closed" value="true" />
+      <created>1748517410329</created>
+      <option name="number" value="00037" />
+      <option name="presentableId" value="LOCAL-00037" />
+      <option name="project" value="LOCAL" />
+      <updated>1748517410329</updated>
+    </task>
+    <option name="localTasksCounter" value="38" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -475,7 +483,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="register minicubes OK." />
     <MESSAGE value="Load .mat7.3 (with hypercube module), envie and h5p OK." />
     <MESSAGE value="Load personal OK&#10;check if transpose needed" />
     <MESSAGE value="Load in VizTool OK" />
@@ -500,6 +507,7 @@
     <MESSAGE value="Overlay transparency separate for for selection and GT&#10;GT and hyp image in QSplitter&#10;Supervised mode with thr" />
     <MESSAGE value="doublons de selection gerer" />
     <MESSAGE value="Merging GT and manual added&#10;add legend of color class when selecting" />
-    <option name="LAST_COMMIT_MESSAGE" value="Merging GT and manual added&#10;add legend of color class when selecting" />
+    <MESSAGE value="QSplitter OK&#10;Loading cube with reste state OK" />
+    <option name="LAST_COMMIT_MESSAGE" value="QSplitter OK&#10;Loading cube with reste state OK" />
   </component>
 </project>
