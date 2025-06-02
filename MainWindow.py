@@ -19,6 +19,7 @@ from data_vizualisation.metadata_tool import MetadataTool
 # TODO : initier dans MainWindow les hypercubes et connecter les champs de chaque widget (yeah...big deal)
 # TODO : generate metadata position,height, width ,parentCube,name of registered cube or minicube
 # TODO : generate a list of basic Metadatas keys with types
+# todo : gestion of signal/slot for in tool load hypercubes.
 
 from PyQt5.QtWidgets import QToolBar, QDockWidget
 from PyQt5.QtCore    import QSize, Qt
