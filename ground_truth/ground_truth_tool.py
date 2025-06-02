@@ -421,8 +421,13 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
                     self.data[yy, xx, :]
                     for (xx, yy) in self.sample_coords.get(cls, [])
                 ]
-                # si plus d'exemples pour cette classe, tu peux aussi
-                # nettoyer class_colors, class_means, class_stds si tu veux
+                if len(self.sample_coords.get(cls, [])) == 0:
+                    # on supprime tous les attributs relatifs à cette classe
+                    self.sample_coords.pop(cls, None)
+                    self.samples.pop(cls, None)
+                    self.class_colors.pop(cls, None)
+                    self.class_means.pop(cls, None)
+                    self.class_stds.pop(cls, None)
 
         self.prune_unused_classes()
         self.show_image()
