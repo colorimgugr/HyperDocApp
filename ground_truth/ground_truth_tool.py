@@ -15,15 +15,15 @@ from hypercubes.hypercube import Hypercube
 from registration.register_tool import ZoomableGraphicsView
 # Import the compiled UI
 from ground_truth.ground_truth_window import Ui_GroundTruthWidget
+from ground_truth.GT_table_viz import LabelWidget
 
 # todo : give GT labels names and number for RGB code ? -> save GT in new dataset of file + png
-# todo : check if dobbles in samples at end of selection process -> keep last selection.
 # todo : band selection on spectra graph
 # todo : show number of pixel selected and number of pixel of each class after segmentation
-# todo : loading cube to solve
+# todo : link to cube_info (read and fill)
 
 class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
-    def __init__(self, parent=None):
+    def __init__(self, parent=None,cubeInfo=None):
         super().__init__(parent)
         # Set up UI from compiled .py
         self.setupUi(self)
@@ -33,10 +33,10 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         self.erase_selection = False # erase mode on or off
         self._pixel_coords = []  # collected  (x,y) during dragging
         self._preview_mask = None # temp mask during dragging pixel selection
-        self.class_colors = {}  # color of each class
-        self._cmap = None
+        self.class_info = {}
+        #dictionnary of lists :  {key:[label GT, name GT,(R,G,B)]}
+        self.class_colors ={}  # color of each class
         n0 = self.nclass_box.value()
-        self._cmap = cm.get_cmap('jet', n0)         # same jet as final segmentation
 
         # Replace placeholders with custom widgets
         self._replace_placeholder('viewer_left', ZoomableGraphicsView)
@@ -79,6 +79,7 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         self.pushButton_erase_selected_pix.toggled.connect(self.on_toggle_erase)
         self.checkBox_see_selection_overlay.toggled.connect(self.toggle_show_selection)
         self.pushButton_merge.clicked.connect(self.merge_selec_GT)
+        self.pushButton_class_name_assign.clicked.connect(self.open_label_table)
 
         # RGB sliders <-> spinboxes
         self.sliders_rgb = [self.horizontalSlider_red_channel, self.horizontalSlider_green_channel,
@@ -122,6 +123,25 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         self.splitter.setStyleSheet("""QSplitter::handle {background-color: darkgray;}""")
         self.splitter_2.setStyleSheet("""QSplitter::handle {background-color: darkgray;}""")
 
+    def open_label_table(self):
+
+        csv_path = 'ground_truth/Materials labels and palette assignation - Materials_labels_palette.csv'
+        self.class_win = LabelWidget(csv_path,self.class_info)
+        self.class_win.resize(1000, 600)
+        self.class_win.class_info_updated.connect(self.on_class_info_updated) # connect to signal from LabelWidget
+        self.class_win.show()
+
+    def on_class_info_updated(self, class_info):
+
+        self.class_info=class_info
+
+        for c, info in class_info.items():
+            if c in self.class_colors:
+                self.class_colors[c] = (info[2][2],info[2][1],info[2][0])
+
+        self.show_image()
+        self.update_legend()
+
     def start_pixel_selection(self):
 
         self.show_selection=True
@@ -140,7 +160,6 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
                 self.selection_mask_map[:] = -1
                 self.samples.clear()
 
-        self.frame_legend.setVisible(True)
         self.selecting_pixels = True
         self.viewer_left.setDragMode(QGraphicsView.NoDrag)
         self.viewer_left.setCursor(Qt.CrossCursor)
@@ -155,7 +174,6 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
     def stop_pixel_selection(self):
 
         self.selecting_pixels = False
-        self.frame_legend.setVisible(False)
 
         # ready to select
         self.viewer_left.setDragMode(QGraphicsView.ScrollHandDrag)
@@ -247,9 +265,10 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         self.class_stds = new_stds
 
         n = len(unique_labels)
-        self._cmap = cm.get_cmap('jet', n)
 
+        self.prune_unused_classes()
         self.show_image()
+        self.update_legend()
 
     def modif_sliders(self):
         max_wl = int(self.wl[-1])
@@ -335,22 +354,30 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
 
     def _handle_selection(self, coords):
         """Prompt for class and store spectra of the given coordinates."""
-        cls, ok = QInputDialog.getInt(
-            self, "Class", "Class label number:", 0, 0, self.nclass_box.value() - 1
+        max_cls = self.nclass_box.value() - 1
+        labels = [str(i) for i in range(max_cls + 1)]
+
+        # 2) Ouvrir un QInputDialog.getItem() au lieu de getInt()
+        #    - on force l’édition à se faire via la liste déroulante
+        cls_str, ok = QInputDialog.getItem(
+            self,
+            "Class",
+            "Choose class label:",
+            labels,
+            0,  # index initial (par défaut on sélectionne “0”)
+            False  # False = l’utilisateur ne peut pas taper autre chose que la liste
         )
+
         if not ok:
             return
 
-        # append spectra
+        cls = int(cls_str)
         if cls not in self.class_colors:
-            # si _cmap n'existe pas encore, on le crée à la volée
-            if self._cmap is None:
-                from matplotlib import cm
-                n = self.nclass_box.value()
-                self._cmap = cm.get_cmap('jet', n)
-            rgba = self._cmap(cls)
-            r, g, b = (int(255 * rgba[i]) for i in range(3))
-            self.class_colors[cls] = (b, g, r)
+            self._assign_initial_colors(cls)
+        else:
+            print({self.class_colors[cls]})
+
+        # append spectra
 
         for x, y in coords:
             if not (0 <= x < self.data.shape[1] and 0 <= y < self.data.shape[0]):
@@ -397,7 +424,9 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
                 # si plus d'exemples pour cette classe, tu peux aussi
                 # nettoyer class_colors, class_means, class_stds si tu veux
 
+        self.prune_unused_classes()
         self.show_image()
+        self.update_legend()
 
     def eventFilter(self, source, event):
         mode = self.comboBox_pixel_selection_mode.currentText()
@@ -580,14 +609,15 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         if self.checkBox_seeGTspectra.isChecked() and hasattr(self, 'class_means'):
             for c, mu in self.class_means.items():
                 std = self.class_stds[c]
-                color = self._cmap(c)
+                b, g, r = self.class_colors[c]
+                col = (r/255.0, g/255.0, b/255.0)
                 self.spec_ax.fill_between(
                     x_graph, mu - std, mu + std,
-                    color=color, alpha=0.3, linewidth=0
+                    color=col, alpha=0.3, linewidth=0
                 )
                 self.spec_ax.plot(
                     x_graph, mu, '--',
-                    color=color, label=f'Classe {c}'
+                    color=col, label=f'Classe {c}'
                 )
             if self.spec_ax.get_legend_handles_labels()[1]:
                 self.spec_ax.legend(loc='upper right', fontsize='small')
@@ -607,7 +637,8 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
             self.live_spectra_update=True
 
     def load_cube(self,path=None):
-        if self.cls_map : # if work done, stop to permit saving before continue.
+
+        if self.cls_map is not None : # if work done, stop to permit saving before continue.
             reply = QMessageBox.question(
                 self, "Erase previous selection ?",
                 "Do you want to erase previous cube work ?",
@@ -658,7 +689,6 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         self.class_means = {}
         self.class_stds = {}
         self.class_colors = {}
-        self._cmap = None
         # 4. Masques de preview/erase
         self._preview_mask = None
         if hasattr(self, '_erase_mask'):
@@ -706,17 +736,57 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
 
         if self.cls_map is None:
             overlay = rgb.copy()
+
         else:
-            seg8 = (self.cls_map.astype(np.float32) / (self.nclass_box.value() - 1) * 255).astype(np.uint8)
-            cmap = cv2.applyColorMap(seg8, cv2.COLORMAP_JET)
-            overlay = cv2.addWeighted(rgb, 1-self.alpha, cmap, self.alpha, 0)
+
+            # 1) Construire seg_color (H x W x 3) en BGR
+
+            H, W = self.cls_map.shape
+
+            seg_color = np.zeros((H, W, 3), dtype=np.uint8)
+
+            for cls, (b, g, r) in self.class_colors.items():
+                mask = (self.cls_map == cls)
+
+                # On applique la couleur b,g,r à tous les pixels de cette classe
+
+                seg_color[mask] = [b, g, r]
+
+            # 2) Si vous avez défini une classe “other” (indice = n_classes),
+
+            #    et que vous n’avez pas de couleur pour elle, vous pouvez la mettre en grisé, ex.:
+
+            other_idx = set(np.unique(self.cls_map)) - set(self.class_colors.keys())
+
+            for cls in other_idx:
+                gray = 128
+
+                mask = (self.cls_map == cls)
+
+                seg_color[mask] = [gray, gray, gray]
+
+            # 3) Faire l’overlay final avec la transparence
+
+            overlay = cv2.addWeighted(rgb, 1 - self.alpha, seg_color, self.alpha, 0)
 
         if self.cls_map is None:
             blank = np.zeros((H, W, 3), dtype=np.uint8)
             pix2 = self._np2pixmap(blank)
         else:
-            seg8 = (self.cls_map.astype(np.float32) / (self.nclass_box.value() - 1) * 255).astype(np.uint8)
-            pix2 = self._np2pixmap(cv2.applyColorMap(seg8, cv2.COLORMAP_JET))
+            # On recycle seg_color calculé plus haut :
+            # s’il n’est pas dans une variable, recalculer de la même façon :
+            seg_color2 = np.zeros((H, W, 3), dtype=np.uint8)
+            for cls, (b, g, r) in self.class_colors.items():
+                mask = (self.cls_map == cls)
+                seg_color2[mask] = [b, g, r]
+            other_idx = set(np.unique(self.cls_map)) - set(self.class_colors.keys())
+            for cls in other_idx:
+                gray = 128
+                mask = (self.cls_map == cls)
+                seg_color2[mask] = [gray, gray, gray]
+
+            pix2 = self._np2pixmap(seg_color2)
+
         self.viewer_right.setImage(pix2)
 
         # overlay of selection blended to GT overlay
@@ -753,21 +823,12 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         self.viewer_left.setImage(self._np2pixmap(self.current_composite))
 
     def update_legend(self):
-        """
-        Construit un petit carré coloré + numéro de classe
-        dans frame_legend pour chaque classe actuelle.
-        """
-        # 1) Vider l’ancien contenu
+
         for i in reversed(range(self.frame_legend.layout().count())):
             w = self.frame_legend.layout().itemAt(i).widget()
             self.frame_legend.layout().removeWidget(w)
             w.deleteLater()
 
-        # Si pas en mode sélection, on ne montre rien
-        if not self.selecting_pixels:
-            return
-
-        # 2) Pour chaque classe, crée un QLabel avec un pixmap carré coloré
         for c in sorted(self.class_colors):
             b, g, r = self.class_colors[c]
             lbl = QLabel(str(c))
@@ -858,11 +919,9 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
             # stocke moyennes, écarts et colormap
             self.class_means = {i: kmeans.cluster_centers_[i] for i in range(n)}
             self.class_stds = {i: np.std(flat[labels == i], axis=0) for i in range(n)}
-            self._cmap = cm.get_cmap('jet', n)
             # Final : reshape et affichage
             H, W = self.data.shape[:2]
             self.cls_map = labels.reshape(H, W)
-            self.show_image()
 
         elif self.mode == 'Supervised':
             # 1) Récupère les prototypes des classes labellisées
@@ -903,11 +962,11 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
 
             # on prend K = nombre de classes + 1 for “other”
             n_colors = other_label + 1
-            self._cmap = cm.get_cmap('jet', n_colors)
 
-            self.show_image()
-            self.update_legend()
-            return
+        self.prune_unused_classes()
+        self._assign_initial_colors()
+        self.show_image()
+        self.update_legend()
 
     def _np2pixmap(self, img):
         from PyQt5.QtGui import QImage, QPixmap
@@ -920,6 +979,45 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
             qimg = QImage(rgb.data, rgb.shape[1], rgb.shape[0], rgb.strides[0], fmt)
         return QPixmap.fromImage(qimg).copy()
 
+    def _assign_initial_colors(self,c=None):
+
+        if c is not None :
+            unique_labels=[c]
+        elif self.cls_map is not None:
+            unique_labels = np.unique(self.cls_map)
+        else:
+            return
+
+        cmap = cm.get_cmap('tab10')
+
+        for cls in unique_labels:
+            if cls not in self.class_colors:
+                # cmap renvoie un tuple RGBA avec floats 0..1
+                r_f, g_f, b_f, _ = cmap(cls)
+                # on convertit en entiers 0..255
+                r, g, b = int(255 * r_f), int(255 * g_f), int(255 * b_f)
+                # MAIS OpenCV attend BGR, donc on stocke (b,g,r)
+                self.class_colors[cls] = (b, g, r)
+                if cls not in self.class_info:
+                    self.class_info[cls] = [None,None,(0,0,0)]
+                self.class_info[cls][2]=(r,g,b)
+
+    def prune_unused_classes(self):
+        """
+        Supprime de self.class_colors et self.class_info
+        tous les labels qui ne figurent plus dans self.cls_map.
+        """
+        if self.cls_map is None:
+            return
+
+        labels_in_map = set(np.unique(self.cls_map))
+        for d in (self.class_colors, self.class_info):
+            for cls in list(d.keys()):
+                if cls not in labels_in_map:
+                    del d[cls]
+
+    def remove_class(self):
+        pass
 
 if __name__=='__main__':
     import sys

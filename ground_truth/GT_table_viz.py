@@ -8,6 +8,7 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import QAbstractTableModel, Qt, pyqtSlot
 from PyQt5.QtGui import QBrush, QColor
+from PyQt5.QtCore import pyqtSignal,QPoint
 
 class PandasModel(QAbstractTableModel):
     def __init__(self, df: pd.DataFrame):
@@ -87,6 +88,8 @@ class NewLabelDialog(QDialog):
         return self.name_edit.text().strip()
 
 class LabelWidget(QWidget):
+    class_info_updated = pyqtSignal(dict)
+
     def __init__(self, csv_path,class_info={0:[None,None,(0,0,255)],1:[None,None,(0,255,0)]}):
         super().__init__()
         self.current_path = csv_path
@@ -105,11 +108,10 @@ class LabelWidget(QWidget):
         self.tableView.setModel(self.model)
 
         # Boutons pour gérer labels
-        self.btn_keep=QPushButton("Keep to cube info")
-        self.btn_keep.clicked.connect(self.keep_gt_cube_info)
+
         self.btn_load = QPushButton("Load table")
         self.btn_load.clicked.connect(self.load_table)
-        self.btn_choose = QPushButton("Assign from table")
+        self.btn_choose = QPushButton("Assign selected")
         self.btn_choose.clicked.connect(self.on_choose_label)
         self.btn_new = QPushButton("Add a new label")
         self.btn_new.clicked.connect(self.on_new_label)
@@ -137,7 +139,6 @@ class LabelWidget(QWidget):
             line.setFrameShape(QFrame.HLine)
             line.setFrameShadow(QFrame.Sunken)
             vbox.addWidget(line)
-
 
         label_container=QWidget()
         label_hbox = QHBoxLayout(label_container)
@@ -170,12 +171,11 @@ class LabelWidget(QWidget):
         # --- 4) Boutons en bas ---
         btn_hbox = QHBoxLayout()
         btn_hbox.addStretch()
-        btn_hbox.addWidget(self.btn_keep)
-        btn_hbox.addStretch()
-        btn_hbox.addWidget(self.btn_load)
         btn_hbox.addWidget(self.btn_choose)
         btn_hbox.addWidget(self.btn_new)
         btn_hbox.addWidget(self.btn_delete)
+        btn_hbox.addStretch()
+        btn_hbox.addWidget(self.btn_load)
         btn_hbox.addWidget(self.btn_save)
         btn_hbox.addStretch()
 
@@ -187,15 +187,12 @@ class LabelWidget(QWidget):
         # Enfin, remplir la colonne de labels
         self.fill_label_box()
 
-    def keep_gt_cube_info(self):
-        pass
+        # Connect right click on table
+        self.tableView.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.tableView.customContextMenuRequested.connect(self.on_table_right_click)
 
     def fill_label_box(self):
-        """
-        Remplit chaque VBox à partir de self.class_info = {
-            key: [cls_idx, gt_idx, gt_name, (r,g,b)], …
-        }
-        """
+
         # On vide d’abord tout (si recyclage possible)
         for vbox in self.vboxes:
             # supprime tous les widgets enfants
@@ -242,12 +239,12 @@ class LabelWidget(QWidget):
         row = index.row()
         df = self.model._df  # ton DataFrame pandas
 
-        # 1) Lecture des données de la ligne sélectionnée
+        # get table lines info
         new_gt = int(df.at[row, "Label in GT"])
         new_name = df.at[row, "Materials/binder"]
         new_color = (df.at[row,"R"],df.at[row,"G"],df.at[row,"B"])
 
-        # 2) Choix de la classe à mettre à jour
+        # Choose class
         keys = [str(k) for k in self.class_info.keys()]
         item, ok = QInputDialog.getItem(
             self,
@@ -262,12 +259,30 @@ class LabelWidget(QWidget):
 
         cls_key = int(item)
 
-        # Update
+        # Update class_info
         print(cls_key,new_gt,new_name, new_color)
         self.class_info[cls_key] = [new_gt, new_name, new_color]
 
-        # 4) Rafraîchissement de l’affichage
+        # update display and emot signal
         self.fill_label_box()
+        self.class_info_updated.emit(self.class_info)
+
+    @pyqtSlot(QPoint)
+    def on_table_right_click(self, pos):
+        """
+        Déclenché quand l’utilisateur fait un clic droit dans la table.
+        On récupère l’index sous la souris, on le sélectionne, puis on appelle on_choose_label().
+        """
+        index = self.tableView.indexAt(pos)
+        if not index.isValid():
+            return
+
+        # on force la sélection de la ligne cliquée (facultatif, mais ergonomique)
+        self.tableView.setCurrentIndex(index)
+
+        # on appelle la même fonction que pour le bouton “Choisir un label”
+        self.on_choose_label()
+
 
     @pyqtSlot()
     def on_new_label(self):
@@ -296,6 +311,7 @@ class LabelWidget(QWidget):
             sel = self.model.index(last, 0)
             self.tableView.scrollTo(sel)
             self.tableView.setCurrentIndex(sel)
+            self.on_choose_label()
 
     @pyqtSlot()
     def on_delete_label(self):
