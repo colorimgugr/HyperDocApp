@@ -4,7 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="handle of classe suppresion ok">
+    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="Add, suppres and reset bands working (on the graph)">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ground_truth/ground_truth_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/ground_truth/ground_truth_tool.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ground_truth/ground_truth_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/ground_truth/ground_truth_window.py" afterDir="false" />
@@ -462,7 +462,15 @@
       <option name="project" value="LOCAL" />
       <updated>1748866959279</updated>
     </task>
-    <option name="localTasksCounter" value="42" />
+    <task id="LOCAL-00042" summary="Add, suppres and reset bands working (on the graph)">
+      <option name="closed" value="true" />
+      <created>1748944467930</created>
+      <option name="number" value="00042" />
+      <option name="presentableId" value="LOCAL-00042" />
+      <option name="project" value="LOCAL" />
+      <updated>1748944467930</updated>
+    </task>
+    <option name="localTasksCounter" value="43" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -514,7 +522,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Dockable window started.&#10;toolbar ok" />
     <MESSAGE value="Registration saving OK&#10;look metadata size problem with .h5" />
     <MESSAGE value="Save H5% en new dataset OK" />
     <MESSAGE value="Manager with filepath OK&#10;Get path of Registered cube in Main OK&#10;send to Register and File Browser OK" />
@@ -539,6 +546,7 @@
     <MESSAGE value="Supression of .ui previous try of class assignment" />
     <MESSAGE value="Connection table and GT tools. &#10;right click interaction added on table." />
     <MESSAGE value="handle of classe suppresion ok" />
-    <option name="LAST_COMMIT_MESSAGE" value="handle of classe suppresion ok" />
+    <MESSAGE value="Add, suppres and reset bands working (on the graph)" />
+    <option name="LAST_COMMIT_MESSAGE" value="Add, suppres and reset bands working (on the graph)" />
   </component>
 </project>

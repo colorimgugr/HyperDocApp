@@ -127,6 +127,8 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         self.splitter.setStyleSheet("""QSplitter::handle {background-color: darkgray;}""")
         self.splitter_2.setStyleSheet("""QSplitter::handle {background-color: darkgray;}""")
 
+        self.set_mode()
+
     def open_label_table(self):
 
         csv_path = 'ground_truth/Materials labels and palette assignation - Materials_labels_palette.csv'
@@ -815,6 +817,16 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
 
     def set_mode(self):
         self.mode = self.comboBox_ClassifMode.currentText()
+        if self.mode=='Supervised':
+            self.page_distance.setVisible(True)
+            self.page_normalized.setVisible(False)
+            self.label_metric.setText('Spectral distance')
+        elif self.mode=='Unsupervised':
+            self.page_distance.setVisible(False)
+            self.page_normalized.setVisible(True)
+            self.label_metric.setText('Spectral Normalization')
+
+
         self.show_image()
 
     def show_image(self, preview=False):
@@ -1026,6 +1038,10 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
 
         # 1) Unsupervised
         if self.mode == 'Unsupervised':
+            if self.comboBox_normalized.currentText()=='Normalize':
+                max_flat=np.max(flat,axis=1,keepdims=True)
+                flat/=max_flat
+
             from sklearn.cluster import KMeans
             n = self.nclass_box.value()
             kmeans = KMeans(n_clusters=n).fit(flat)
