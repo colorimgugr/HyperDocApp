@@ -4,7 +4,12 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="Connection table and GT tools. &#10;right click interaction added on table." />
+    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="handle of classe suppresion ok">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ground_truth/ground_truth_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/ground_truth/ground_truth_tool.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ground_truth/ground_truth_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/ground_truth/ground_truth_window.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ground_truth/ground_truth_window.ui" beforeDir="false" afterPath="$PROJECT_DIR$/ground_truth/ground_truth_window.ui" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -449,7 +454,15 @@
       <option name="project" value="LOCAL" />
       <updated>1748866354558</updated>
     </task>
-    <option name="localTasksCounter" value="41" />
+    <task id="LOCAL-00041" summary="handle of classe suppresion ok">
+      <option name="closed" value="true" />
+      <created>1748866959279</created>
+      <option name="number" value="00041" />
+      <option name="presentableId" value="LOCAL-00041" />
+      <option name="project" value="LOCAL" />
+      <updated>1748866959279</updated>
+    </task>
+    <option name="localTasksCounter" value="42" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -501,7 +514,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Dockable window started.&#10;First test OK but widget not connected" />
     <MESSAGE value="Dockable window started.&#10;toolbar ok" />
     <MESSAGE value="Registration saving OK&#10;look metadata size problem with .h5" />
     <MESSAGE value="Save H5% en new dataset OK" />
@@ -526,6 +538,7 @@
     <MESSAGE value="GT_table_viz works now very nice. To be inserted in GT tool." />
     <MESSAGE value="Supression of .ui previous try of class assignment" />
     <MESSAGE value="Connection table and GT tools. &#10;right click interaction added on table." />
-    <option name="LAST_COMMIT_MESSAGE" value="Connection table and GT tools. &#10;right click interaction added on table." />
+    <MESSAGE value="handle of classe suppresion ok" />
+    <option name="LAST_COMMIT_MESSAGE" value="handle of classe suppresion ok" />
   </component>
 </project>

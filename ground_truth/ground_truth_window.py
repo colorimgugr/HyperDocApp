@@ -221,6 +221,7 @@ class Ui_GroundTruthWidget(object):
         self.checkBox_see_selection_overlay.setObjectName("checkBox_see_selection_overlay")
         self.gridLayout_4.addWidget(self.checkBox_see_selection_overlay, 2, 3, 1, 1)
         self.pushButton_band_selection = QtWidgets.QPushButton(self.frame)
+        self.pushButton_band_selection.setCheckable(True)
         self.pushButton_band_selection.setObjectName("pushButton_band_selection")
         self.gridLayout_4.addWidget(self.pushButton_band_selection, 3, 3, 1, 1)
         self.horizontalLayout_2.addLayout(self.gridLayout_4)

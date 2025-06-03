@@ -6,6 +6,7 @@ from PyQt5.QtWidgets import QWidget, QFileDialog, QMessageBox,QInputDialog , QSp
 from PyQt5.QtCore import Qt, QEvent, QRect, QRectF,QPointF
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
+from matplotlib.widgets import SpanSelector
 from matplotlib import cm
 from matplotlib.path import Path
 
@@ -13,9 +14,9 @@ from scipy.spatial import distance as spdist
 
 from hypercubes.hypercube import Hypercube
 from registration.register_tool import ZoomableGraphicsView
-# Import the compiled UI
-from ground_truth.ground_truth_window import Ui_GroundTruthWidget
 from ground_truth.GT_table_viz import LabelWidget
+
+from ground_truth.ground_truth_window import Ui_GroundTruthWidget
 
 # todo : give GT labels names and number for RGB code ? -> save GT in new dataset of file + png
 # todo : band selection on spectra graph
@@ -70,6 +71,8 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         self.hyps_rgb_chan_DEFAULT=[0,0,0] #default rgb channels (in int nm)
         self.hyps_rgb_chan=[0,0,0] #current rgb (in int nm)
         self.class_means = {} #for spectra of classe
+        self.selected_bands=[]
+        self.selected_span_patch=[]
 
         # Connect widget signals
         self.load_btn.clicked.connect(self.load_cube)
@@ -80,6 +83,7 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         self.checkBox_see_selection_overlay.toggled.connect(self.toggle_show_selection)
         self.pushButton_merge.clicked.connect(self.merge_selec_GT)
         self.pushButton_class_name_assign.clicked.connect(self.open_label_table)
+        self.pushButton_band_selection.toggled.connect(self.band_selection)
 
         # RGB sliders <-> spinboxes
         self.sliders_rgb = [self.horizontalSlider_red_channel, self.horizontalSlider_green_channel,
@@ -333,7 +337,18 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         self.spec_fig = Figure()
         self.spec_canvas = FigureCanvas(self.spec_fig)
         self.spec_ax = self.spec_fig.add_subplot(111)
-        self.spec_ax.set_title('Spectrum')
+        self.spec_ax.set_title('Spectra')
+
+        self.span_selector = SpanSelector(
+            ax=self.spec_ax,  # votre axe “Spectrum”
+            onselect=self._on_bandselect,  # callback
+            direction="horizontal",  # sélection horizontale
+            useblit=True,  # activer le “blitting”
+            minspan=1.0,  # au moins 1 unité sur l’axe λ
+            props=dict(alpha=0.3, facecolor='tab:blue')
+        )
+
+        self.span_selector.set_active(False)
 
         # Remplace dans le splitter ou dans le layout
         if isinstance(parent, QSplitter):
@@ -351,6 +366,80 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
             self.verticalLayout.addWidget(self.spec_canvas)
 
         self.spec_canvas.setVisible(True)
+
+    def _on_bandselect(self, lambda_min, lambda_max):
+        """
+        Callback  SpanSelector
+        """
+
+        if self._band_action is None:
+            return
+
+        # 1) S’assurer que lambda_min < lambda_max
+        if lambda_min > lambda_max:
+            lambda_min, lambda_max = lambda_max, lambda_min
+
+        # 2) Conversion en indices d’onde
+        idx_min = int(np.argmin(np.abs(self.wl - lambda_min)))
+        idx_max = int(np.argmin(np.abs(self.wl - lambda_max)))
+
+        # 3) update self.selected_bands
+        if self._band_action == 'add':
+            for idx in range(idx_min,idx_max+1):
+                if idx not in self.selected_bands:
+                    self.selected_bands.append(idx)
+
+            print(f"Selected band : [{idx_min} → {idx_max}] "
+                  f"({self.wl[idx_min]:.1f} → {self.wl[idx_max]:.1f} nm)")
+
+            patch=self.spec_ax.axvspan(
+                lambda_min, lambda_max,
+                alpha=0.2, color='tab:blue'
+            )
+
+            self.selected_span_patch.append(patch)
+
+        elif self._band_action == 'del':
+
+            for idx in range(idx_min,idx_max+1):
+                if idx in self.selected_bands:
+                    self.selected_bands.remove(idx)
+
+            self.selected_bands=sorted(self.selected_bands)
+
+            for patch in self.selected_span_patch:  # reset all patch
+                patch.remove()
+                self.selected_span_patch = []
+
+            bands={}
+            i_band=0
+            for i in range(len(self.selected_bands)-1): # get bands from index
+                if (self.selected_bands[i+1] -self.selected_bands[i]) ==1:
+                    try:
+                        bands[i_band].append(self.selected_bands[i])
+                    except:
+                        bands[i_band]=[self.selected_bands[i]]
+                else:
+                    try:
+                        bands[i_band].append(self.selected_bands[i])
+                    except:
+                        bands[i_band]=[self.selected_bands[i]]
+
+                    i_band+=1
+
+
+            # recreate patches
+            for i_band in bands:
+                lambda_min, lambda_max=self.wl[bands[i_band][0]],self.wl[bands[i_band][-1]]
+
+                patch = self.spec_ax.axvspan(
+                    lambda_min, lambda_max,
+                    alpha=0.2, color='tab:blue'
+                )
+
+                self.selected_span_patch.append(patch)
+
+        self.spec_canvas.draw_idle()
 
     def _handle_selection(self, coords):
         """Prompt for class and store spectra of the given coordinates."""
@@ -596,7 +685,10 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         if source is self.viewer_left.viewport() and event.type() == QEvent.MouseMove and self.live_spectra_update:
             if self.live_cb.isChecked() and self.data is not None:
                 pos = self.viewer_left.mapToScene(event.pos())
-                self.update_spectra(x=int(pos.x()),y=int(pos.y()))
+                x,y=int(pos.x()),int(pos.y())
+                H, W = self.data.shape[0], self.data.shape[1]
+                if 0 <= x < W and 0 <= y < H:
+                    self.update_spectra(x, y)
 
             return super().eventFilter(source, event)
 
@@ -628,7 +720,14 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
                 self.spec_ax.legend(loc='upper right', fontsize='small')
             self.spec_ax.set_title(f'Spectra')
             self.spec_canvas.setVisible(True)
-            self.spec_canvas.draw()
+
+        for patch in self.selected_span_patch:
+            # patch est un PolyCollection produit par axvspan()
+            # On le remet dans l’axe courant :
+            self.spec_ax.add_patch(patch)
+
+            # 4) On rafraîchit le canvas
+        self.spec_canvas.draw_idle()
 
     def on_alpha_change(self, val):
         self.alpha = val / 100.0
@@ -716,7 +815,6 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
 
     def set_mode(self):
         self.mode = self.comboBox_ClassifMode.currentText()
-        self.spec_canvas.setVisible(False)
         self.show_image()
 
     def show_image(self, preview=False):
@@ -913,7 +1011,18 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
             QMessageBox.warning(self, "Warning", "Load a cube !")
             return
 
-        flat = self.data.reshape(-1, self.data.shape[2])
+        samples_seg={}
+        if len(self.selected_bands) > 0:
+            bandes = self.selected_bands
+            bandes_sorted = sorted(bandes)
+            data_seg = self.data[:, :, bandes_sorted]
+
+        else:
+            bandes_sorted=list(range(len(self.wl)))
+            data_seg=self.data
+
+        H, W, B_sel = data_seg.shape
+        flat = data_seg.reshape(-1, B_sel)
 
         # 1) Unsupervised
         if self.mode == 'Unsupervised':
@@ -921,12 +1030,25 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
             n = self.nclass_box.value()
             kmeans = KMeans(n_clusters=n).fit(flat)
             labels = kmeans.labels_
-            # stocke moyennes, écarts et colormap
-            self.class_means = {i: kmeans.cluster_centers_[i] for i in range(n)}
-            self.class_stds = {i: np.std(flat[labels == i], axis=0) for i in range(n)}
+
             # Final : reshape et affichage
             H, W = self.data.shape[:2]
             self.cls_map = labels.reshape(H, W)
+
+            # stocke moyennes, écarts et colormap
+            full_means = {}
+            full_stds = {}
+            for c in range(n):
+                mask_c = (self.cls_map == c)  # True pour tous les pixels de la classe c
+                pixels_spectre_complet = self.data[mask_c]  # shape = (N_pixels_classe, F)
+                if pixels_spectre_complet.size == 0:
+                    full_means[c] = np.zeros(self.data.shape[2])
+                    full_stds[c] = np.zeros(self.data.shape[2])
+                else:
+                    full_means[c] = pixels_spectre_complet.mean(axis=0)
+                    full_stds[c] = pixels_spectre_complet.std(axis=0)
+            self.class_means = full_means
+            self.class_stds = full_stds
 
         elif self.mode == 'Supervised':
             # 1) Récupère les prototypes des classes labellisées
@@ -935,7 +1057,11 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
                 QMessageBox.warning(self, "Warning", "Select references pixels and try again !")
                 return
 
-            means = {c: np.mean(np.vstack(self.samples[c]), axis=0) for c in classes}
+            means = {}
+            for c in classes:
+                full_spectra_c = np.vstack(self.samples[c])  # shape = (N_pixels_de_c, F)
+                truncated_spectra_c = full_spectra_c[:, bandes_sorted]  # shape = (N_pixels_de_c, B_sel)
+                means[c] = truncated_spectra_c.mean(axis=0)
 
             thr_pct = self.slider_class_thr.value()
             thr_frac = thr_pct / 100.0  # 0.0–1.0
@@ -958,8 +1084,20 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
                     if norm_dist <= thr_frac:
                         labels[i] = classes[min_idx]
 
-            self.class_means = means
-            self.class_stds = {c: np.std(np.vstack(self.samples[c]), axis=0) for c in classes}
+            full_means = {}
+            full_stds = {}
+
+            for c in range(len(classes)):
+                mask_c = (self.cls_map == c)  # True pour tous les pixels de la classe c
+                pixels_spectre_complet = self.data[mask_c]  # shape = (N_pixels_classe, F)
+                if pixels_spectre_complet.size == 0:
+                    full_means[c] = np.zeros(self.data.shape[2])
+                    full_stds[c] = np.zeros(self.data.shape[2])
+                else:
+                    full_means[c] = pixels_spectre_complet.mean(axis=0)
+                    full_stds[c] = pixels_spectre_complet.std(axis=0)
+            self.class_means = full_means
+            self.class_stds = full_stds
 
             # 5) reshape et préparation de l’affichage
             H, W = self.data.shape[:2]
@@ -1021,8 +1159,56 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
                 if cls not in labels_in_map:
                     del d[cls]
 
-    def remove_class(self):
-        pass
+    def band_selection(self,checked):
+        if checked:
+
+            try:
+                msg = QMessageBox(self)
+                msg.setWindowTitle("Bands selection")
+                msg.setText("Add or suppress bands ")
+                add_button = msg.addButton("Add", QMessageBox.AcceptRole)
+                remove_button = msg.addButton("Suppress", QMessageBox.AcceptRole)
+                reset_button=msg.addButton("Clear all bands", QMessageBox.AcceptRole)
+                cancel_button = msg.addButton(QMessageBox.Cancel)
+                msg.setDefaultButton(add_button)
+                msg.exec_()
+
+                if msg.clickedButton() == add_button:
+                    self._band_action = 'add'
+                elif msg.clickedButton() == remove_button:
+                    self._band_action = 'del'
+                elif msg.clickedButton() == reset_button:
+                    print('reset')
+                    self._band_action = None
+                    self.selected_bands = []
+
+                    for patch in self.selected_span_patch:  # reset patch
+                        patch.remove()
+                        self.selected_span_patch = []
+
+                    self.pushButton_band_selection.setChecked(False)
+                    self.spec_canvas.draw_idle()
+                    return
+
+                else:
+                    self.span_selector.set_active(False)
+                    self.pushButton_band_selection.setChecked(False)
+                    return
+
+                self.span_selector.set_active(True)
+                self.pushButton_band_selection.setText('STOP SELECTION')
+            except:
+                QMessageBox.warning(
+                    self, "Warning",
+                    "No band selection choice"
+                )
+                self.pushButton_band_selection.setChecked(False)
+
+                return
+
+        else:
+            self.span_selector.set_active(False)
+            self.pushButton_band_selection.setText('Band selection')
 
 if __name__=='__main__':
     import sys
