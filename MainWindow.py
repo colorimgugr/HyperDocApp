@@ -246,8 +246,11 @@ class MainApp(QtWidgets.QMainWindow):
             return
 
         for path in paths:
+            print(path.split('/')[-1])
             ci=CubeInfoTemp(filepath=path)
             self.hypercube_manager.addCube(ci)
+
+        print(self.hypercube_manager.paths)
 
     def _on_get_cube_info(self, insert_index):
         # 1) Récupère le CubeInfoTemp déjà présent
@@ -269,11 +272,12 @@ class MainApp(QtWidgets.QMainWindow):
         self.hypercube_manager.cubesChanged.emit(self.hypercube_manager.paths)
 
     def _send_to_metadata(self,index):
-        self.meta_dock.widget().set_cube_info(self.hypercube_manager.getCubeInfo(index))
-        self.meta_dock.widget().update_combo_meta(init=True)
-        print('send to meta')
+        widget = self.meta_dock.widget()
+        ci     = self.hypercube_manager.getCubeInfo(index)
+        widget.set_cube_info(ci)
+        widget.update_combo_meta(init=True)
 
-    # TODO : Fix meta_tool init
+    # todo : send to vizualisation tool
 
     def _update_cube_menu(self, paths):
         """Met à jour le menu de cubes avec sous-menus et actions fonctionnelles."""

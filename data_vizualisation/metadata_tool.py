@@ -72,6 +72,7 @@ class MetadataTool(QWidget, Ui_Metadata_tool):
         self.meta_load = cube.metadata_temp.copy()
         self.label_file_name_meta.setText(os.path.basename(self.cube_info.filepath))
         self.update_combo_meta(init=True)
+        print(self.cube_info.data_shape)
 
     def reset_metadatum(self):
         key = self.comboBox_metadata.currentText()
@@ -234,13 +235,15 @@ class MetadataTool(QWidget, Ui_Metadata_tool):
 
     def _toggle_edit_metadata(self, editable: bool):
         """
-        Basculer entre mode lecture (QLabel) et mode édition (QTextEdit ).
+        Basculer entre mode lecture (QLabel) et mode édition (QTextEdit).
         """
         self.stacked_metadata.setCurrentIndex(1 if editable else 0)
         self.textEdit_metadata.setReadOnly(not editable)
         self.pushButton_save.setEnabled(editable)
-        self.update_metadata_label()
         self.textEdit_metadata.setStyleSheet("QTextEdit  { color: black; }")
+        self.update_metadata_label()
+
+
 
 if __name__ == '__main__':
     sample   = '00001-VNIR-mock-up.h5'

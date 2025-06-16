@@ -14,23 +14,39 @@ class HypercubeManager(QtCore.QObject):
         # store CubeInfoTemp instances
         self._cubes: List[CubeInfoTemp] = []
 
-    def addCube(self, cube_info :CubeInfoTemp):
+    def addCube(self, ci):
         """
         Add a new cube if not already present. Emits updated list of filepaths.
         """
-        filepath=cube_info.filepath
+
+        if not isinstance(ci,CubeInfoTemp):
+            print("NO CubeInfoTemp")
+            if isinstance(ci,Hypercube):
+                cube=ci
+                ci=ci.cube_info
+            else:
+                print("Problem for loading cube info")
+                return
+
+        filepath=ci.filepath
         if not filepath:
             return
 
         # prevent duplicates
         if any(ci.filepath == filepath for ci in self._cubes):
+            print("Cube already loaded")
             return
 
-        if cube_info.metadata_temp is None:
-            hc = Hypercube(filepath=ci.filepath, cube_info=cube_info, load_init=True)
+        if len(ci.metadata_temp) ==0:
+            print("no metadatas in cubeInfo yet -> Try to load from cube")
+            print(filepath)
+            hc = Hypercube(filepath=filepath, load_init=True)
+            print(hc.filepath)
+            ci=hc.cube_info
+            print(ci.filepath)
 
-
-        self._cubes.append(cube_info)
+        self._cubes.append(ci)
+        print(self.paths)
         self.cubesChanged.emit(self.paths)
 
     def removeCube(self, index: int):
@@ -59,3 +75,16 @@ class HypercubeManager(QtCore.QObject):
     def cubes(self) -> List[CubeInfoTemp]:
         """List of all CubeInfoTemp objects."""
         return list(self._cubes)
+
+
+if __name__ == "__main__":
+    folder = r'C:\Users\Usuario\Documents\DOC_Yannick\Hyperdoc_Test\Samples\minicubes/'
+    cube_1 = '00001-VNIR-mock-up.h5'
+    cube_2 = '00002-VNIR-mock-up.h5'
+    paths = [folder + cube_1, folder + cube_2]
+    hm=HypercubeManager()
+    for path in paths:
+        print(path)
+        ci=CubeInfoTemp(filepath=path)
+        hm.addCube(ci)
+

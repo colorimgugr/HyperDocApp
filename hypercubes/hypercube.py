@@ -43,13 +43,15 @@ class Hypercube:
       • ENVI (.hdr + raw) via spectral.io.envi
     """
 
-    def __init__(self, filepath=None, data=None, wl=None, metadata=None, load_init=False,cube_info=CubeInfoTemp()):
+    def __init__(self, filepath=None, data=None, wl=None, metadata=None, load_init=False,cube_info=None):
         self.filepath = filepath
         self.data     = data
         self.wl       = wl
         self.metadata = metadata or {}
 
-        self.cube_info=cube_info
+        if cube_info is None:
+            cube_info = CubeInfoTemp()
+        self.cube_info = cube_info
 
         if load_init:
             if self.filepath is not None:
