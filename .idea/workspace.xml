@@ -4,11 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="pixel_averaged added + saving GT started">
+    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="Bugg of metadata loading finally fixed :-p">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/MainWindow.py" beforeDir="false" afterPath="$PROJECT_DIR$/MainWindow.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data_vizualisation/metadata_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/data_vizualisation/metadata_tool.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hypercubes/hypercube.py" beforeDir="false" afterPath="$PROJECT_DIR$/hypercubes/hypercube.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ground_truth/ground_truth_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/ground_truth/ground_truth_tool.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/interface/HypercubeManager.py" beforeDir="false" afterPath="$PROJECT_DIR$/interface/HypercubeManager.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -487,7 +486,15 @@
       <option name="project" value="LOCAL" />
       <updated>1749819042738</updated>
     </task>
-    <option name="localTasksCounter" value="45" />
+    <task id="LOCAL-00045" summary="Bugg of metadata loading finally fixed :-p">
+      <option name="closed" value="true" />
+      <created>1750075741719</created>
+      <option name="number" value="00045" />
+      <option name="presentableId" value="LOCAL-00045" />
+      <option name="project" value="LOCAL" />
+      <updated>1750075741719</updated>
+    </task>
+    <option name="localTasksCounter" value="46" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -539,7 +546,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Manager with filepath OK&#10;Get path of Registered cube in Main OK&#10;send to Register and File Browser OK" />
     <MESSAGE value="Added size column in FileBrowser" />
     <MESSAGE value="Gestion par CubeInfoTemp des infos des cubes pseudo chargés" />
     <MESSAGE value="Gestion par CubeInfoTemp des infos des cubes pseudo chargés - extension au MainWindow" />
@@ -564,14 +570,15 @@
     <MESSAGE value="Add, suppres and reset bands working (on the graph)" />
     <MESSAGE value="Added normalizarion for Unsupervised" />
     <MESSAGE value="pixel_averaged added + saving GT started" />
-    <option name="LAST_COMMIT_MESSAGE" value="pixel_averaged added + saving GT started" />
+    <MESSAGE value="Bugg of metadata loading finally fixed :-p" />
+    <option name="LAST_COMMIT_MESSAGE" value="Bugg of metadata loading finally fixed :-p" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/ground_truth/ground_truth_tool.py</url>
-          <line>273</line>
+          <line>274</line>
           <option name="timeStamp" value="4" />
         </line-breakpoint>
       </breakpoints>

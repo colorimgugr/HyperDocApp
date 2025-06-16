@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="70.215759mm"
+   height="39.988419mm"
+   viewBox="0 0 70.215759 39.988419"
+   version="1.1"
+   id="svg1"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs1">
+    <rect
+       x="225.07738"
+       y="207.87402"
+       width="230.81184"
+       height="121.85718"
+       id="rect1" />
+    <filter
+       y="0"
+       height="1"
+       x="0"
+       width="1"
+       style="color-interpolation-filters:sRGB"
+       id="filter64">
+      <feTurbulence
+         type="fractalNoise"
+         baseFrequency="0.04"
+         numOctaves="5"
+         seed="0"
+         result="result4"
+         id="feTurbulence63" />
+      <feDisplacementMap
+         in="SourceGraphic"
+         in2="result4"
+         yChannelSelector="G"
+         xChannelSelector="R"
+         scale="10"
+         result="result3"
+         id="feDisplacementMap63" />
+      <feDiffuseLighting
+         lighting-color="#e9e6d7"
+         diffuseConstant="1"
+         surfaceScale="2"
+         result="result1"
+         in="result4"
+         id="feDiffuseLighting63">
+        <feDistantLight
+           azimuth="235"
+           elevation="40"
+           id="feDistantLight63" />
+      </feDiffuseLighting>
+      <feComposite
+         operator="in"
+         in="result3"
+         in2="result1"
+         result="result2"
+         id="feComposite63" />
+      <feComposite
+         in2="result1"
+         result="result5"
+         operator="arithmetic"
+         k1="1.7"
+         id="feComposite64"
+         k2="0"
+         k3="0"
+         k4="0" />
+      <feBlend
+         in="result5"
+         in2="result3"
+         mode="normal"
+         id="feBlend64" />
+    </filter>
+    <filter
+       style="color-interpolation-filters:sRGB"
+       x="-0.024716734"
+       width="1.0494335"
+       y="-0.038556009"
+       height="1.077112"
+       id="filter36">
+      <feGaussianBlur
+         in="SourceGraphic"
+         stdDeviation="1.17379 1.17379"
+         result="blur1"
+         id="feGaussianBlur35" />
+      <feTurbulence
+         type="fractalNoise"
+         baseFrequency="0.0520826"
+         numOctaves="2"
+         seed="0"
+         result="turbulence"
+         id="feTurbulence35" />
+      <feDisplacementMap
+         in="blur1"
+         in2="turbulence"
+         xChannelSelector="R"
+         yChannelSelector="G"
+         scale="7.64526"
+         result="map"
+         id="feDisplacementMap35" />
+      <feGaussianBlur
+         in="map"
+         stdDeviation="0.01"
+         result="blur2"
+         id="feGaussianBlur36" />
+      <feComposite
+         in="blur2"
+         in2="map"
+         operator="over"
+         result="composite"
+         id="feComposite36" />
+    </filter>
+  </defs>
+  <g
+     id="layer1"
+     transform="translate(-69.429342,-112.21479)">
+    <rect
+       style="fill:#e9ddaf;stroke-width:2.27159;stroke-linecap:square;paint-order:markers fill stroke;filter:url(#filter64)"
+       id="rect2-1"
+       width="75.947563"
+       height="42.953144"
+       x="69.429344"
+       y="109.25007"
+       rx="1.1660458"
+       transform="matrix(0.9245295,0,0,0.93097771,5.2398675,10.505415)" />
+    <text
+       xml:space="preserve"
+       transform="matrix(0.32424333,0,0,0.24632118,-6.2150086,82.918868)"
+       id="text1"
+       style="font-size:96px;line-height:0px;font-family:'MV Boli';-inkscape-font-specification:'MV Boli';text-align:center;letter-spacing:-0.46px;word-spacing:7.43px;writing-mode:lr-tb;direction:ltr;white-space:pre;shape-inside:url(#rect1);display:inline;fill:#000000;stroke-width:5.16661;stroke-linecap:square;paint-order:markers fill stroke;filter:url(#filter36)"><tspan
+         x="282.49465"
+         y="237.05772"
+         id="tspan2"><tspan
+           style="font-family:Harrington;-inkscape-font-specification:Harrington"
+           id="tspan1">GT</tspan></tspan></text>
+  </g>
+</svg>

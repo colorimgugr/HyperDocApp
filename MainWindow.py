@@ -15,6 +15,7 @@ from data_vizualisation.data_vizualisation_tool import Data_Viz_Window
 from registration.register_tool        import RegistrationApp
 from interface.HypercubeManager import HypercubeManager
 from data_vizualisation.metadata_tool import MetadataTool
+from ground_truth.ground_truth_tool import GroundTruthWidget
 
 # TODO : initier dans MainWindow les hypercubes et connecter les champs de chaque widget (yeah...big deal)
 # TODO : generate metadata position,height, width ,parentCube,name of registered cube or minicube
@@ -91,6 +92,7 @@ class MainApp(QtWidgets.QMainWindow):
         self.data_viz_dock =self._add_dock("Data Visualization", Data_Viz_Window,  QtCore.Qt.RightDockWidgetArea)
         self.reg_dock=self._add_dock("Registration",   RegistrationApp,     QtCore.Qt.BottomDockWidgetArea)
         self.meta_dock=self._add_dock("Metadata",   MetadataTool,     QtCore.Qt.BottomDockWidgetArea)
+        self.gt_dock=self._add_dock("Ground Truth",   GroundTruthWidget,     QtCore.Qt.BottomDockWidgetArea)
 
         # Tool menu
         view = self.menuBar().addMenu("Tools")
@@ -129,6 +131,13 @@ class MainApp(QtWidgets.QMainWindow):
         act_met.setIcon(QIcon(os.path.join(ICONS_DIR, icon_met)))
         act_met.setToolTip("Metadata")
         toolbar.addAction(act_met)
+
+        # Action GT
+        act_gt = self.gt_dock.toggleViewAction()
+        icon_gt = "GT_icon_1.png"
+        act_gt.setIcon(QIcon(os.path.join(ICONS_DIR, icon_gt)))
+        act_gt.setToolTip("Ground Truth")
+        toolbar.addAction(act_gt)
 
         toolbar.addSeparator()
 
@@ -246,11 +255,8 @@ class MainApp(QtWidgets.QMainWindow):
             return
 
         for path in paths:
-            print(path.split('/')[-1])
             ci=CubeInfoTemp(filepath=path)
             self.hypercube_manager.addCube(ci)
-
-        print(self.hypercube_manager.paths)
 
     def _on_get_cube_info(self, insert_index):
         # 1) Récupère le CubeInfoTemp déjà présent
@@ -276,6 +282,11 @@ class MainApp(QtWidgets.QMainWindow):
         ci     = self.hypercube_manager.getCubeInfo(index)
         widget.set_cube_info(ci)
         widget.update_combo_meta(init=True)
+
+    def _send_to_gt(self,index):
+        widget = self.gt_dock.widget()
+        ci = self.hypercube_manager.getCubeInfo(index)
+        widget.load_cube(cube_info=ci)
 
     # todo : send to vizualisation tool
 
@@ -312,6 +323,11 @@ class MainApp(QtWidgets.QMainWindow):
             act_meta = QtWidgets.QAction("Send to Metadata", self)
             act_meta.triggered.connect(lambda checked, i=idx: self._send_to_metadata(i))
             sub.addAction(act_meta)
+
+            # Envoyer au dock gt
+            act_gt = QtWidgets.QAction("Send to GT", self)
+            act_gt.triggered.connect(lambda checked, i=idx: self._send_to_gt(i))
+            sub.addAction(act_gt)
 
             # Séparateur
             sub.addSeparator()

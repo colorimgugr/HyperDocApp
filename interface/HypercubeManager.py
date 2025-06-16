@@ -20,7 +20,6 @@ class HypercubeManager(QtCore.QObject):
         """
 
         if not isinstance(ci,CubeInfoTemp):
-            print("NO CubeInfoTemp")
             if isinstance(ci,Hypercube):
                 cube=ci
                 ci=ci.cube_info
@@ -34,19 +33,13 @@ class HypercubeManager(QtCore.QObject):
 
         # prevent duplicates
         if any(ci.filepath == filepath for ci in self._cubes):
-            print("Cube already loaded")
             return
 
         if len(ci.metadata_temp) ==0:
-            print("no metadatas in cubeInfo yet -> Try to load from cube")
-            print(filepath)
             hc = Hypercube(filepath=filepath, load_init=True)
-            print(hc.filepath)
             ci=hc.cube_info
-            print(ci.filepath)
 
         self._cubes.append(ci)
-        print(self.paths)
         self.cubesChanged.emit(self.paths)
 
     def removeCube(self, index: int):
@@ -84,7 +77,6 @@ if __name__ == "__main__":
     paths = [folder + cube_1, folder + cube_2]
     hm=HypercubeManager()
     for path in paths:
-        print(path)
         ci=CubeInfoTemp(filepath=path)
         hm.addCube(ci)
 

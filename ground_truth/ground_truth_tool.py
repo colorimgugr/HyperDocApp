@@ -12,7 +12,7 @@ from matplotlib.path import Path
 
 from scipy.spatial import distance as spdist
 
-from hypercubes.hypercube import Hypercube
+from hypercubes.hypercube import Hypercube,CubeInfoTemp
 from registration.register_tool import ZoomableGraphicsView
 from ground_truth.GT_table_viz import LabelWidget
 
@@ -60,6 +60,7 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         self.cube = None
         self.data = None
         self.wl= None
+        self.current_cube_info=None
         self.cls_map = None
         self.samples = {} # to save pixels spectra samples for GT
         self.sample_coords = {c: set() for c in self.samples.keys()} # to remember coord of pixel samples
@@ -781,7 +782,7 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
             self.update_spectra()
             self.live_spectra_update=True
 
-    def load_cube(self,path=None):
+    def load_cube(self,cube_info=None,path=None):
 
         if self.cls_map is not None : # if work done, stop to permit saving before continue.
             reply = QMessageBox.question(
@@ -792,6 +793,14 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
             if reply == QMessageBox.No:
                return
 
+        if cube_info is not None:
+            if path is None:
+                path=cube_info.filepath
+            else :
+                if path !=cube_info.filepath :
+                    QMessageBox.warning(self, "Warning", "Path  is different from the filepath of cubeInfo")
+                    return
+
         if not path :
             print('Ask path for cube')
             path, _ = QFileDialog.getOpenFileName(
@@ -800,9 +809,25 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
             if not path:
                 return
         try:
-            self.cube = Hypercube(filepath=path, load_init=True)
+            cube = Hypercube(filepath=path, load_init=True)
+
+            # todo : check if GT already done in the file
+
+            if cube_info is None:
+                if "GTLabels" in cube.metadata.keys():
+                    if len(cube.metadata["GTLabels"][0])!=0:
+                        reply = QMessageBox.question(
+                            self, "Erase previous Ground Truth ?",
+                            "Ground truth labels has been found in the file. \n Are you sure that you want to make a new Ground Truth for this cube ?",
+                        QMessageBox.Yes | QMessageBox.No
+                        )
+                        if reply == QMessageBox.No:
+                            return
+
+            self.cube=cube
             self.data = self.cube.data
-            self.wl= self.cube.wl
+            self.wl = self.cube.wl
+
             if self.wl[-1]<1100 and self.wl[0]>350:
                 self.hyps_rgb_chan_DEFAULT = [610, 540, 435]
             elif self.wl[-1]>=1100:
@@ -1285,7 +1310,7 @@ if __name__=='__main__':
     folder=r'C:\Users\Usuario\Documents\DOC_Yannick\Hyperdoc_Test/'
     file_name='00001-SWIR-mock-up.h5'
     filepath=folder+file_name
-    w.load_cube(filepath)
+    w.load_cube(path=filepath)
     w.show()
     sys.exit(app.exec_())
 
