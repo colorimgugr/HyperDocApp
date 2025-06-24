@@ -1,4 +1,10 @@
+# cd C:\Users\Usuario\Documents\GitHub\Hypertool\ground_truth
+# python -m PyQt5.uic.pyuic -o registration_window.py registration_window.ui
+# pyinstaller  --exclude-module tensorflow --exclude-module torch --icon="GT_icon.ico" --add-data "ground_truth/Materials labels and palette assignation - Materials_labels_palette.csv;ground_truth"  ground_truth_tool.py
+# opts   --noconsole --onefile
 import os
+import sys
+from PyQt5.QtWidgets import QApplication
 import numpy as np
 import cv2
 from PyQt5.QtGui    import QPixmap, QPainter, QColor
@@ -171,6 +177,7 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
     def open_label_table(self):
 
         csv_path = 'ground_truth/Materials labels and palette assignation - Materials_labels_palette.csv'
+        # csv_path = 'Materials labels and palette assignation - Materials_labels_palette.csv'
         self.class_win = LabelWidget(csv_path,self.class_info)
         self.class_win.resize(1000, 600)
         self.class_win.class_info_updated.connect(self.on_class_info_updated) # connect to signal from LabelWidget
@@ -732,7 +739,9 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
                 if 0 <= x < W and 0 <= y < H:
                     self.update_spectra(x, y)
 
-            return super().eventFilter(source, event)
+            return True
+
+        return super().eventFilter(source, event)
 
     def update_spectra(self,x=None,y=None):
         self.spec_ax.clear()
@@ -795,7 +804,11 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
 
         if cube_info is not None:
             if path is None:
-                path=cube_info.filepath
+                try:
+                    if cube_info.filepath is not None:
+                        path=cube_info.filepath
+                except:
+                    pass
             else :
                 if path !=cube_info.filepath :
                     QMessageBox.warning(self, "Warning", "Path  is different from the filepath of cubeInfo")
@@ -1303,14 +1316,13 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
             self.pushButton_band_selection.setText('Band selection')
 
 if __name__=='__main__':
-    import sys
-    from PyQt5.QtWidgets import QApplication
+
     app = QApplication(sys.argv)
     w = GroundTruthWidget()
-    folder=r'C:\Users\Usuario\Documents\DOC_Yannick\Hyperdoc_Test/'
-    file_name='00001-SWIR-mock-up.h5'
-    filepath=folder+file_name
-    w.load_cube(path=filepath)
+    # folder=r'C:\Users\Usuario\Documents\DOC_Yannick\Hyperdoc_Test/'
+    # file_name='00001-SWIR-mock-up.h5'
+    # filepath=folder+file_name
+    # w.load_cube(path=filepath)
     w.show()
     sys.exit(app.exec_())
 

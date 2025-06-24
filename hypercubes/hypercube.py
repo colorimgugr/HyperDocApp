@@ -10,7 +10,7 @@ from PyQt5.QtWidgets import (QWidget,
 )
 from PyQt5.QtCore    import pyqtSignal, QEventLoop
 from hypercubes.save_window import Ui_Save_Window
-from hypercubes.HDF5BrowserWidget import Ui_HDF5BrowserWidget
+from hypercubes.hdf5_browser_tool import Ui_HDF5BrowserWidget
 import sys
 
 from dataclasses import dataclass, field
@@ -44,7 +44,6 @@ class Hypercube:
     """
 
     def __init__(self, filepath=None, data=None, wl=None, metadata=None, load_init=False,cube_info=None):
-        self.filepath = filepath
         self.data     = data
         self.wl       = wl
         self.metadata = metadata or {}
@@ -53,14 +52,16 @@ class Hypercube:
             cube_info = CubeInfoTemp()
         self.cube_info = cube_info
 
+        if self.cube_info.filepath is None:
+            self.cube_info.filepath=filepath
+
         if load_init:
-            if self.filepath is not None:
-                self.open_hyp(default_path=self.filepath, open_dialog=False)
+            if filepath is not None:
+
+                self.open_hyp(default_path=filepath, open_dialog=False)
             else:
                 self.open_hyp(open_dialog=True)
 
-        if self.cube_info.filepath is None:
-            self.cube_info.filepath=self.filepath
 
     @staticmethod
     def _is_hdf5_file(path: str) -> bool:
@@ -342,7 +343,6 @@ class Hypercube:
             )
 
             if filepath is None:
-                print('Problem getting filepath to save')
                 return
 
             sel = selected_filter.lower()

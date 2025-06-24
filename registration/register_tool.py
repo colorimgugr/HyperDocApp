@@ -1,5 +1,6 @@
 # cd C:\Users\Usuario\Documents\GitHub\Hypertool\registration
 # python -m PyQt5.uic.pyuic -o registration_window.py registration_window.ui
+# pyinstaller --noconsole --exclude-module tensorflow --exclude-module torch --icon="registration_icon.ico"   register_tool.py
 
 import sys
 from importlib.metadata import metadata
@@ -275,7 +276,6 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
 
         try :
             temp_path = os.path.join(tempfile.gettempdir(), name_moving+"_aligned_cube.h5")
-            print(temp_path)
             self.aligned_cube.filepath=temp_path
             self.aligned_cube.cube_info.filepath=temp_path
 
@@ -283,8 +283,7 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
             self.alignedCubeReady.emit(self.aligned_cube.cube_info)
             # self.pushButton_validRegistration.setEnabled(False)
         except:
-            print('Problem in registration validation')
-
+            pass
     def update_images(self):
 
         for i_mov in [0,1]:
@@ -699,10 +698,10 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
 
     def open_save_dialog(self):
         """Ouvre la dialog SaveWindow, récupère les options et déclenche la sauvegarde."""
-        dlg = SaveWindow(self)
+        dialogWindow = SaveWindow(self)
         # Affiche en modal : si OK, on récupère les options
-        if dlg.exec_() == QDialog.Accepted:
-            opts = dlg.get_options()
+        if dialogWindow.exec_() == QDialog.Accepted:
+            opts = dialogWindow.get_options()
             self.save_cube_with_options(opts)
 
     def save_cube_with_options(self, opts):
@@ -735,9 +734,38 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
 
                 fixed_img = self.fixed_img[x:x + dx, y:y + dy]
                 aligned_img = self.aligned_img[x:x + dx, y:y + dy]
+
         else:
             fixed_img = self.fixed_img
             aligned_img = self.aligned_img
+
+        if opts['image_mode_rgb']: ## si rgb on remplace les image de gris precedentes par les false rgb par default
+            wl = mini_fixed_cube.wl
+            if wl[-1] < 1100 and wl[0] > 350:
+                wl_rgb = [610, 540, 435]
+            elif wl[-1] >= 1100:
+                wl_rgb = [1605, 1205, 1005]
+            else:
+                mid = int(len(wl) / 2)
+                wl_rgb = [wl[0], wl[mid], wl[-1]]
+
+            chan=[np.argmin(np.abs(wl-wl_col)) for wl_col in wl_rgb]
+
+            fixed_img = (mini_fixed_cube.data[:, :, chan]*255).clip(0,255).astype(np.uint8)
+
+            wl = mini_align_cube.wl
+            if wl[-1] < 1100 and wl[0] > 350:
+                wl_rgb = [610, 540, 435]
+            elif wl[-1] >= 1100:
+                wl_rgb = [1605, 1205, 1005]
+            else:
+                mid = int(len(wl) / 2)
+                wl_rgb = [wl[0], wl[mid], wl[-1]]
+
+            chan=[np.argmin(np.abs(wl-wl_col)) for wl_col in wl_rgb]
+
+            aligned_img = (mini_align_cube.data[:, :, chan]*255).clip(0,255).astype(np.uint8)
+
 
         # Image
         if opts['export_images']:
@@ -826,10 +854,10 @@ if __name__ == '__main__':
     window.clean_cache()
     app.setStyle('Fusion')
 
-    folder_cube=r'C:\Users\Usuario\Documents\DOC_Yannick\Hyperdoc_Test\Archivo chancilleria/'
-    path_fixed_cube=folder_cube+'MPD41a_SWIR.mat'
-    path_moving_cube=folder_cube+'MPD41a_VNIR.mat'
-    window.load_cube(0,path_fixed_cube)
-    window.load_cube(1,path_moving_cube)
+    # folder_cube=r'C:\Users\Usuario\Documents\DOC_Yannick\Hyperdoc_Test\Archivo chancilleria/'
+    # path_fixed_cube=folder_cube+'MPD41a_SWIR.mat'
+    # path_moving_cube=folder_cube+'MPD41a_VNIR.mat'
+    # window.load_cube(0,path_fixed_cube)
+    # window.load_cube(1,path_moving_cube)
 
     sys.exit(app.exec_())

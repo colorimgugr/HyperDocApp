@@ -13,7 +13,7 @@ import traceback
 from hypercubes.hypercube  import *
 from data_vizualisation.data_vizualisation_tool import Data_Viz_Window
 from registration.register_tool        import RegistrationApp
-from interface.HypercubeManager import HypercubeManager
+from interface.hypercube_manager import HypercubeManager
 from data_vizualisation.metadata_tool import MetadataTool
 from ground_truth.ground_truth_tool import GroundTruthWidget
 
@@ -87,12 +87,19 @@ class MainApp(QtWidgets.QMainWindow):
         icon_main= "Hyperdoc_logo_transparente_CIMLab.png"
         self.setWindowIcon(QIcon(os.path.join(ICONS_DIR,icon_main)))
 
-        # add docks
-        self.file_browser_dock = self._add_file_browser_dock()
+        # make left docks with meta and file browser
+        self.file_browser_dock = self._add_file_browser_dock() # left dock with file browser
+        self.meta_dock=self._add_dock("Metadata",   MetadataTool,     QtCore.Qt.LeftDockWidgetArea) # add meta to left dock
+        self.tabifyDockWidget(self.file_browser_dock, self.meta_dock)
+        self.meta_dock.raise_() # raise meta and "hide in tab" file browser
+
+        # make "central" dock with visuals tools
         self.data_viz_dock =self._add_dock("Data Visualization", Data_Viz_Window,  QtCore.Qt.RightDockWidgetArea)
-        self.reg_dock=self._add_dock("Registration",   RegistrationApp,     QtCore.Qt.BottomDockWidgetArea)
-        self.meta_dock=self._add_dock("Metadata",   MetadataTool,     QtCore.Qt.BottomDockWidgetArea)
-        self.gt_dock=self._add_dock("Ground Truth",   GroundTruthWidget,     QtCore.Qt.BottomDockWidgetArea)
+        self.reg_dock=self._add_dock("Registration",   RegistrationApp,     QtCore.Qt.RightDockWidgetArea)
+        self.gt_dock=self._add_dock("Ground Truth",   GroundTruthWidget,     QtCore.Qt.RightDockWidgetArea)
+        self.tabifyDockWidget(self.reg_dock, self.gt_dock)
+        self.tabifyDockWidget(self.reg_dock, self.data_viz_dock)
+        self.data_viz_dock.raise_()
 
         # Tool menu
         view = self.menuBar().addMenu("Tools")
@@ -111,6 +118,15 @@ class MainApp(QtWidgets.QMainWindow):
         act_file.setToolTip("File Browser")
         toolbar.addAction(act_file)
 
+        # Action Metadata
+        act_met = self.meta_dock.toggleViewAction()
+        icon_met = "metadata_icon.png"
+        act_met.setIcon(QIcon(os.path.join(ICONS_DIR, icon_met)))
+        act_met.setToolTip("Metadata")
+        toolbar.addAction(act_met)
+
+        toolbar.addSeparator()
+
         # Action Data Viz
         act_data = self.data_viz_dock.toggleViewAction()
         icon_data_viz = "icon_data_viz.svg"
@@ -124,13 +140,6 @@ class MainApp(QtWidgets.QMainWindow):
         act_reg.setIcon(QIcon(os.path.join(ICONS_DIR, icon_registration)))
         act_reg.setToolTip("Registration")
         toolbar.addAction(act_reg)
-
-        # Action Metadata
-        act_met = self.meta_dock.toggleViewAction()
-        icon_met = "metadata_icon.png"
-        act_met.setIcon(QIcon(os.path.join(ICONS_DIR, icon_met)))
-        act_met.setToolTip("Metadata")
-        toolbar.addAction(act_met)
 
         # Action GT
         act_gt = self.gt_dock.toggleViewAction()
@@ -350,7 +359,6 @@ class MainApp(QtWidgets.QMainWindow):
 def excepthook(exc_type, exc_value, exc_traceback):
     """Capture les exceptions et les affiche dans une boîte de dialogue."""
     error_msg = "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
-    print(f"Erreur : {error_msg}")  # Optionnel : enregistrer dans un fichier log
     msg_box = QtWidgets.QMessageBox()
     msg_box.setIcon(QtWidgets.QMessageBox.Critical)
     msg_box.setText("Une erreur est survenue :")

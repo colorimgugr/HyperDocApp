@@ -260,7 +260,6 @@ class LabelWidget(QWidget):
         cls_key = int(item)
 
         # Update class_info
-        print(cls_key,new_gt,new_name, new_color)
         self.class_info[cls_key] = [new_gt, new_name, new_color]
 
         # update display and emot signal
@@ -355,12 +354,10 @@ class LabelWidget(QWidget):
 
     @pyqtSlot()
     def save_table(self):
-        print('saving')
         path, _ = QFileDialog.getSaveFileName(self, "Save in CSV", "", "CSV Files (*.csv);;All Files (*)")
         if path:
             # Sauvegarde sans l'index pandas
             self.model._df.to_csv(path, index=False)
-            print(f"Table sauvegardée dans : {path}")
 
     @pyqtSlot()
     def load_table(self):
@@ -382,7 +379,6 @@ class LabelWidget(QWidget):
         self.tableView.setModel(self.model)
         self.current_path = path
         self.default_cols = cols
-        print(f"CSV chargé : {path}")
 
 def load_and_prepare_df(path, cols=None):
     df = pd.read_csv(path)

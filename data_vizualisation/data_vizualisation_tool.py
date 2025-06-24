@@ -1,8 +1,9 @@
-# cd C:\Users\Usuario\Documents\GitHub\Hypertool
+# cd C:\Users\Usuario\Documents\GitHub\Hypertool\data_vizualisation
 # python -m PyQt5.uic.pyuic -o Hyperdoc_GUI_design.py Hyperdoc_GUI_design.ui
 # G:\Mi unidad\CIMLab\Proyectos y OTRI\Hyperdoc\Datos\Database_samples_paper\minicubes
 # pyinstaller --noconsole --onefile --icon="hyperdoc_logo_transparente.ico" --add-data "Hyperdoc_logo_transparente_CIMLab.png:." HyperdocApp_core_v3.5.1.py
 # G:\Mi unidad\CIMLab\Proyectos y OTRI\Hyperdoc\Datos\Database_samples\HYPERDOC Database\Samples
+# --exclude-module tensorflow --exclude-module torch
 
 '''
 IMPORTANTE : reescribir por mas de dos cubos : 3 por lo menos O uno a la vez solo
@@ -953,7 +954,6 @@ class GroundTruth:
 def excepthook(exc_type, exc_value, exc_traceback):
     """Capture les exceptions et les affiche dans une boîte de dialogue."""
     error_msg = "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
-    print(f"Erreur : {error_msg}")  # Optionnel : enregistrer dans un fichier log
     msg_box = QtWidgets.QMessageBox()
     msg_box.setIcon(QtWidgets.QMessageBox.Critical)
     msg_box.setText("Une erreur est survenue :")
