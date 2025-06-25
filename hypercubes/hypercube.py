@@ -57,7 +57,6 @@ class Hypercube:
 
         if load_init:
             if filepath is not None:
-
                 self.open_hyp(default_path=filepath, open_dialog=False)
             else:
                 self.open_hyp(open_dialog=True)
@@ -175,6 +174,7 @@ class Hypercube:
 
             except Exception:
                 pass
+
 
         # 2) If we get here, automatic failed → show browser dialog
         # TODO : remember choice made by user for future loading
@@ -392,13 +392,15 @@ class Hypercube:
             for key, val in full_meta.items():
                 # si on a déjà coché “Do this for all”, on applique la même décision
                 if ask_all and default_drop:
-                    # on droppe sans rien écrire
+                    # on drop sans rien écrire
                     continue
 
                 try:
-                    # tentative d’écriture
+                    if key =='wl':
+                        if len(self.wl)==self.data.shape[2]:
+                           val=self.wl
+
                     f.attrs[key] = val
-                    # si ça passe, on conserve la valeur pour la mémoire
                     filtered_meta[key] = val
 
                 except OSError as e:
@@ -729,8 +731,10 @@ if __name__ == '__main__':
     # folder = r'C:\Users\Usuario\Downloads'
     # sample = 'MPD41a_SWIR.mat'
     # folder = r'C:\Users\Usuario\Documents\DOC_Yannick\Hyperdoc_Test\Archivo chancilleria'
-    folder = r'C:\Users\Usuario\Documents\DOC_Yannick\Hyperdoc_Test/'
-    file_name = '00001-SWIR-mock-up.h5'
+    # folder = r'C:\Users\Usuario\Documents\DOC_Yannick\Hyperdoc_Test\Samples\minicubes/'
+    # file_name = '00001-VNIR-mock-up.h5'
+    folder = r'C:\Users\Usuario\Documents\DOC_Yannick\Hyperdoc_Test\Register_Test/'
+    file_name = 'aligned.h5'
     filepath = folder + file_name
     # filepath = os.path.join(folder, sample)
     # filepath='C:/Users/Usuario/Documents/DOC_Yannick/Hyperdoc_Test/Samples/minicubes/00001-VNIR-mock-up.h5'
