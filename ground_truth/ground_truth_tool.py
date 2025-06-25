@@ -821,40 +821,70 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
             )
             if not path:
                 return
-        try:
-            cube = Hypercube(filepath=path, load_init=True)
+        # try:
+        #     cube = Hypercube(filepath=path, load_init=True)
+        #
+        #     # todo : check if GT already done in the file
+        #
+        #     if cube_info is None:
+        #         if "GTLabels" in cube.metadata.keys():
+        #             if len(cube.metadata["GTLabels"][0])!=0:
+        #                 reply = QMessageBox.question(
+        #                     self, "Erase previous Ground Truth ?",
+        #                     "Ground truth labels has been found in the file. \n Are you sure that you want to make a new Ground Truth for this cube ?",
+        #                 QMessageBox.Yes | QMessageBox.No
+        #                 )
+        #                 if reply == QMessageBox.No:
+        #                     return
+        #
+        #     self.cube=cube
+        #     self.data = self.cube.data
+        #     self.wl = self.cube.wl
+        #
+        #     if self.wl[-1]<1100 and self.wl[0]>350:
+        #         self.hyps_rgb_chan_DEFAULT = [610, 540, 435]
+        #     elif self.wl[-1]>=1100:
+        #         self.hyps_rgb_chan_DEFAULT = [1605, 1205, 1005]
+        #     else:
+        #         mid=int(len(self.wl)/2)
+        #         self.hyps_rgb_chan_DEFAULT = [self.wl[0], self.wl[mid], self.wl[-1]]
+        #
+        #     self.reset_state()
+        #     self.modif_sliders()
+        #     self.show_image()
+        #
+        # except Exception as e:
+        #     QMessageBox.critical(self, "Erreur", f"Impossible de charger le cube: {e}")
+        cube = Hypercube(filepath=path, load_init=True)
 
-            # todo : check if GT already done in the file
+        # todo : check if GT already done in the file
 
-            if cube_info is None:
-                if "GTLabels" in cube.metadata.keys():
-                    if len(cube.metadata["GTLabels"][0])!=0:
-                        reply = QMessageBox.question(
-                            self, "Erase previous Ground Truth ?",
-                            "Ground truth labels has been found in the file. \n Are you sure that you want to make a new Ground Truth for this cube ?",
+        if cube_info is None:
+            if "GTLabels" in cube.metadata.keys():
+                if len(cube.metadata["GTLabels"][0]) != 0:
+                    reply = QMessageBox.question(
+                        self, "Erase previous Ground Truth ?",
+                        "Ground truth labels has been found in the file. \n Are you sure that you want to make a new Ground Truth for this cube ?",
                         QMessageBox.Yes | QMessageBox.No
-                        )
-                        if reply == QMessageBox.No:
-                            return
+                    )
+                    if reply == QMessageBox.No:
+                        return
 
-            self.cube=cube
-            self.data = self.cube.data
-            self.wl = self.cube.wl
+        self.cube = cube
+        self.data = self.cube.data
+        self.wl = self.cube.wl
 
-            if self.wl[-1]<1100 and self.wl[0]>350:
-                self.hyps_rgb_chan_DEFAULT = [610, 540, 435]
-            elif self.wl[-1]>=1100:
-                self.hyps_rgb_chan_DEFAULT = [1605, 1205, 1005]
-            else:
-                mid=int(len(self.wl)/2)
-                self.hyps_rgb_chan_DEFAULT = [self.wl[0], self.wl[mid], self.wl[-1]]
+        if self.wl[-1] < 1100 and self.wl[0] > 350:
+            self.hyps_rgb_chan_DEFAULT = [610, 540, 435]
+        elif self.wl[-1] >= 1100:
+            self.hyps_rgb_chan_DEFAULT = [1605, 1205, 1005]
+        else:
+            mid = int(len(self.wl) / 2)
+            self.hyps_rgb_chan_DEFAULT = [self.wl[0], self.wl[mid], self.wl[-1]]
 
-            self.reset_state()
-            self.modif_sliders()
-            self.show_image()
-
-        except Exception as e:
-            QMessageBox.critical(self, "Erreur", f"Impossible de charger le cube: {e}")
+        self.reset_state()
+        self.modif_sliders()
+        self.show_image()
 
     def reset_state(self):
         """

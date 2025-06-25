@@ -582,6 +582,7 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
         self.pushButton_save_cube.setEnabled(True)
         self.pushButton_validRegistration.setEnabled(True)
 
+
     def choose_register_method_ecc(self):
         try:
             fixed_f = self.fixed_img.astype(np.float32) / 255
@@ -749,6 +750,8 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
                 wl_rgb = [wl[0], wl[mid], wl[-1]]
 
             chan=[np.argmin(np.abs(wl-wl_col)) for wl_col in wl_rgb]
+            chan.reverse()
+            print(chan)
 
             fixed_img = (mini_fixed_cube.data[:, :, chan]*255).clip(0,255).astype(np.uint8)
 
@@ -762,9 +765,10 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
                 wl_rgb = [wl[0], wl[mid], wl[-1]]
 
             chan=[np.argmin(np.abs(wl-wl_col)) for wl_col in wl_rgb]
+            chan.reverse()
+            print(chan)
 
             aligned_img = (mini_align_cube.data[:, :, chan]*255).clip(0,255).astype(np.uint8)
-
 
         # Image
         if opts['export_images']:

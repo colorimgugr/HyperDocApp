@@ -75,6 +75,12 @@ def apply_fusion_border_highlight(app,
     }}
     """)
 
+from PyQt5.QtCore    import Qt
+from PyQt5.QtWidgets import QDockWidget
+from PyQt5 import QtCore, QtWidgets
+from PyQt5.QtCore import Qt, QEvent
+from PyQt5.QtWidgets import QDockWidget
+
 class MainApp(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
