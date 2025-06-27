@@ -359,7 +359,7 @@ class Ui_GroundTruthWidget(object):
         self.pushButton_band_selection.setText(_translate("GroundTruthWidget", "Band selection"))
         self.pushButton_merge.setText(_translate("GroundTruthWidget", "Merge GT and select"))
         self.pushButton_class_name_assign.setText(_translate("GroundTruthWidget", "Class name assign"))
-        self.pushButton_keep_GT.setText(_translate("GroundTruthWidget", "Keep GT map"))
+        self.pushButton_keep_GT.setText(_translate("GroundTruthWidget", "Save GT map"))
         self.viewer_left.setToolTip(_translate("GroundTruthWidget", "Promote to ZoomableGraphicsView"))
         self.viewer_right.setToolTip(_translate("GroundTruthWidget", "Promote to ZoomableGraphicsView"))
         self.spec_canvas.setToolTip(_translate("GroundTruthWidget", "Promote to FigureCanvas"))

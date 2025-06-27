@@ -1,15 +1,24 @@
-from PyQt5 import QtWidgets, QtCore
-from PyQt5.QtCore import QTimer,QSize, Qt
-from PyQt5.QtGui import QFont,QIcon, QPalette, QColor
-import matplotlib.pyplot as plt
-from PyQt5.QtWidgets import (QStyleFactory, QToolBar,QAction,QComboBox,
-                             QLabel,QToolButton,QMenu)
+# cd C:\Users\Usuario\Documents\GitHub\Hypertool
+# pyinstaller --noconsole --noconfirm --exclude-module tensorflow --exclude-module torch --icon="interface/icons/hyperdoc_logo_transparente.ico" --add-data "interface/icons:Hypertool/interface/icons" --add-data "ground_truth/Materials labels and palette assignation - Materials_labels_palette.csv:ground_truth" MainWindow.py
 
+# GUI Qt
+from PyQt5 import QtWidgets, QtCore
+from PyQt5.QtCore import QTimer,QSize, Qt,QEvent
+from PyQt5.QtGui import QFont,QIcon, QPalette, QColor
+from PyQt5.QtWidgets import (QStyleFactory, QDialog,QAction,QComboBox,QApplication, QMessageBox, QPushButton,QSizePolicy,
+                             QLabel,QToolButton,QMenu,QToolBar, QDockWidget,QVBoxLayout,QTextEdit,QDialog)
+
+import matplotlib.pyplot as plt
+
+## System
 import sys
 import os
-import traceback
 
-# widgets import
+## exception gestion
+import traceback
+import logging
+
+# projects import
 from hypercubes.hypercube  import *
 from data_vizualisation.data_vizualisation_tool import Data_Viz_Window
 from registration.register_tool        import RegistrationApp
@@ -21,10 +30,6 @@ from ground_truth.ground_truth_tool import GroundTruthWidget
 # TODO : generate metadata position,height, width ,parentCube,name of registered cube or minicube
 # TODO : generate a list of basic Metadatas keys with types
 # todo : gestion of signal/slot for in tool load hypercubes.
-
-from PyQt5.QtWidgets import QToolBar, QDockWidget
-from PyQt5.QtCore    import QSize, Qt
-from PyQt5.QtGui     import QIcon
 
 def apply_fusion_border_highlight(app,
                                   border_color: str = "#888888",
@@ -75,11 +80,7 @@ def apply_fusion_border_highlight(app,
     }}
     """)
 
-from PyQt5.QtCore    import Qt
-from PyQt5.QtWidgets import QDockWidget
-from PyQt5 import QtCore, QtWidgets
-from PyQt5.QtCore import Qt, QEvent
-from PyQt5.QtWidgets import QDockWidget
+
 
 class MainApp(QtWidgets.QMainWindow):
     def __init__(self):
@@ -88,7 +89,11 @@ class MainApp(QtWidgets.QMainWindow):
         self.resize(1200, 800)
         self.setCentralWidget(QtWidgets.QWidget())
 
-        self.BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+        if getattr(sys, 'frozen', False): # pynstaller case
+            self.BASE_DIR = sys._MEIPASS
+        else :
+            self.BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+
         self.ICONS_DIR = os.path.join(self.BASE_DIR, "Hypertool/interface/icons")
         icon_main= "Hyperdoc_logo_transparente_CIMLab.png"
         self.setWindowIcon(QIcon(os.path.join(self.ICONS_DIR,icon_main)))
@@ -120,7 +125,7 @@ class MainApp(QtWidgets.QMainWindow):
         act_file = self.onToolButtonPress(self.file_browser_dock,icon_name="file_browser_icon.png",tooltip="File Browser")
         act_met = self.onToolButtonPress(self.meta_dock, "metadata_icon.png", "Metadata")
         self.toolbar.addSeparator()
-        act_data = self.onToolButtonPress(self.data_viz_dock, "icon_data_viz.svg", "Metadata")
+        act_data = self.onToolButtonPress(self.data_viz_dock, "icon_data_viz.svg", "Data Vizualisation")
         act_reg = self.onToolButtonPress(self.reg_dock, "registration_icon.png", "Registration")
         act_gt =self.onToolButtonPress(self.gt_dock, "GT_icon_1.png", "Ground Truth")
 
@@ -159,9 +164,19 @@ class MainApp(QtWidgets.QMainWindow):
         act_open_next.setToolTip("Open next cube in current folder")
         self.toolbar.addAction(act_open_next)
 
-        # tools to hide at opening
-        self.file_browser_dock.hide()
-        self.reg_dock.hide()
+        spacer = QWidget()
+        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+        self.toolbar.addWidget(spacer)
+
+        act_suggestion= QAction("SUGGESTIONS",self)
+        act_suggestion.setToolTip("Add a suggestion for the developper")
+        act_suggestion.triggered.connect(self.open_suggestion_box)
+        self.toolbar.addAction(act_suggestion)
+
+
+    def open_suggestion_box(self):
+        self.suggestion_window = SuggestionWidget()
+        self.suggestion_window.show()
 
     def onToolButtonPress(self, dock, icon_name, tooltip):
         # act = dock.toggleViewAction()
@@ -346,14 +361,91 @@ class MainApp(QtWidgets.QMainWindow):
             # Ajouter sous-menu au menu principal
             self.cubeMenu.addMenu(sub)
 
+# Configure error logging
+logging.basicConfig(
+    filename="log/error.log",
+    level=logging.ERROR,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
+
+
+# Configure suggestion logging (manually because second log)
+suggestion_logger = logging.getLogger("suggestion_logger")
+suggestion_handler = logging.FileHandler("log/suggestions.log")
+suggestion_handler.setFormatter(logging.Formatter("%(asctime)s - %(message)s"))
+suggestion_logger.addHandler(suggestion_handler)
+suggestion_logger.setLevel(logging.INFO)
+
+class SuggestionWidget(QWidget):
+    """ Window to get suggestion of users """
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Suggestion Box")
+        self.setMinimumWidth(300)
+
+        layout = QVBoxLayout()
+
+        layout.addWidget(QLabel("Write your suggestion or feedback below:"))
+        self.text_edit = QTextEdit()
+        layout.addWidget(self.text_edit)
+
+        self.submit_button = QPushButton("Submit")
+        self.submit_button.clicked.connect(self.submit_suggestion)
+        layout.addWidget(self.submit_button)
+
+        self.setLayout(layout)
+
+    def submit_suggestion(self):
+        text = self.text_edit.toPlainText().strip()
+        if text:
+            suggestion_logger.info(text)
+            self.close()
+            QMessageBox.information(None, "Thank you",
+                                    "Suggestion has been logged in 'suggestions.log'.")  # show to user that comment has been taken into account
+        else:
+            self.submit_button.setText("Please write something!")
+
+class ErrorDialog(QDialog):
+    """ Window to open in development phase to describe exception seen"""
+    def __init__(self, error_text):
+        super().__init__()
+        self.setWindowTitle("Unexpected Error")
+        self.setMinimumWidth(400)
+
+        layout = QVBoxLayout()
+
+        layout.addWidget(QLabel("An unexpected error occurred:"))
+        layout.addWidget(QLabel(error_text))
+
+        layout.addWidget(QLabel("If you wish, describe what you were doing before the error:"))
+        self.user_input = QTextEdit()
+        layout.addWidget(self.user_input)
+
+        self.btn_send = QPushButton("OK")
+        self.btn_send.clicked.connect(self.accept)
+        layout.addWidget(self.btn_send)
+
+        self.setLayout(layout)
+
+    def get_user_comment(self):
+        return self.user_input.toPlainText()
+
 def excepthook(exc_type, exc_value, exc_traceback):
-    """Capture les exceptions et les affiche dans une boîte de dialogue."""
-    error_msg = "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
-    msg_box = QtWidgets.QMessageBox()
-    msg_box.setIcon(QtWidgets.QMessageBox.Critical)
-    msg_box.setText("Une erreur est survenue :")
-    msg_box.setInformativeText(error_msg)
-    msg_box.exec_()
+    """Capture exception and send it to log file, and show warning message"""
+    error_msg = ''.join(traceback.format_exception(exc_type, exc_value, exc_traceback))
+
+    logging.error("Uncaught exception:\n%s", error_msg) # log error
+
+    # Show dialog debug to the user
+    dlg = ErrorDialog(str(exc_value))
+    dlg.exec_()
+
+    user_comment = dlg.get_user_comment()
+
+    if user_comment.strip():
+        logging.error("User comment: %s", user_comment)
+
+    QMessageBox.information(None, "Log Saved", "Error has been logged in 'error.log'.") # show to user that comment has been taken into account
 
 def update_font(_app,width=None,_font="Segoe UI",):
     global main
@@ -387,6 +479,9 @@ def check_resolution_change():
         last_width = current_width
 
 if __name__ == "__main__":
+
+    sys.excepthook = excepthook #set the exception handler
+
     app = QtWidgets.QApplication(sys.argv)
 
     update_font(app)
@@ -397,12 +492,12 @@ if __name__ == "__main__":
     main = MainApp()
     main.show()
 
-    folder=r'C:\Users\Usuario\Documents\DOC_Yannick\Hyperdoc_Test\Samples\minicubes/'
-    cube_1='00001-VNIR-mock-up.h5'
-    cube_2='00002-VNIR-mock-up.h5'
-    paths=[folder+cube_1,folder+cube_2]
-
-    main._on_add_cube(paths)
+    # folder=r'C:\Users\Usuario\Documents\DOC_Yannick\Hyperdoc_Test\Samples\minicubes/'
+    # cube_1='00001-VNIR-mock-up.h5'
+    # cube_2='00002-VNIR-mock-up.h5'
+    # paths=[folder+cube_1,folder+cube_2]
+    #
+    # main._on_add_cube(paths)
 
     # Timer for screen resolution check
     last_width = app.primaryScreen().size().width()

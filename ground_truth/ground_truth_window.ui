@@ -565,7 +565,7 @@
         <item>
          <widget class="QPushButton" name="pushButton_keep_GT">
           <property name="text">
-           <string>Keep GT map</string>
+           <string>Save GT map</string>
           </property>
          </widget>
         </item>

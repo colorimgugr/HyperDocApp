@@ -447,9 +447,16 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
             kp1, des1 = detector.detectAndCompute(fixed, None)
             kp2, des2 = detector.detectAndCompute(moving, None)
 
-        if des1 is None or des2 is None:
-            QMessageBox.warning(self, "Error", "Feature detection failed.")
+        try :
+            if des1 is None or des2 is None:
+                QMessageBox.warning(self, "Error", "Feature detection failed.")
+                return
+
+        except:
+            QMessageBox.warning(self, "Error",
+                                "Select a rectangle in both cubes or erase all.")
             return
+
 
         self.kp1, self.kp2 = kp1, kp2
 
@@ -726,6 +733,7 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
 
         # Crop
         if opts['crop_cube']:
+            #todo : add metadata parent cube, modify cube info, position, name
             if self.viewer_aligned.get_rect_coords() is not None:
                 y, x, dy, dx = self.viewer_aligned.get_rect_coords()
                 y, x, dy, dx = map(int, (y, x, dy, dx))

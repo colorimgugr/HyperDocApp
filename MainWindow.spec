@@ -5,7 +5,7 @@ a = Analysis(
     ['MainWindow.py'],
     pathex=[],
     binaries=[],
-    datas=[],
+    datas=[('interface/icons', 'Hypertool/interface/icons'), ('ground_truth/Materials labels and palette assignation - Materials_labels_palette.csv', 'ground_truth')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
@@ -32,6 +32,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    icon=['interface\\icons\\hyperdoc_logo_transparente.ico'],
 )
 coll = COLLECT(
     exe,

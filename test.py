@@ -1,10 +1,22 @@
-import matplotlib.pyplot as plt
-import numpy as np
-import matplotlib
-matplotlib.use('TkAgg')
+import pandas as pd
+import os
+import sys
 
-x=np.linspace(-5,5,100)
-y=(((x-5)/10)**2+(x-5)/10)
+folder = r'C:\Users\Usuario\Documents\DOC_Yannick\App_present_24_06\datas\Archivo chancilleria_for_Registering/'
+file_name = 'reg_test.h5'
+filepath = folder + file_name
+os.path.exists(filepath)
 
-plt.plot(x,y)
-plt.show()
+# if getattr(sys, 'frozen', False):  # pynstaller case
+#     BASE_DIR = sys._MEIPASS
+# else:
+#     BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+#
+# lookup_table_path = os.path.join(BASE_DIR,
+#                                       "Hypertool/data_vizualisation/Spatially registered minicubes equivalence.csv")
+#
+# df = pd.read_csv(lookup_table_path)
+#
+# curent='00189-VNIR-mock-up'
+# otro=df.loc[df['VNIR']==curent]['SWIR'][0]
+

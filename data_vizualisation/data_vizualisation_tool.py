@@ -17,7 +17,7 @@ set reflectance axis to 0-1 always -> OK
 import sys
 import traceback
 import h5py
-import numpy as np          
+import numpy as np
 import matplotlib.pyplot as plt
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QPushButton, QLabel, QVBoxLayout, QWidget,
@@ -39,6 +39,7 @@ from data_vizualisation.data_vizualisation_window import*
 from hypercubes.hypercube import*
 
 # TODO : clean this ugly  open_hypercubes_and_GT and open_UVIS and connect to main
+# todo : let open file if name do not fit the nomenclature
 
 class Data_Viz_Window(QWidget,Ui_DataVizualisation):
     #TODO : make a widget window to edit metadata and add a button on all windows of the app
@@ -46,14 +47,15 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
         super().__init__(parent)
         self.setupUi(self)
 
-        self.hyps = [Hypercube(),Hypercube()] # create hypercubes objects[VNIR,SWIR]
+        self.hyps = [Hypercube(),Hypercube()] # create hypercubes objects[VNIR,SWIR] two maximum
         self.folder_GT=None
         self.GTexist = True
+        self.spec_range=['VNIR','SWIR'] # ['UVIS','VNIR','SWIR']
         self.folder_app=os.path.dirname(__file__)
         self.cubes_path=os.path.dirname(__file__)
 
-        self.hyps_rgb_chan_DEFAULT=[[610, 540, 435],[1605, 1205, 1005]]   # defaults channels for hypercubes images
-        self.hyps_rgb_chan=self.hyps_rgb_chan_DEFAULT.copy()  # channels for hypercubes images, initialiser aux DEFAULT
+        self.hyps_rgb_chan_DEFAULT={'UVIS':[550,450,350],'VNIR':[610, 540, 435],'SWIR':[1605, 1205, 1005]}   # defaults channels for hypercubes images
+        self.hyps_rgb_chan=[self.hyps_rgb_chan_DEFAULT[self.spec_range[0]],self.hyps_rgb_chan_DEFAULT[self.spec_range[1]]]  # channels for hypercubes images, initialiser aux DEFAULT
 
         self.GT=GroundTruth() # create GT object
         self.image_loaded=[False,False,False]
@@ -146,76 +148,113 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
 
     def change_hyp_quick(self,prev_next):
 
-        last_hyp_path = self.cubes_path
-        init_dir_hyp = '/'.join(last_hyp_path.split('/')[:-1])
-        file_init = last_hyp_path.split('/')[-1]
-        last_num=file_init.split('-')[0]
+        try:
+            last_hyp_path = self.cubes_path
+            init_dir_hyp = '/'.join(last_hyp_path.split('/')[:-1])
+            file_init = last_hyp_path.split('/')[-1]
+            last_num=file_init.split('-')[0]
+            if "." in last_num:
+                return
 
-        files = sorted(os.listdir(init_dir_hyp))
-        index_init = files.index(file_init)
+            files = sorted(os.listdir(init_dir_hyp))
+            index_init = files.index(file_init)
 
-        file_new = files[(index_init + prev_next) % len(files)]
-        i = prev_next
-        while (last_num in file_new or '.h5' not in file_new):
-            i += prev_next
-            file_new = files[(index_init + i) % len(files)]
+            file_new = files[(index_init + prev_next) % len(files)]
+            i = prev_next
+            while (last_num in file_new or '.h5' not in file_new):
+                i += prev_next
+                file_new = files[(index_init + i) % len(files)]
 
-        file_hyp = init_dir_hyp + '/' + file_new
-        self.open_hypercubes_and_GT(filepath=file_hyp)
+            file_hyp = init_dir_hyp + '/' + file_new
+            self.open_hypercubes_and_GT(filepath=file_hyp)
+        except:
+            pass
 
     def open_hypercubes_and_GT(self,filepath=None):
+        """ load cube and look for complemtal cube and also GT  """
 
-        self.image_loaded=[0,0,0]
+        # set 3 filepath to 0
+        path_VNIR = None
+        path_SWIR = None
+        path_UV = None
+        self.image_loaded=[0,0,0] # hyp 0, hyp 1 and GT
+
+
         default_dir = self.cubes_path
-        if filepath:quick_change=True
+        if filepath:quick_change=True # with arrows
         else : quick_change=False
 
         if not filepath:
-            filepath, _ = QFileDialog.getOpenFileName(self, "Ouvrir un hypercube", default_dir)
+            filepath, _ = QFileDialog.getOpenFileName(self, "Open hypercube",default_dir)
 
         if not filepath:
             return
-        self.cubes_path=filepath
 
-        if 'UVIS' in filepath:
-            self.open_UVIS(filepath)
-            return
+        self.cubes_path=filepath # update folder
 
-        path_VNIR = filepath
-        path_SWIR = filepath
-        path_GT = filepath
+        cube=Hypercube(filepath,load_init=True) # load hypercube
 
-        if 'VNIR' in filepath:
-            path_SWIR = filepath.replace("VNIR", "SWIR")
-        elif 'SWIR' in filepath:
-            path_VNIR = filepath.replace("SWIR", "VNIR")
+        # TODO : continue working on nicely open asociated cubes
+
+        if 'VNIR' in filepath or (cube.wl[-1] < 1100 and cube.wl[0] > 350):
+            path_VNIR = filepath
+            if 'VNIR' in filepath:
+                path_SWIR = filepath.replace("VNIR", "SWIR")
+                if not os.path.exists(path_SWIR):
+                    print('what a pitty ! not so simple association man. Try with lookup table')
+
+        elif 'SWIR' in filepath or cube.wl[-1] >= 1100:
+            path_SWIR = filepath
         else:
-            self.label_general_message.setText('File no valid')
-            return
+            path_UV=filepath
 
-        try:
-            self.hyps[0].open_hyp(default_path=path_VNIR,open_dialog=False,show_exception=False)
 
-            if self.hyps[0].data is None:
+        if path_VNIR is not None:
+
+            try:
+                self.hyps[0].open_hyp(default_path=path_VNIR,open_dialog=False,show_exception=False)
+
+                if self.hyps[0].data is None:
+                    self.image_loaded[0] = False
+
+                else:
+                    self.image_loaded[0] = True
+                    self.spec_range[0] = 'VNIR'
+            except:
                 self.image_loaded[0] = False
-            else:
-                self.image_loaded[0] = True
-        except:
-            self.image_loaded[0] = False
 
-        try:
-            self.hyps[1].open_hyp(path_SWIR,open_dialog=False,show_exception=False)
-            if self.hyps[1].data is None :
+        elif path_SWIR is not None:
+
+            try:
+                self.hyps[1].open_hyp(path_SWIR,open_dialog=False,show_exception=False)
+                if self.hyps[1].data is None :
+                    self.image_loaded[1] = False
+                else :
+                    self.image_loaded[1] = True
+                    self.spec_range[1] = 'SWIR'
+            except:
                 self.image_loaded[1] = False
-            else :
-                self.image_loaded[1] = True
-        except:
-            self.image_loaded[1] = False
+
+        elif path_UV is not None:
+            try:
+                self.hyps[0].open_hyp(path_SWIR,open_dialog=False,show_exception=False)
+                if self.hyps[0].data is None :
+                    self.image_loaded[0] = False
+                else :
+                    self.image_loaded[0] = True
+                    self.spec_range[0] = 'UVIS'
+            except:
+                self.image_loaded[1] = False
+                QMessageBox.warning('Problem in cube opening','No cube has been opened.')
+                return
 
         if self.image_loaded[0]:
-            file_GT=(path_VNIR[:-3] + '_GT.png').split('/')[-1]
+            if path_VNIR is not None:
+                file_GT=(path_VNIR.split('.')[0] + '_GT.png').split('/')[-1]
+            elif path_UV is not None :
+                file_GT = (path_UV.split('.')[0] + '_GT.png').split('/')[-1]
         elif self.image_loaded[1]:
-            file_GT=(path_SWIR[:-3] + '_GT.png').split('/')[-1]
+            file_GT=(path_SWIR.split('.')[0] + '_GT.png').split('/')[-1]
 
         if self.folder_GT:
             try:
@@ -290,7 +329,6 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
             self.radioButton_VNIR.setChecked(True)
         if not self.image_loaded[2]:
             self.horizontalSlider_transparency_GT.setEnabled(False)
-
 
         self.radioButton_VNIR.setAutoExclusive(True)
         self.radioButton_SWIR.setAutoExclusive(True)
@@ -500,7 +538,7 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
             element.setMaximum(max_wl)
             element.setSingleStep(wl_step)
             if default:
-                element.setValue(self.hyps_rgb_chan_DEFAULT[hyp_active][i])
+                element.setValue(self.hyps_rgb_chan_DEFAULT[self.spec_range[hyp_active]][i])
             else:
                 element.setValue(self.hyps_rgb_chan[hyp_active][i])
             if self.radioButton_rgb_default.isChecked():
@@ -518,7 +556,7 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
             element.setMaximum(max_wl)
             element.setSingleStep(wl_step)
             if default:
-                element.setValue(self.hyps_rgb_chan_DEFAULT[hyp_active][i])
+                element.setValue(self.hyps_rgb_chan_DEFAULT[self.spec_range[hyp_active]][i])
             else:
                 element.setValue(self.hyps_rgb_chan[hyp_active][i])
             if self.radioButton_rgb_default.isChecked():
@@ -554,7 +592,10 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
                     rgb_image= hyp.get_rgb_image(channels_index)
                     rgb_image/=np.max(rgb_image)
                     rgb_images.append(rgb_image)
-                    title=f'{hyp.metadata['number']} - {hyp.metadata['parent_cube']}'
+                    if type(hyp.metadata['number']) is str and type(hyp.metadata['parent_cube']) is str :
+                        title=f'{hyp.metadata['number']} - {hyp.metadata['parent_cube']}'
+                    else :
+                        title=hyp.cube_info.metadata_temp['name']
                 else:
                     rgb_images.append(None)
 
@@ -1007,5 +1048,10 @@ if __name__ == "__main__":
     timer = QTimer()
     timer.timeout.connect(check_resolution_change)
     timer.start(500)  # Vérifie toutes les 500 ms
+
+    folder = r'C:\Users\Usuario\Documents\DOC_Yannick\App_present_24_06\datas\Archivo chancilleria_for_Registering/'
+    file_name = 'reg_test.h5'
+    filepath = folder + file_name
+    window.open_hypercubes_and_GT(filepath=filepath)
 
     sys.exit(app.exec_())

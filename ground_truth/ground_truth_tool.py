@@ -2,36 +2,233 @@
 # python -m PyQt5.uic.pyuic -o registration_window.py registration_window.ui
 # pyinstaller  --exclude-module tensorflow --exclude-module torch --icon="GT_icon.ico" --add-data "ground_truth/Materials labels and palette assignation - Materials_labels_palette.csv;ground_truth"  ground_truth_tool.py
 # opts   --noconsole --onefile
+
+# Gnl
 import os
 import sys
-from PyQt5.QtWidgets import QApplication
-import numpy as np
-import cv2
-from PyQt5.QtGui    import QPixmap, QPainter, QColor
-from PyQt5.QtWidgets import QWidget, QFileDialog, QMessageBox,QInputDialog , QSplitter,QGraphicsView,QLabel
-from PyQt5.QtCore import Qt, QEvent, QRect, QRectF,QPointF
+
+## GUI
+from PyQt5.QtGui    import QPixmap, QPainter, QColor, QPen
+from PyQt5.QtWidgets import (
+    QApplication,QSizePolicy, QGraphicsScene, QGraphicsPixmapItem,QRubberBand,QWidget, QFileDialog, QMessageBox,QInputDialog , QSplitter,QGraphicsView,QLabel,
+)
+from PyQt5.QtCore import Qt, QEvent, QRect, QRectF, QPoint, QSize
+
+#Graphs
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from matplotlib.widgets import SpanSelector
 from matplotlib import cm
 from matplotlib.path import Path
 
+# Maths
+import numpy as np
+import cv2
 from scipy.spatial import distance as spdist
 
+# Intern
 from hypercubes.hypercube import Hypercube,CubeInfoTemp
-from registration.register_tool import ZoomableGraphicsView
 from ground_truth.GT_table_viz import LabelWidget
-
 from ground_truth.ground_truth_window import Ui_GroundTruthWidget
 
 # todo : give GT labels names and number for RGB code ? -> save GT in new dataset of file + png
 # todo : link to cube_info (read and fill)
+# todo : actualize GT_cmp if label added OR load from default GT_table
+# todo : check if cube already hace a GT map done (looking at GT labels for example)
+# todo : upload GT_cmap from csv ?
+
+## GT colors
+GT_cmap=np.array([[0.        , 1.        , 0.24313725, 0.22745098, 0.37254902,
+        0.26666667, 0.05882353, 0.31764706, 0.36078431, 0.34509804,
+        0.5372549 , 0.93333333, 0.9254902 , 0.90196078, 0.74901961,
+        0.7372549 , 0.6745098 , 1.        , 0.88627451, 0.14901961,
+        0.11764706, 0.2745098 , 0.        , 0.34901961, 0.03529412,
+        0.2       , 0.46666667, 1.        , 0.50196078, 0.14117647,
+        0.        , 0.07843137, 0.50588235, 0.71372549, 0.83921569,
+        0.14509804, 0.        , 0.77647059, 0.99215686, 0.99215686,
+        0.16078431, 0.83137255, 0.70588235, 0.63137255, 0.9254902 ,
+        0.98431373, 0.90196078, 0.63137255, 0.61568627, 0.31764706,
+        0.92156863, 0.90980392, 0.97254902, 0.96470588, 0.83529412,
+        0.79215686, 0.43529412, 0.79607843, 0.70588235, 0.76078431,
+        0.94117647, 0.23529412, 0.        , 0.20784314, 0.92156863,
+        0.69411765, 0.6745098 , 0.63529412, 0.92156863, 0.83137255,
+        0.68627451, 0.60784314, 0.6745098 , 0.52941176, 0.45098039,
+        0.29411765, 0.31372549, 0.78431373, 0.76470588, 0.83137255,
+        0.83137255, 0.45098039, 1.        , 0.29411765, 0.1372549 ,
+        0.07843137, 0.12941176, 0.88235294, 0.77254902, 0.74901961,
+        0.71372549, 0.88235294, 0.70980392, 0.6       , 0.6745098 ,
+        0.47843137, 0.25490196, 0.54901961, 0.35294118, 0.29411765,
+        0.75686275, 0.83137255, 0.63529412, 0.90588235, 0.50980392,
+        0.71764706, 0.90588235, 0.68627451, 0.60784314, 0.92156863,
+        0.97647059, 0.86666667, 0.33333333, 0.84313725, 0.14509804,
+        0.06666667, 0.2627451 , 0.98431373, 0.90588235, 0.61568627,
+        0.15686275, 0.45098039, 0.1372549 , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.49019608, 0.09803922,
+        0.8627451 , 0.74509804, 0.58823529, 0.39215686, 0.19607843],
+       [0.        , 1.        , 0.14901961, 0.1254902 , 0.24705882,
+        0.16470588, 0.05882353, 0.14509804, 0.24705882, 0.2745098 ,
+        0.54901961, 0.85098039, 0.83921569, 0.9372549 , 0.85882353,
+        0.74509804, 0.78823529, 0.83921569, 0.8       , 0.21176471,
+        0.1372549 , 0.11764706, 0.25490196, 0.4745098 , 0.54117647,
+        0.39607843, 0.29411765, 0.56078431, 0.10196078, 0.58431373,
+        0.40392157, 0.21176471, 0.77647059, 0.32941176, 0.4745098 ,
+        0.17647059, 0.34901961, 0.17254902, 0.50980392, 0.49411765,
+        0.70196078, 0.80392157, 0.75686275, 0.20392157, 0.74117647,
+        0.85098039, 0.8745098 , 0.38823529, 0.44313725, 0.36078431,
+        0.16470588, 0.84705882, 0.70588235, 0.76470588, 0.70196078,
+        0.7372549 , 0.21176471, 0.70196078, 0.54509804, 0.64705882,
+        0.94117647, 0.78431373, 0.2745098 , 0.09411765, 0.92156863,
+        0.64705882, 0.25490196, 0.29411765, 0.56078431, 0.71764706,
+        0.60784314, 0.67843137, 0.75686275, 0.49803922, 0.41176471,
+        0.34117647, 0.8627451 , 0.7254902 , 0.83529412, 0.95294118,
+        0.41176471, 0.5372549 , 0.71764706, 0.7254902 , 0.62745098,
+        0.35294118, 0.17254902, 0.96078431, 0.68627451, 0.16470588,
+        0.21568627, 0.63921569, 0.55294118, 0.52156863, 0.75294118,
+        0.64705882, 0.29411765, 0.41176471, 0.21568627, 0.78431373,
+        0.67843137, 0.90980392, 0.80392157, 0.32156863, 0.37254902,
+        0.52156863, 0.7254902 , 0.25490196, 0.68627451, 0.84313725,
+        0.85098039, 0.45098039, 0.82352941, 0.41176471, 0.38823529,
+        0.54509804, 0.78039216, 0.77254902, 0.69411765, 0.43921569,
+        0.30980392, 0.66666667, 0.22352941, 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.49019608, 0.09803922,
+        0.8627451 , 0.74509804, 0.58823529, 0.39215686, 0.19607843],
+       [0.        , 1.        , 0.25490196, 0.14509804, 0.14117647,
+        0.11764706, 0.05882353, 0.12941176, 0.25882353, 0.14509804,
+        0.56470588, 0.78039216, 0.7254902 , 0.80392157, 0.78039216,
+        0.56862745, 0.80392157, 0.79215686, 0.81960784, 0.15686275,
+        0.15686275, 0.2       , 0.54901961, 0.63921569, 0.79607843,
+        0.56862745, 0.26666667, 0.49019608, 0.25098039, 0.74509804,
+        0.6       , 0.28627451, 0.88235294, 0.14117647, 0.32156863,
+        0.48627451, 0.25098039, 0.1254902 , 0.21176471, 0.        ,
+        0.82352941, 0.8       , 0.        , 0.19607843, 0.        ,
+        0.38431373, 0.78823529, 0.37254902, 0.1254902 , 0.58039216,
+        0.07843137, 0.70980392, 0.        , 0.34117647, 0.45098039,
+        0.62352941, 0.1372549 , 0.44705882, 0.56470588, 0.80784314,
+        0.78431373, 0.82352941, 0.39215686, 0.64705882, 0.82352941,
+        0.60784314, 0.22352941, 0.26666667, 0.07843137, 0.55294118,
+        0.05882353, 0.1372549 , 0.17647059, 0.02745098, 0.        ,
+        0.29411765, 0.90196078, 0.25490196, 0.29411765, 0.33333333,
+        0.41960784, 0.45098039, 0.23529412, 0.74117647, 0.66666667,
+        0.50980392, 0.73333333, 0.7254902 , 0.49019608, 0.26666667,
+        0.16862745, 0.19607843, 0.39215686, 0.16862745, 0.19607843,
+        0.09411765, 0.11764706, 0.16862745, 0.21568627, 0.82352941,
+        0.3254902 , 0.35294118, 0.25098039, 0.42352941, 0.37254902,
+        0.35294118, 0.50980392, 0.34117647, 0.16470588, 0.11372549,
+        0.25490196, 0.19607843, 0.14509804, 0.49803922, 0.20784314,
+        0.3372549 , 0.18039216, 0.01960784, 0.09803922, 0.17647059,
+        0.06666667, 0.06666667, 0.35686275, 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.        , 0.        ,
+        0.        , 0.        , 0.        , 0.49019608, 0.09803922,
+        0.8627451 , 0.74509804, 0.58823529, 0.39215686, 0.19607843]])
+
+class ZoomableGraphicsView(QGraphicsView):
+    def __init__(self):
+        super().__init__()
+        self.setScene(QGraphicsScene())
+        self.setDragMode(QGraphicsView.ScrollHandDrag)
+        self.setCursor(Qt.OpenHandCursor)
+        self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
+        self.pixmap_item = None  # check if image loaded
+
+    def setImage(self, pixmap):
+        self.scene().clear()
+        self.pixmap_item = QGraphicsPixmapItem(pixmap)
+        self.scene().addItem(self.pixmap_item)
+        self.setSceneRect(QRectF(pixmap.rect()))
+
+    def wheelEvent(self, event):
+        zoom_in_factor = 1.25
+        zoom_out_factor = 1 / zoom_in_factor
+        zoom = zoom_in_factor if event.angleDelta().y() > 0 else zoom_out_factor
+        self.scale(zoom, zoom)
+
+    # def mousePressEvent(self, event):
+    #     if event.button() == Qt.RightButton and self.pixmap_item:
+    #         self.viewport().setCursor(Qt.CrossCursor)
+    #         self.origin = event.pos()
+    #         self.rubber_band.setGeometry(QRect(self.origin, QSize()))
+    #         self.rubber_band.show()
+    #         self._selecting = True
+    #     super().mousePressEvent(event)
+
 
 class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
     def __init__(self, parent=None,cubeInfo=None):
         super().__init__(parent)
         # Set up UI from compiled .py
         self.setupUi(self)
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding) ##all creen of possible
 
         self.selecting_pixels = False # mode selection ref activated
         self._pixel_selecting = False  # for manual pixel selection for dragging mode
@@ -54,6 +251,7 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         # Enable live spectrum tracking
         self.viewer_left.viewport().setCursor(Qt.CrossCursor) # curseur croix
         self.viewer_left.viewport().setMouseTracking(True)
+        self.viewer_left.setDragMode(QGraphicsView.ScrollHandDrag)
 
         # Promote spec_canvas placeholder to FigureCanvas
         self.spec_canvas_layout = self.spec_canvas.layout() if hasattr(self.spec_canvas, 'layout') else None
@@ -135,6 +333,196 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
 
         self.set_mode()
 
+    def eventFilter(self, source, event):
+        mode = self.comboBox_pixel_selection_mode.currentText()
+
+        if event.type() == QEvent.MouseButtonPress and event.button() == Qt.LeftButton:
+            return False      ## to dont block drag
+
+        if event.type() == QEvent.MouseButtonPress and event.button() == Qt.RightButton and (self.selecting_pixels or self.erase_selection):
+            if not (self.selecting_pixels or self.erase_selection):
+                return False
+            print('Clicked OK')
+            pos = self.viewer_left.mapToScene(event.pos())
+            x0, y0 = int(pos.x()), int(pos.y())
+            if mode == 'pixel':
+                # on commence la collecte
+                self._pixel_selecting = True
+                self._pixel_coords = [(x0, y0)]
+                return True
+            elif mode == 'rectangle':
+                # début du drag
+                from PyQt5.QtWidgets import QRubberBand
+                self.origin = event.pos()
+                self.rubberBand = QRubberBand(QRubberBand.Rectangle,
+                                              self.viewer_left.viewport())
+                self.rubberBand.setGeometry(self.origin.x(),
+                                            self.origin.y(), 1, 1)
+                self.rubberBand.show()
+                return True
+            elif mode == 'ellipse':
+                from PyQt5.QtWidgets import QGraphicsEllipseItem
+                from PyQt5.QtGui import QPen
+
+                self.origin = event.pos()
+                pen = QPen(Qt.red)
+                pen.setStyle(Qt.DashLine)
+                self.ellipse_item = QGraphicsEllipseItem()
+                self.ellipse_item.setPen(pen)
+                self.ellipse_item.setBrush(Qt.transparent)
+                self.viewer_left.scene().addItem(self.ellipse_item)
+                return True
+
+        if event.type() == QEvent.MouseButtonPress and event.button() == Qt.MiddleButton:
+            if not self.selecting_pixels:
+                self.live_spectra_update=not self.live_spectra_update
+
+        # 2) Mouvement souris → mise à jour de la selection en cours
+        if event.type() == QEvent.MouseMove and self._pixel_selecting and mode == 'pixel':
+            if not (self.selecting_pixels or self.erase_selection):
+                return False
+            pos = self.viewer_left.mapToScene(event.pos())
+            x, y = int(pos.x()), int(pos.y())
+
+            if (x, y) not in self._pixel_coords:
+                self._pixel_coords.append((x, y))
+            if self._preview_mask is None:
+                H, W = self.data.shape[:2]
+                self._preview_mask = np.zeros((H, W), dtype=bool)
+
+            self._preview_mask[y, x] = True
+            self.show_image(preview=True)
+
+            return True
+
+        if event.type() == QEvent.MouseMove and hasattr(self, 'rubberBand'):
+            if not (self.selecting_pixels or self.erase_selection):
+                return False
+            self.rubberBand.setGeometry(
+                QRect(self.origin, event.pos()).normalized()
+            )
+            return True
+
+        if event.type() == QEvent.MouseMove and mode == 'ellipse' and hasattr(self, 'ellipse_item'):
+            if not (self.selecting_pixels or self.erase_selection):
+                return False
+            sc_orig = self.viewer_left.mapToScene(self.origin)
+            sc_now = self.viewer_left.mapToScene(event.pos())
+            x0, y0 = sc_orig.x(), sc_orig.y()
+            x1, y1 = sc_now.x(), sc_now.y()
+            rect = QRectF(min(x0, x1), min(y0, y1), abs(x1 - x0), abs(y1 - y0))
+            self.ellipse_item.setRect(rect)
+            return True
+
+        # 3) Relâchement souris → calcul de la sélection
+
+        if event.type() == QEvent.MouseButtonRelease and event.button() == Qt.RightButton and mode == 'pixel' and self._pixel_selecting :
+            if not (self.selecting_pixels or self.erase_selection):
+                return False
+            print('realeased OK')
+            # get pixels
+            coords = self._pixel_coords.copy()
+            #  Si au moins 3 points, propose de fermer le cheminif min 3 points, propose contour
+            if len(coords) >= 3:
+                reply = QMessageBox.question(
+                    self, "Close Path?",
+                    "You have selected multiple pixels.\n"
+                    "Do you want to close the path and include all pixels inside the contour?",
+                    QMessageBox.Yes | QMessageBox.No
+                )
+                if reply == QMessageBox.Yes:
+                    pts = np.array(coords)
+                    poly = Path(pts)
+                    x0, y0 = pts[:, 0].min().astype(int), pts[:, 1].min().astype(int)
+                    x1, y1 = pts[:, 0].max().astype(int), pts[:, 1].max().astype(int)
+                    filled = list(coords)
+                    for yy in range(y0, y1 + 1):
+                        for xx in range(x0, x1 + 1):
+                            if poly.contains_point((xx, yy)):
+                                filled.append((xx, yy))
+
+                    # to avoid dobbles
+                    seen = set()
+                    coords = []
+                    for p in filled:
+                        if p not in seen:
+                            seen.add(p)
+                            coords.append(p)
+
+            if self.erase_selection:
+                self._handle_erasure(coords)
+            else :
+                self._handle_selection(coords) # close selection
+
+            # ready to new selection
+            self._pixel_selecting = False
+            self._erase_selecting = False
+            self._preview_mask = None
+            return True
+
+        if event.type() == QEvent.MouseButtonRelease and hasattr(self, 'rubberBand'):
+            if not (self.selecting_pixels or self.erase_selection):
+                return False
+            rect = self.rubberBand.geometry()
+            self.rubberBand.hide()
+            # coins en coordonnées image
+            tl = self.viewer_left.mapToScene(rect.topLeft())
+            br = self.viewer_left.mapToScene(rect.bottomRight())
+            x0, y0 = int(tl.x()), int(tl.y())
+            x1, y1 = int(br.x()), int(br.y())
+            # liste de tous les pixels dans le rectangle
+            coords = [
+                (xx, yy)
+                for yy in range(max(0, min(y0, y1)), min(self.data.shape[0], max(y0, y1) + 1))
+                for xx in range(max(0, min(x0, x1)), min(self.data.shape[1], max(x0, x1) + 1))
+            ]
+
+            if self.erase_selection:
+                self._handle_erasure(coords)
+            else:
+                self._handle_selection(coords)  # close selection
+
+            del self.rubberBand
+            return True
+
+        if event.type() == QEvent.MouseButtonRelease and hasattr(self, 'ellipse_item'):
+            if not (self.selecting_pixels or self.erase_selection):
+                return False
+            rect = self.ellipse_item.rect()
+            self.viewer_left.scene().removeItem(self.ellipse_item)
+            del self.ellipse_item
+
+            cx, cy = rect.center().x(), rect.center().y()
+            rx, ry = rect.width() / 2, rect.height() / 2
+            x0, x1 = int(rect.left()), int(rect.right())
+            y0, y1 = int(rect.top()), int(rect.bottom())
+
+            coords = []
+            for yy in range(max(0, y0), min(self.data.shape[0], y1 + 1)):
+                for xx in range(max(0, x0), min(self.data.shape[1], x1 + 1)):
+                    if ((xx - cx) ** 2 / rx ** 2 + (yy - cy) ** 2 / ry ** 2) <= 1:
+                        coords.append((xx, yy))
+
+            if self.erase_selection:
+                self._handle_erasure(coords)
+            else:
+                self._handle_selection(coords)  # close selection
+            return True
+
+        # 4) Mouvement souris pour le live spectrum
+        if source is self.viewer_left.viewport() and event.type() == QEvent.MouseMove and self.live_spectra_update:
+            if self.live_cb.isChecked() and self.data is not None:
+                pos = self.viewer_left.mapToScene(event.pos())
+                x,y=int(pos.x()),int(pos.y())
+                H, W = self.data.shape[0], self.data.shape[1]
+                if 0 <= x < W and 0 <= y < H:
+                    self.update_spectra(x, y)
+
+            return True
+
+        # return super().eventFilter(source, event)
+        return False
+
     def keep_GT(self):
         # On envoie dans metadata : map de GT, class_counts (pixels_averaged), 'GT_cmap','spectra_mean','spectra_std'
 
@@ -146,15 +534,14 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         GT_name=[]
         GT_num=[]
         for key in self.class_info:
-            GT_num.append(self.class_info[key][0])
+            GT_num.append(str(self.class_info[key][0]))
             GT_name.append(self.class_info[key][1])
 
         self.cube.cube_info.metadata_temp['GTLabels']=[GT_num,GT_name]
+        self.cube.cube_info.metadata_temp['GT_cmap']=GT_cmap
 
-        self.cube.cube_info.metadata_temp['GT_mask']=self.cls_map
-
-        print(self.cube.cube_info.metadata_temp['pixels_averaged'])
-        print(self.cube.cube_info.metadata_temp['GTLabels'])
+        self.cube.cube_info.metadata_temp['spectra_mean']=list(self.class_means.values())
+        self.cube.cube_info.metadata_temp['spectra_std']=list(self.class_stds.values())
 
         if  hasattr(self, 'GT_image'):
             path, _ = QFileDialog.getSaveFileName(
@@ -167,16 +554,40 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
                 return
 
             cv2.imwrite(path, self.GT_image)
-            QMessageBox.information(self, "Saved", f"Ground truth image saved in :\n{path}")
+
+            reply = QMessageBox.question(
+                self, "Erase selection?",
+                "Ground truth image saved in :\n{path} \n \n Do you also want to save updates metadata of the cube ?",
+
+                QMessageBox.Yes | QMessageBox.No
+            )
+            if reply == QMessageBox.Yes:
+                self.cube.metadata=self.cube.cube_info.metadata_temp
+                filepath=self.cube.cube_info.filepath
+                ext = os.path.splitext(filepath)[1].lower()
+                match ext:
+                    case  ".mat":
+                        fmt='MATLAB'
+                    case ".h5":
+                        fmt='HDF5'
+                    case ".hdf5":
+                        fmt = 'HDF5'
+                    case '.hdr':
+                        fmt='ENVI'
+
+                self.cube.save(filepath,fmt=fmt)
 
         else :
             print('No Overlay')
 
-        # On demande si on veut AUSSI sauvegarder le cube (.h5) en l'etat et/ou juste le GT (format)
-
     def open_label_table(self):
 
-        csv_path = 'ground_truth/Materials labels and palette assignation - Materials_labels_palette.csv'
+        if getattr(sys, 'frozen', False): # pynstaller case
+            BASE_DIR = sys._MEIPASS
+        else :
+            BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+
+        csv_path = os.path.join(BASE_DIR, "ground_truth/Materials labels and palette assignation - Materials_labels_palette.csv")
         # csv_path = 'Materials labels and palette assignation - Materials_labels_palette.csv'
         self.class_win = LabelWidget(csv_path,self.class_info)
         self.class_win.resize(1000, 600)
@@ -199,6 +610,7 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         self.show_selection=True
         self.pushButton_class_selection.setText("Stop Selection")
         self.pushButton_erase_selected_pix.setChecked(False)
+        self.live_spectra_update=False # to bloc tracking
 
         if len(self.samples)>0 :
             reply = QMessageBox.question(
@@ -213,7 +625,7 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
                 self.samples.clear()
 
         self.selecting_pixels = True
-        self.viewer_left.setDragMode(QGraphicsView.NoDrag)
+        # self.viewer_left.setDragMode(QGraphicsView.NoDrag)
         self.viewer_left.setCursor(Qt.CrossCursor)
         self.viewer_left.viewport().setCursor(Qt.CrossCursor)
         self.show_image()
@@ -253,7 +665,7 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
 
             self.pushButton_erase_selected_pix.setText("Stop Erasing")
             self.pushButton_class_selection.setChecked(False)
-            self.viewer_left.setDragMode(QGraphicsView.NoDrag)
+            # self.viewer_left.setDragMode(QGraphicsView.NoDrag)
             self.viewer_left.setCursor(Qt.CrossCursor)
 
         else:
@@ -544,6 +956,7 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         self.show_image()
         self.update_legend()
 
+
     def _handle_erasure(self, coords):
 
         for x, y in coords:
@@ -571,178 +984,6 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         self.show_image()
         self.update_legend()
 
-    def eventFilter(self, source, event):
-        mode = self.comboBox_pixel_selection_mode.currentText()
-
-        # 1) Clic souris
-        if event.type() == QEvent.MouseButtonPress and event.button() == Qt.LeftButton and (self.selecting_pixels or self.erase_selection):
-            print('Clicked OK')
-            pos = self.viewer_left.mapToScene(event.pos())
-            x0, y0 = int(pos.x()), int(pos.y())
-            if mode == 'pixel':
-                # on commence la collecte
-                self._pixel_selecting = True
-                self._pixel_coords = [(x0, y0)]
-                return True
-            elif mode == 'rectangle':
-                # début du drag
-                from PyQt5.QtWidgets import QRubberBand
-                self.origin = event.pos()
-                self.rubberBand = QRubberBand(QRubberBand.Rectangle,
-                                              self.viewer_left.viewport())
-                self.rubberBand.setGeometry(self.origin.x(),
-                                            self.origin.y(), 1, 1)
-                self.rubberBand.show()
-                return True
-            elif mode == 'ellipse':
-                from PyQt5.QtWidgets import QGraphicsEllipseItem
-                from PyQt5.QtGui import QPen
-
-                self.origin = event.pos()
-                pen = QPen(Qt.red)
-                pen.setStyle(Qt.DashLine)
-                self.ellipse_item = QGraphicsEllipseItem()
-                self.ellipse_item.setPen(pen)
-                self.ellipse_item.setBrush(Qt.transparent)
-                self.viewer_left.scene().addItem(self.ellipse_item)
-                return True
-
-        if event.type() == QEvent.MouseButtonPress and event.button() == Qt.MiddleButton:
-            self.live_spectra_update=not self.live_spectra_update
-
-        # 2) Mouvement souris → mise à jour de la selection en cours
-        if event.type() == QEvent.MouseMove and self._pixel_selecting and mode == 'pixel':
-            pos = self.viewer_left.mapToScene(event.pos())
-            x, y = int(pos.x()), int(pos.y())
-
-            if (x, y) not in self._pixel_coords:
-                self._pixel_coords.append((x, y))
-            if self._preview_mask is None:
-                H, W = self.data.shape[:2]
-                self._preview_mask = np.zeros((H, W), dtype=bool)
-
-            self._preview_mask[y, x] = True
-            self.show_image(preview=True)
-
-            return True
-
-        if event.type() == QEvent.MouseMove and hasattr(self, 'rubberBand'):
-            self.rubberBand.setGeometry(
-                QRect(self.origin, event.pos()).normalized()
-            )
-            return True
-
-        if event.type() == QEvent.MouseMove and mode == 'ellipse' and hasattr(self, 'ellipse_item'):
-            sc_orig = self.viewer_left.mapToScene(self.origin)
-            sc_now = self.viewer_left.mapToScene(event.pos())
-            x0, y0 = sc_orig.x(), sc_orig.y()
-            x1, y1 = sc_now.x(), sc_now.y()
-            rect = QRectF(min(x0, x1), min(y0, y1), abs(x1 - x0), abs(y1 - y0))
-            self.ellipse_item.setRect(rect)
-            return True
-
-        # 3) Relâchement souris → calcul de la sélection
-
-        if event.type() == QEvent.MouseButtonRelease and event.button() == Qt.LeftButton and mode == 'pixel' and self._pixel_selecting :
-            print('realeased OK')
-            # get pixels
-            coords = self._pixel_coords.copy()
-            #  Si au moins 3 points, propose de fermer le cheminif min 3 points, propose contour
-            if len(coords) >= 3:
-                reply = QMessageBox.question(
-                    self, "Close Path?",
-                    "You have selected multiple pixels.\n"
-                    "Do you want to close the path and include all pixels inside the contour?",
-                    QMessageBox.Yes | QMessageBox.No
-                )
-                if reply == QMessageBox.Yes:
-                    pts = np.array(coords)
-                    poly = Path(pts)
-                    x0, y0 = pts[:, 0].min().astype(int), pts[:, 1].min().astype(int)
-                    x1, y1 = pts[:, 0].max().astype(int), pts[:, 1].max().astype(int)
-                    filled = list(coords)
-                    for yy in range(y0, y1 + 1):
-                        for xx in range(x0, x1 + 1):
-                            if poly.contains_point((xx, yy)):
-                                filled.append((xx, yy))
-
-                    # to avoid dobbles
-                    seen = set()
-                    coords = []
-                    for p in filled:
-                        if p not in seen:
-                            seen.add(p)
-                            coords.append(p)
-
-            if self.erase_selection:
-                self._handle_erasure(coords)
-            else :
-                self._handle_selection(coords) # close selection
-
-            # ready to new selection
-            self._pixel_selecting = False
-            self._erase_selecting = False
-            self._preview_mask = None
-            return True
-
-        if event.type() == QEvent.MouseButtonRelease and hasattr(self, 'rubberBand'):
-            rect = self.rubberBand.geometry()
-            self.rubberBand.hide()
-            # coins en coordonnées image
-            tl = self.viewer_left.mapToScene(rect.topLeft())
-            br = self.viewer_left.mapToScene(rect.bottomRight())
-            x0, y0 = int(tl.x()), int(tl.y())
-            x1, y1 = int(br.x()), int(br.y())
-            # liste de tous les pixels dans le rectangle
-            coords = [
-                (xx, yy)
-                for yy in range(max(0, min(y0, y1)), min(self.data.shape[0], max(y0, y1) + 1))
-                for xx in range(max(0, min(x0, x1)), min(self.data.shape[1], max(x0, x1) + 1))
-            ]
-
-            if self.erase_selection:
-                self._handle_erasure(coords)
-            else:
-                self._handle_selection(coords)  # close selection
-
-            del self.rubberBand
-            return True
-
-        if event.type() == QEvent.MouseButtonRelease and hasattr(self, 'ellipse_item'):
-            rect = self.ellipse_item.rect()
-            self.viewer_left.scene().removeItem(self.ellipse_item)
-            del self.ellipse_item
-
-            cx, cy = rect.center().x(), rect.center().y()
-            rx, ry = rect.width() / 2, rect.height() / 2
-            x0, x1 = int(rect.left()), int(rect.right())
-            y0, y1 = int(rect.top()), int(rect.bottom())
-
-            coords = []
-            for yy in range(max(0, y0), min(self.data.shape[0], y1 + 1)):
-                for xx in range(max(0, x0), min(self.data.shape[1], x1 + 1)):
-                    if ((xx - cx) ** 2 / rx ** 2 + (yy - cy) ** 2 / ry ** 2) <= 1:
-                        coords.append((xx, yy))
-
-            if self.erase_selection:
-                self._handle_erasure(coords)
-            else:
-                self._handle_selection(coords)  # close selection
-            return True
-
-        # 4) Mouvement souris pour le live spectrum
-        if source is self.viewer_left.viewport() and event.type() == QEvent.MouseMove and self.live_spectra_update:
-            if self.live_cb.isChecked() and self.data is not None:
-                pos = self.viewer_left.mapToScene(event.pos())
-                x,y=int(pos.x()),int(pos.y())
-                H, W = self.data.shape[0], self.data.shape[1]
-                if 0 <= x < W and 0 <= y < H:
-                    self.update_spectra(x, y)
-
-            return True
-
-        return super().eventFilter(source, event)
-
     def update_spectra(self,x=None,y=None):
         self.spec_ax.clear()
         x_graph = self.wl
@@ -765,7 +1006,7 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
                 )
                 self.spec_ax.plot(
                     x_graph, mu, '--',
-                    color=col, label=f'Classe {c}'
+                    color=col, label=f'Class {c}'
                 )
             if self.spec_ax.get_legend_handles_labels()[1]:
                 self.spec_ax.legend(loc='upper right', fontsize='small')
@@ -909,18 +1150,15 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         # 5. UI
         # Masquer le canvas de spectres
         self.spec_canvas.setVisible(False)
-        # Réinitialiser la légende
-        self.update_legend()
-        # Remettre le slider de threshold à 100%
-        if hasattr(self, 'horizontalSlider_threshold'):
-            self.horizontalSlider_threshold.setValue(100)
-        # Remettre toggles
         self.selecting_pixels = False
         self.erase_selection = False
         self.pushButton_class_selection.setChecked(False)
         self.pushButton_erase_selected_pix.setChecked(False)
-        # 6. Rafraîchir l'affichage
         self.show_image()
+        self.update_legend()
+        # Remettre le slider de threshold à 100%
+        if hasattr(self, 'horizontalSlider_threshold'):
+            self.horizontalSlider_threshold.setValue(100)
 
     def set_mode(self):
         self.mode = self.comboBox_ClassifMode.currentText()
@@ -1047,27 +1285,29 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
 
     def update_legend(self):
 
-        for i in reversed(range(self.frame_legend.layout().count())):
-            w = self.frame_legend.layout().itemAt(i).widget()
-            self.frame_legend.layout().removeWidget(w)
-            w.deleteLater()
+        if len(self.class_ncount)!=0:
 
-        for c in sorted(self.class_colors):
-            b, g, r = self.class_colors[c]
-            txt=str(c)
-            if self.class_ncount is not None :
-                txt+='-'+str(self.class_ncount[c])+'px'
+            for i in reversed(range(self.frame_legend.layout().count())):
+                w = self.frame_legend.layout().itemAt(i).widget()
+                self.frame_legend.layout().removeWidget(w)
+                w.deleteLater()
 
-            lbl = QLabel(txt)
-            # lbl.setFixedSize(30, 20)
-            lbl.setAlignment(Qt.AlignCenter)
-            lbl.setStyleSheet(
-                f"background-color: rgb({r},{g},{b});"
-                "color: white;"
-                "border-radius: 3px;"
-                "font-weight: bold;"
-            )
-            self.frame_legend.layout().addWidget(lbl)
+            for c in sorted(self.class_colors):
+                b, g, r = self.class_colors[c]
+                txt=str(c)
+                if self.class_ncount is not None :
+                    txt+='-'+str(self.class_ncount[c])+'px'
+
+                lbl = QLabel(txt)
+                # lbl.setFixedSize(30, 20)
+                lbl.setAlignment(Qt.AlignCenter)
+                lbl.setStyleSheet(
+                    f"background-color: rgb({r},{g},{b});"
+                    "color: white;"
+                    "border-radius: 3px;"
+                    "font-weight: bold;"
+                )
+                self.frame_legend.layout().addWidget(lbl)
 
     def _replace_placeholder(self, name, widget_cls, **kwargs):
         placeholder = getattr(self, name)
@@ -1126,6 +1366,8 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         return fn(u, v)
 
     def run(self):
+
+        self.stop_pixel_selection()
 
         if not self.checkBox_enable_segment.isChecked():
             QMessageBox.warning(self, "Warning", "Enable segmentation with checkbox !")
@@ -1239,12 +1481,13 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         self.show_image()
         self.update_counts()
         self.update_legend()
+        self.update_spectra()
 
     def update_counts(self):
         labels, counts = np.unique(self.cls_map, return_counts=True)
         for cls, cnt in zip(labels, counts):
             self.class_ncount[cls]=cnt
-            print(f"Classe {cls} → {cnt} pixels")
+            print(f"Class {cls} → {cnt} pixels")
 
     def _np2pixmap(self, img):
         from PyQt5.QtGui import QImage, QPixmap
