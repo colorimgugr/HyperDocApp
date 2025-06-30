@@ -5,36 +5,37 @@
 # G:\Mi unidad\CIMLab\Proyectos y OTRI\Hyperdoc\Datos\Database_samples\HYPERDOC Database\Samples
 # --exclude-module tensorflow --exclude-module torch
 
-'''
-IMPORTANTE : reescribir por mas de dos cubos : 3 por lo menos O uno a la vez solo
-Hacer : Bajar tamaño de icono y talla fonts por baja resolution : Problema con la de Fran
-si no encuentra un minicubo o un GT, que no aperezca el la figura
-los filename de GT seran como los minicubos +'_GT.png' -> OK
-poner la opccion de abrir a mano cada minicubo y cada GT -> OK
-set reflectance axis to 0-1 always -> OK
-'''
-
+## import
+# os and interp
 import sys
 import traceback
-import h5py
+import os
+
+# math
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
+
+# GUI
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QPushButton, QLabel, QVBoxLayout, QWidget,
     QSlider, QFileDialog, QHBoxLayout,QGraphicsView, QGraphicsScene, QGraphicsPixmapItem,QMessageBox
 )
-
+from PyQt5.QtCore import Qt,QTimer,QEvent
 from PyQt5.QtGui import QPixmap,QPainter,QIcon,QFont
+
+# images
+import h5py
 from PIL import Image
 
-from PyQt5.QtCore import Qt,QTimer,QEvent
+# graphs
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from matplotlib.gridspec import GridSpec
 import matplotlib.text
-import os
-
 from matplotlib.pyplot import fill_between
+
+# intern
 from data_vizualisation.data_vizualisation_window import*
 from hypercubes.hypercube import*
 
@@ -114,6 +115,17 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
         self.label_icon_CIL.resize(size, size)
         self.resize_icon()
 
+        # load lookup table for VNIR - SWIR correspodance
+        if getattr(sys, 'frozen', False):  # pynstaller case
+            BASE_DIR = sys._MEIPASS
+        else:
+            BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+
+        table_path = os.path.join(BASE_DIR,
+                                         "data_vizualisation/Spatially registered minicubes equivalence.csv")
+
+        self.minicube_association_table = pd.read_csv(table_path)
+
     def resizeEvent(self, event):
         # Redéfinir la méthode resizeEvent pour redimensionner l'image lorsque la fenêtre est redimensionnée
         super().resizeEvent(event)
@@ -148,24 +160,27 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
 
     def change_hyp_quick(self,prev_next):
 
+
+        last_hyp_path = self.cubes_path
+        init_dir_hyp = '/'.join(last_hyp_path.split('/')[:-1])
+        file_init = last_hyp_path.split('/')[-1]
+        last_num=file_init.split('-')[0]
+        if "." in last_num:
+            return
+
+        files = sorted(os.listdir(init_dir_hyp))
+        index_init = files.index(file_init)
+
+        file_new = files[(index_init + prev_next) % len(files)]
+        i = prev_next
+        while (last_num in file_new or '.h5' not in file_new):
+            i += prev_next
+            file_new = files[(index_init + i) % len(files)]
+
+        file_hyp = init_dir_hyp + '/' + file_new
+        print(f'file_hyp quick : {file_hyp} ')
+
         try:
-            last_hyp_path = self.cubes_path
-            init_dir_hyp = '/'.join(last_hyp_path.split('/')[:-1])
-            file_init = last_hyp_path.split('/')[-1]
-            last_num=file_init.split('-')[0]
-            if "." in last_num:
-                return
-
-            files = sorted(os.listdir(init_dir_hyp))
-            index_init = files.index(file_init)
-
-            file_new = files[(index_init + prev_next) % len(files)]
-            i = prev_next
-            while (last_num in file_new or '.h5' not in file_new):
-                i += prev_next
-                file_new = files[(index_init + i) % len(files)]
-
-            file_hyp = init_dir_hyp + '/' + file_new
             self.open_hypercubes_and_GT(filepath=file_hyp)
         except:
             pass
@@ -177,38 +192,69 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
         path_VNIR = None
         path_SWIR = None
         path_UV = None
+        file_GT = None
         self.image_loaded=[0,0,0] # hyp 0, hyp 1 and GT
 
-
-        default_dir = self.cubes_path
         if filepath:quick_change=True # with arrows
         else : quick_change=False
 
         if not filepath:
-            filepath, _ = QFileDialog.getOpenFileName(self, "Open hypercube",default_dir)
+            filepath, _ = QFileDialog.getOpenFileName(self, "Open hypercube", self.cubes_path)
 
         if not filepath:
             return
 
-        self.cubes_path=filepath # update folder
+        self.cubes_path=filepath # update default folder
 
         cube=Hypercube(filepath,load_init=True) # load hypercube
+        print(f'cube loaded from : {filepath}')
 
-        # TODO : continue working on nicely open asociated cubes
+        # TODO : continue working on nicely open associated cubes
 
+        # Test if VNIR SWIR or UV range (other)
         if 'VNIR' in filepath or (cube.wl[-1] < 1100 and cube.wl[0] > 350):
             path_VNIR = filepath
             if 'VNIR' in filepath:
                 path_SWIR = filepath.replace("VNIR", "SWIR")
                 if not os.path.exists(path_SWIR):
-                    print('what a pitty ! not so simple association man. Try with lookup table')
+                    # use table
+                    base_name=os.path.basename(filepath).split('.')[0]
+                    print(base_name)
+                    matching_rows = self.minicube_association_table[self.minicube_association_table['VNIR'] == base_name]
+
+                if not matching_rows.empty:
+                    cube_asoc = matching_rows['SWIR'].iloc[0]
+                    path_SWIR = filepath.replace(base_name, cube_asoc)
+                else:
+                    print(f"NO SWIR found for : {base_name}")
+                    path_SWIR = None  # ou lève une exception ou gère autrement
+                    cube_asoc = self.minicube_association_table.loc[self.minicube_association_table['VNIR'] == base_name]['SWIR'][0]
+                    path_SWIR=filepath.replace(base_name,cube_asoc)
 
         elif 'SWIR' in filepath or cube.wl[-1] >= 1100:
             path_SWIR = filepath
+            if 'SWIR' in filepath:
+                path_VNIR = filepath.replace("SWIR", "VNIR")
+                if not os.path.exists(path_VNIR):
+                    # use table
+                    base_name=os.path.basename(filepath).split('.')[0]
+                    print(base_name)
+
+                    matching_rows = self.minicube_association_table[self.minicube_association_table['SWIR'] == base_name]
+
+                    if not matching_rows.empty:
+                        cube_asoc = matching_rows['VNIR'].iloc[0]
+                        path_VNIR = filepath.replace(base_name, cube_asoc)
+                    else:
+                        print(f"NO VNIR found for : {base_name}")
+                        path_VNIR = None  # ou lève une exception ou gère autrement
+                        cube_asoc = \
+                        self.minicube_association_table.loc[self.minicube_association_table['SWIR'] == base_name]['VNIR'][0]
+                        path_VNIR = filepath.replace(base_name, cube_asoc)
         else:
             path_UV=filepath
 
-
+        # load hypercubes
         if path_VNIR is not None:
 
             try:
@@ -223,18 +269,6 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
             except:
                 self.image_loaded[0] = False
 
-        elif path_SWIR is not None:
-
-            try:
-                self.hyps[1].open_hyp(path_SWIR,open_dialog=False,show_exception=False)
-                if self.hyps[1].data is None :
-                    self.image_loaded[1] = False
-                else :
-                    self.image_loaded[1] = True
-                    self.spec_range[1] = 'SWIR'
-            except:
-                self.image_loaded[1] = False
-
         elif path_UV is not None:
             try:
                 self.hyps[0].open_hyp(path_SWIR,open_dialog=False,show_exception=False)
@@ -248,6 +282,19 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
                 QMessageBox.warning('Problem in cube opening','No cube has been opened.')
                 return
 
+        if path_SWIR is not None:
+
+            try:
+                self.hyps[1].open_hyp(path_SWIR,open_dialog=False,show_exception=False)
+                if self.hyps[1].data is None :
+                    self.image_loaded[1] = False
+                else :
+                    self.image_loaded[1] = True
+                    self.spec_range[1] = 'SWIR'
+            except:
+                self.image_loaded[1] = False
+
+        # construct GT name from filename adding _GT
         if self.image_loaded[0]:
             if path_VNIR is not None:
                 file_GT=(path_VNIR.split('.')[0] + '_GT.png').split('/')[-1]
@@ -256,43 +303,50 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
         elif self.image_loaded[1]:
             file_GT=(path_SWIR.split('.')[0] + '_GT.png').split('/')[-1]
 
-        if self.folder_GT:
+        # load GT using previous folder_name saved with file_GT
+        if self.folder_GT is not None :
+            path_GT = self.folder_GT + '/' + file_GT
+            print(f'path_GT1 : {path_GT}')
             try:
-                path_GT = self.folder_GT + '/' + file_GT
-                try : self.GT.load_image(path_GT)
-                except :
-                    file_GT_bis=file_GT.replace('-VNIR','')
-                    file_GT_bis=file_GT_bis.replace('-SWIR','')
-                    path_GT = self.folder_GT + '/' + file_GT_bis
-                    self.GT.load_image(path_GT)
-
-                self.image_loaded[2] = True
-            except:
-                self.image_loaded[2] = False
-
-        if self.image_loaded[2] == False:
-
-            try:
-                if self.image_loaded[0]:
-                    path_GT = path_VNIR[:-3] + '_GT.png'
-                elif self.image_loaded[1]:
-                    path_GT = path_SWIR[:-3] + '_GT.png'
-                self.GT.load_image(path_GT)
-
-                self.image_loaded[2]=True
-            except:
-                self.image_loaded[2] = False
-
-        if self.image_loaded[2] == False:
-            try:
-                file=path_GT.split('/')[-1]
-                folder=('/').join(path_GT.split('/')[:-2])
-                path_GT=folder+'/GT/'+file
                 self.GT.load_image(path_GT)
                 self.image_loaded[2] = True
             except:
-                self.image_loaded[2] = False
-                if not quick_change:
+                pass
+
+
+        # try using same folder as opened cube
+        if not self.image_loaded[2]:
+            self.folder_GT = os.path.dirname(filepath)
+            path_GT =  os.path.join(self.folder_GT,file_GT)
+            print(f'path_GT2 : {path_GT}')
+            try :
+                self.GT.load_image(path_GT)
+                self.image_loaded[2] = True
+            except:
+                pass
+
+        # try using parent folder/GT of opened cube
+        if not self.image_loaded[2]:
+            self.folder_GT = os.path.join(os.path.dirname(os.path.dirname(filepath)),'GT')
+            path_GT = os.path.join(self.folder_GT, file_GT)
+            print(f'path_GT3 : {path_GT}')
+            try:
+                self.GT.load_image(path_GT)
+                self.image_loaded[2] = True
+            except:
+                pass
+
+        # try using parent folder of opened cube
+        if not self.image_loaded[2]:
+            self.folder_GT = os.path.dirname(os.path.dirname(filepath))
+            path_GT =  os.path.join(self.folder_GT,file_GT)
+            print(f'path_GT4 : {path_GT}')
+            try:
+                self.GT.load_image(path_GT)
+                self.image_loaded[2] = True
+            except:
+                # try by asking to user to choose file
+                 if not quick_change:
                     qm=QMessageBox()
                     ans=qm.question(self, 'No GT found', "No Ground Truth found for this minicube.\nDo you want to open the Ground Truth manually ?", qm.Yes | qm.No)
                     if ans==qm.Yes:
@@ -303,7 +357,7 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
 
                             self.GT.load_image(path_GT)
                             self.image_loaded[2] = True
-                            self.folder_GT=('/').join(filepath.split('/')[:-1])
+                            self.folder_GT=os.path.dirname(filepath)
 
                         except:
                             msg = QMessageBox()
@@ -312,6 +366,7 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
                             msg.setWindowTitle("GT not found")
                             msg.setStandardButtons(QMessageBox.StandardButton.Ok)
                             msg.exec()
+
 
         for elem in [self.pushButton_next_cube,self.pushButton_prev_cube,self.pushButton_save_image,self.horizontalSlider_red_channel,self.horizontalSlider_green_channel,self.horizontalSlider_blue_channel,self.spinBox_red_channel,self.spinBox_green_channel,self.spinBox_blue_channel,self.checkBox_std,self.pushButton_save_spectra,self.horizontalSlider_transparency_GT,self.radioButton_VNIR,self.radioButton_rgb_user,self.radioButton_rgb_default,self.radioButton_SWIR,self.radioButton_grayscale]:
             elem.setEnabled(True)
@@ -713,7 +768,6 @@ class Canvas_Image(FigureCanvas):
         super().__init__(self.fig)
         self.fig.subplots_adjust(left=0.01, bottom=0.05, right=0.99, top=0.85)
 
-
     def create_axis(self,images=[False,False,False]):
         self.fig.clear()
         if images==[False,False,False]:
@@ -1049,8 +1103,8 @@ if __name__ == "__main__":
     timer.timeout.connect(check_resolution_change)
     timer.start(500)  # Vérifie toutes les 500 ms
 
-    folder = r'C:\Users\Usuario\Documents\DOC_Yannick\App_present_24_06\datas\Archivo chancilleria_for_Registering/'
-    file_name = 'reg_test.h5'
+    folder = r'C:\Users\Usuario\Documents\DOC_Yannick\HYPERDOC Database\Samples\minicubes/'
+    file_name = '00189-VNIR-mock-up.h5'
     filepath = folder + file_name
     window.open_hypercubes_and_GT(filepath=filepath)
 

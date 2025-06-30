@@ -23,6 +23,7 @@ import random
 # TODO : Manual outling features
 # TODO : Clean Cache to to well od close and save as.
 # TODO : Trier les save depuis tool et depuis main -> Metadatas a bien reflechir.
+# TODO : automatic fill name for saving
 
 from registration.registration_window import*
 from hypercubes.hypercube import*
