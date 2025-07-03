@@ -599,20 +599,10 @@
                  <property name="text">
                   <string>Live</string>
                  </property>
+                 <property name="checked">
+                  <bool>true</bool>
+                 </property>
                 </widget>
-               </item>
-               <item>
-                <spacer name="horizontalSpacer_4">
-                 <property name="orientation">
-                  <enum>Qt::Horizontal</enum>
-                 </property>
-                 <property name="sizeHint" stdset="0">
-                  <size>
-                   <width>40</width>
-                   <height>20</height>
-                  </size>
-                 </property>
-                </spacer>
                </item>
                <item>
                 <widget class="QPushButton" name="pushButton_save_spectra">
@@ -680,5 +670,102 @@
   </layout>
  </widget>
  <resources/>
- <connections/>
+ <connections>
+  <connection>
+   <sender>horizontalSlider_red_channel</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>spinBox_red_channel</receiver>
+   <slot>setValue(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>117</x>
+     <y>595</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>73</x>
+     <y>594</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>horizontalSlider_green_channel</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>spinBox_green_channel</receiver>
+   <slot>setValue(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>148</x>
+     <y>622</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>89</x>
+     <y>620</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>horizontalSlider_blue_channel</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>spinBox_blue_channel</receiver>
+   <slot>setValue(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>179</x>
+     <y>649</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>89</x>
+     <y>649</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>spinBox_red_channel</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>horizontalSlider_red_channel</receiver>
+   <slot>setValue(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>71</x>
+     <y>597</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>137</x>
+     <y>596</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>spinBox_green_channel</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>horizontalSlider_green_channel</receiver>
+   <slot>setValue(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>74</x>
+     <y>617</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>187</x>
+     <y>626</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>spinBox_blue_channel</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>horizontalSlider_blue_channel</receiver>
+   <slot>setValue(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>73</x>
+     <y>645</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>246</x>
+     <y>652</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>

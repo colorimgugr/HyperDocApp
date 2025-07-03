@@ -256,10 +256,9 @@ class Ui_DataVizualisation(object):
         self.checkBox_std.setObjectName("checkBox_std")
         self.horizontalLayout_7.addWidget(self.checkBox_std)
         self.checkBox_live_spectrum = QtWidgets.QCheckBox(self.groupBox_2)
+        self.checkBox_live_spectrum.setChecked(True)
         self.checkBox_live_spectrum.setObjectName("checkBox_live_spectrum")
         self.horizontalLayout_7.addWidget(self.checkBox_live_spectrum)
-        spacerItem5 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
-        self.horizontalLayout_7.addItem(spacerItem5)
         self.pushButton_save_spectra = QtWidgets.QPushButton(self.groupBox_2)
         self.pushButton_save_spectra.setObjectName("pushButton_save_spectra")
         self.horizontalLayout_7.addWidget(self.pushButton_save_spectra)
@@ -302,6 +301,12 @@ class Ui_DataVizualisation(object):
         self.verticalLayout_2.addWidget(self.frame_principal)
 
         self.retranslateUi(DataVizualisation)
+        self.horizontalSlider_red_channel.valueChanged['int'].connect(self.spinBox_red_channel.setValue) # type: ignore
+        self.horizontalSlider_green_channel.valueChanged['int'].connect(self.spinBox_green_channel.setValue) # type: ignore
+        self.horizontalSlider_blue_channel.valueChanged['int'].connect(self.spinBox_blue_channel.setValue) # type: ignore
+        self.spinBox_red_channel.valueChanged['int'].connect(self.horizontalSlider_red_channel.setValue) # type: ignore
+        self.spinBox_green_channel.valueChanged['int'].connect(self.horizontalSlider_green_channel.setValue) # type: ignore
+        self.spinBox_blue_channel.valueChanged['int'].connect(self.horizontalSlider_blue_channel.setValue) # type: ignore
         QtCore.QMetaObject.connectSlotsByName(DataVizualisation)
 
     def retranslateUi(self, DataVizualisation):

@@ -134,22 +134,6 @@
       <option name="presentableId" value="Default" />
       <updated>1744020944801</updated>
     </task>
-    <task id="LOCAL-00004" summary="Open OK with mat v7.3&#10;Strating registration">
-      <option name="closed" value="true" />
-      <created>1744112816540</created>
-      <option name="number" value="00004" />
-      <option name="presentableId" value="LOCAL-00004" />
-      <option name="project" value="LOCAL" />
-      <updated>1744112816540</updated>
-    </task>
-    <task id="LOCAL-00005" summary="Open OK with mat v7.3&#10;Strating registration">
-      <option name="closed" value="true" />
-      <created>1744279115309</created>
-      <option name="number" value="00005" />
-      <option name="presentableId" value="LOCAL-00005" />
-      <option name="project" value="LOCAL" />
-      <updated>1744279115309</updated>
-    </task>
     <task id="LOCAL-00006" summary="Regisration GUI from chatGPT to adapt">
       <option name="closed" value="true" />
       <created>1744292569152</created>
@@ -526,7 +510,23 @@
       <option name="project" value="LOCAL" />
       <updated>1751284917961</updated>
     </task>
-    <option name="localTasksCounter" value="53" />
+    <task id="LOCAL-00053" summary="ouverture des cubes dans data_viz elargie en format, ajout de la hash_up table pour association de cube, depandance UV differentes">
+      <option name="closed" value="true" />
+      <created>1751372677413</created>
+      <option name="number" value="00053" />
+      <option name="presentableId" value="LOCAL-00053" />
+      <option name="project" value="LOCAL" />
+      <updated>1751372677413</updated>
+    </task>
+    <task id="LOCAL-00054" summary="ouverture des cubes dans data_viz elargie en format, ajout de la hash_up table pour association de cube, depandance UV differentes">
+      <option name="closed" value="true" />
+      <created>1751372738567</created>
+      <option name="number" value="00054" />
+      <option name="presentableId" value="LOCAL-00054" />
+      <option name="project" value="LOCAL" />
+      <updated>1751372738567</updated>
+    </task>
+    <option name="localTasksCounter" value="55" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -578,7 +578,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="metadata not editable from metadata tool blocked" />
     <MESSAGE value="Ground truth tool : ok for rgb visualisation + live spectrum" />
     <MESSAGE value="Added GT spectrum to live spectrum + std deviation.&#10;Resolve conflict between pixel selction and draggable." />
     <MESSAGE value="OK for selection rectangle and pixel of different color, multiple distance." />
@@ -602,6 +601,7 @@
     <MESSAGE value="added" />
     <MESSAGE value="fixed bugg meta wl with register cube&#10;fixed rgb save bugg register" />
     <MESSAGE value="plein de trucs :-p" />
+    <MESSAGE value="data_viz : &#10;- all metadata pop up OK&#10;- live spectrum ok&#10;- resize graph ok&#10;- 3 imeges same size OK" />
     <MESSAGE value="ouverture des cubes dans data_viz elargie en format, ajout de la hash_up table pour association de cube, depandance UV differentes" />
     <option name="LAST_COMMIT_MESSAGE" value="ouverture des cubes dans data_viz elargie en format, ajout de la hash_up table pour association de cube, depandance UV differentes" />
   </component>

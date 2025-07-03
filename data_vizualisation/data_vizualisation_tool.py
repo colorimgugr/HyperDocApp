@@ -37,16 +37,11 @@ from matplotlib.pyplot import fill_between
 from data_vizualisation.data_vizualisation_window import*
 from hypercubes.hypercube import*
 
-# TODO : clean this ugly  open_hypercubes_and_GT and open_UVIS and connect to main
-# todo : let open file if name do not fit the nomenclature
-
 class Data_Viz_Window(QWidget,Ui_DataVizualisation):
 
-    #TODO : make a widget window to edit metadata and add a button on all windows of the app
     def __init__(self,parent=None):
         super().__init__(parent)
         self.setupUi(self)
-
         self.hyps = [Hypercube(),Hypercube()] # create hypercubes objects[VNIR,SWIR] two maximum
         self.folder_GT=None
         self.GTexist = True
@@ -73,6 +68,8 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
         # Connect to window Metadata
         self.pushButton_see_all_metadata.clicked.connect(self.show_all_metadata)
 
+        # group active hyp radiobuttons :
+        self.radioButtons_ActiveHyp= [self.radioButton_VNIR, self.radioButton_SWIR, self.radioButton_UVIS]
         # Connect elements du canvas GT image
         self.sliders_rgb=[self.horizontalSlider_red_channel,self.horizontalSlider_green_channel,self.horizontalSlider_blue_channel]
         self.spinBox_rgb=[self.spinBox_red_channel,self.spinBox_green_channel,self.spinBox_blue_channel]
@@ -190,8 +187,6 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
 
         cube=Hypercube(filepath,load_init=True) # load hypercube
 
-        # TODO : continue working on nicely open associated cubes
-
         # Test if VNIR SWIR or UV range (other)
         if 'VNIR' in filepath or (cube.wl[-1] < 1100 and cube.wl[0] > 350):
             path_VNIR = filepath
@@ -202,13 +197,13 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
                     base_name=os.path.basename(filepath).split('.')[0]
                     matching_rows = self.minicube_association_table[self.minicube_association_table['VNIR'] == base_name]
 
-                if not matching_rows.empty:
-                    cube_asoc = matching_rows['SWIR'].iloc[0]
-                    path_SWIR = filepath.replace(base_name, cube_asoc)
-                else:
-                    path_SWIR = None  # ou lève une exception ou gère autrement
-                    cube_asoc = self.minicube_association_table.loc[self.minicube_association_table['VNIR'] == base_name]['SWIR'][0]
-                    path_SWIR=filepath.replace(base_name,cube_asoc)
+                    if not matching_rows.empty:
+                        cube_asoc = matching_rows['SWIR'].iloc[0]
+                        path_SWIR = filepath.replace(base_name, cube_asoc)
+                    else:
+                        path_SWIR = None  # ou lève une exception ou gère autrement
+                        cube_asoc = self.minicube_association_table.loc[self.minicube_association_table['VNIR'] == base_name]['SWIR'][0]
+                        path_SWIR=filepath.replace(base_name,cube_asoc)
 
         elif 'SWIR' in filepath or cube.wl[-1] >= 1100:
             path_SWIR = filepath
@@ -248,15 +243,14 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
 
         elif path_UV is not None:
             try:
-                self.hyps[0].open_hyp(path_SWIR,open_dialog=False,show_exception=False)
+                self.hyps[0].open_hyp(path_UV,open_dialog=False,show_exception=False)
                 if self.hyps[0].data is None :
                     self.image_loaded[0] = False
                 else :
                     self.image_loaded[0] = True
                     self.spec_range[0] = 'UVIS'
             except:
-                self.image_loaded[1] = False
-                QMessageBox.warning('Problem in cube opening','No cube has been opened.')
+                self.image_loaded[0] = False
                 return
 
         if path_SWIR is not None:
@@ -272,6 +266,7 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
                 self.image_loaded[1] = False
 
         # construct GT name from filename adding _GT
+
         if self.image_loaded[0]:
             if path_VNIR is not None:
                 file_GT=(path_VNIR.split('.')[0] + '_GT.png').split('/')[-1]
@@ -288,7 +283,6 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
                 self.image_loaded[2] = True
             except:
                 pass
-
 
         # try using same folder as opened cube
         if not self.image_loaded[2]:
@@ -340,26 +334,44 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
                             msg.setStandardButtons(QMessageBox.StandardButton.Ok)
                             msg.exec()
 
+        ## Update widgets
+
+        # get last cube selected  :
+        i_act=0
+        for radio in self.radioButtons_ActiveHyp:
+            if radio.isChecked():
+                break
+            i_act+=1
 
         for elem in [self.pushButton_next_cube,self.pushButton_prev_cube,self.pushButton_save_image,self.horizontalSlider_red_channel,self.horizontalSlider_green_channel,self.horizontalSlider_blue_channel,self.spinBox_red_channel,self.spinBox_green_channel,self.spinBox_blue_channel,self.checkBox_std,self.pushButton_save_spectra,self.horizontalSlider_transparency_GT,self.radioButton_VNIR,self.radioButton_rgb_user,self.radioButton_rgb_default,self.radioButton_SWIR,self.radioButton_grayscale]:
             elem.setEnabled(True)
 
-        self.radioButton_VNIR.setAutoExclusive(False)
-        self.radioButton_SWIR.setAutoExclusive(False)
+        for radio in self.radioButtons_ActiveHyp:
+            radio.setAutoExclusive(False)
+            radio.setEnabled(False)
+            radio.setChecked(False)
 
-        if not self.image_loaded[0]:
-            self.radioButton_VNIR.setEnabled(False)
-            self.radioButton_VNIR.setChecked(False)
-            self.radioButton_SWIR.setChecked(True)
-        if not self.image_loaded[1]:
-            self.radioButton_SWIR.setEnabled(False)
-            self.radioButton_SWIR.setChecked(False)
-            self.radioButton_VNIR.setChecked(True)
+        if self.image_loaded[0]:
+            if self.spec_range[0]=='VNIR':
+                self.radioButton_VNIR.setEnabled(True)
+                if i_act==0 or not self.image_loaded[1] or i_act==2:
+                    self.radioButton_VNIR.setChecked(True)
+
+            elif self.spec_range[0] == 'UVIS':
+                self.radioButton_UVIS.setEnabled(True)
+                if i_act==2 or not self.image_loaded[1]:
+                    self.radioButton_UVIS.setChecked(True)
+
+        if  self.image_loaded[1]:
+            self.radioButton_SWIR.setEnabled(True)
+            if i_act == 1 or not self.image_loaded[0]:
+                self.radioButton_SWIR.setChecked(True)
+
         if not self.image_loaded[2]:
             self.horizontalSlider_transparency_GT.setEnabled(False)
 
-        self.radioButton_VNIR.setAutoExclusive(True)
-        self.radioButton_SWIR.setAutoExclusive(True)
+        for radio in self.radioButtons_ActiveHyp:
+            radio.setAutoExclusive(True)
 
         self.modif_sliders(default=True)
         self.horizontalSlider_transparency_GT.setValue(0)
@@ -383,46 +395,16 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
             self.pushButton_save_spectra.setEnabled(False)
 
         message=''
-        if self.image_loaded[0]:message+='VNIR found \n'
-        else : message+='VNIR NOT FOUND \n'
+        if self.image_loaded[0] :
+            if self.spec_range[0]=='VNIR':
+                message+='VNIR found \n'
+            elif self.spec_range[0]=='UVIS':
+                message+='UV-VIS found \n'
         if self.image_loaded[1]:message+='SWIR found \n'
-        else : message+='SWIR NOT FOUND \n'
         if self.image_loaded[2]:message+='GT found'
         else : message+='GT NOT FOUND'
 
         self.label_general_message.setText(message)
-
-    def open_UVIS(self,filepath):
-
-        self.image_loaded[1] = False
-        self.image_loaded[2] = False
-
-        try:
-            self.hyps[0].open_hyp(filepath,open_dialog=False)
-            self.image_loaded[0] = True
-            self.label_general_message.setText('UV-VIS minicube of substrate')
-        except:
-            self.image_loaded[0] = False
-            self.label_general_message.setText('UV-VIS minicube NOT LOADED')
-            return
-
-        self.radioButton_VNIR.setAutoExclusive(False)
-        self.radioButton_SWIR.setAutoExclusive(False)
-        self.radioButton_VNIR.setChecked(False)
-        self.radioButton_SWIR.setChecked(False)
-        self.radioButton_VNIR.setEnabled(False)
-        self.radioButton_SWIR.setEnabled(False)
-
-        self.horizontalSlider_transparency_GT.setEnabled(False)
-
-        self.radioButton_grayscale.setChecked(True)
-
-        self.modif_sliders(default=True)
-        self.horizontalSlider_transparency_GT.setValue(0)
-        self.update_image(load=True,UV=True)
-        self.update_combo_meta(init=True)
-
-        self.canvas_spectra.clear_spectra()
 
     def update_combo_meta(self,init=False):
         hyp = self.hyps[self.radioButton_SWIR.isChecked()]
@@ -595,7 +577,7 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
 
     def modif_sliders(self,default=False):
 
-        hyp_active=self.radioButton_SWIR.isChecked()    # 0 (VNIR) ou 1 (SWIR)
+        hyp_active=self.radioButton_SWIR.isChecked()    # 0 (VNIR ou UV) ou 1 (SWIR)
         hyp=self.hyps[hyp_active]
         # Ajuste les sliders aux indices disponibles
         max_wl=int(hyp.wl[-1])
@@ -702,37 +684,39 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
         if load :
             hyp = self.hyps[self.radioButton_SWIR.isChecked()]
             try :
-                len(hyp.metadata['GTLabels'])
+                len(hyp.metadata['spectra_mean'])
             except:
                 return
 
             hyps_loaded=[self.hyps[i] for i in [0,1] if self.image_loaded[i]]
-            wls = [hyp.metadata['wl'] for hyp in hyps_loaded]
+            wls = [hyp.wl for hyp in hyps_loaded]
 
-            if len(hyp.metadata['GTLabels'].shape)==2:
-                GT_index = [[int(i),int(i)-1][int(i)==255] for i in hyp.metadata['GTLabels'][0]]
-                GT_material = [i for i in hyp.metadata['GTLabels'][1]]
-                GT_colors = hyp.metadata['GT_cmap'][:, GT_index]
-                spectra_mean = [hyp.metadata['spectra_mean'] for hyp in hyps_loaded]
-                spectra_std = [hyp.metadata['spectra_std'] for hyp in hyps_loaded]
-            elif len(hyp.metadata['GTLabels'].shape)==1:
-                GT_index=int(hyp.metadata['GTLabels'][0])
-                if GT_index==255:GT_index=254
-                GT_material = [hyp.metadata['GTLabels'][1]]
-                GT_colors = np.array([hyp.metadata['GT_cmap'][:, GT_index]]).T
-                spectra_mean =[[hyp.metadata['spectra_mean'] for hyp in hyps_loaded]]
-                spectra_std = [[hyp.metadata['spectra_std'] for hyp in hyps_loaded]]
+            try :
+                if len(hyp.metadata['GTLabels'].shape)==2:
+                    GT_index = [[int(i),int(i)-1][int(i)==255] for i in hyp.metadata['GTLabels'][0]]
+                    GT_material = [i for i in hyp.metadata['GTLabels'][1]]
+                    GT_colors = hyp.metadata['GT_cmap'][:, GT_index]
+                    spectra_mean = [hyp.metadata['spectra_mean'] for hyp in hyps_loaded]
+                    spectra_std = [hyp.metadata['spectra_std'] for hyp in hyps_loaded]
+                elif len(hyp.metadata['GTLabels'].shape)==1:
+                    GT_index=int(hyp.metadata['GTLabels'][0])
+                    if GT_index==255:GT_index=254
+                    GT_material = [hyp.metadata['GTLabels'][1]]
+                    GT_colors = np.array([hyp.metadata['GT_cmap'][:, GT_index]]).T
+                    spectra_mean =[[hyp.metadata['spectra_mean'] for hyp in hyps_loaded]]
+                    spectra_std = [[hyp.metadata['spectra_std'] for hyp in hyps_loaded]]
+            except:
+                pass
 
-            else:
-                return
-
-            self.canvas_spectra.load_spectra(wls,spectra_mean,spectra_std,GT_material,GT_colors,std,self.image_loaded)
-
+            try:
+                self.canvas_spectra.load_spectra(wls,spectra_mean,spectra_std,GT_material,GT_colors,std,self.image_loaded)
+            except:
+                self.canvas_spectra.clear_spectra()
         else:
             self.canvas_spectra.update_spectra(std)
 
     def save_image(self):
-        """ Sauvegarde l'image affichée. """
+        """ save current images """
         try:
             filepath, _ = QFileDialog.getSaveFileName(
                 None, "Sauvegarder l'image", "", "Images PNG (*.png);;Images JPEG (*.jpg)"
@@ -794,11 +778,126 @@ class Canvas_Image(FigureCanvas):
         self.fig.subplots_adjust(left=0.01, bottom=0.05, right=0.99, top=0.85)
 
         #add interaction
+        self.drag_start = None
+        self.drag_ax = None
+        self.left_button_down = False
+
+        self.mpl_connect('figure_leave_event', self.on_figure_leave) # will be use to cancel drag
+        self.mpl_connect('scroll_event', self.on_scroll)
+        self.mpl_connect('button_press_event', self.on_press)
+        self.mpl_connect('button_release_event', self.on_release)
         self.fig.canvas.mpl_connect('motion_notify_event', self.on_mouse_move)
+        self.setFocusPolicy(Qt.ClickFocus)
+        self.setFocus()
+
+    def on_figure_leave(self, event):
+        self.left_button_down = False
+        self.drag_start = None
+        self.drag_ax = None
+
+    def on_scroll(self, event):
+        ax = event.inaxes
+        if ax is None:
+            return
+
+        # get wich image
+        index = self.axs.index(ax)
+        if self.images[index] is None:
+            return
+
+        # Zoom factor
+        base_scale = 1.2
+        scale = base_scale if event.step < 0 else 1 / base_scale
+
+        #get center of homotethie from ouse
+        xlim,ylim = ax.get_xlim(),ax.get_ylim()
+        xdata,ydata = event.xdata,event.ydata
+
+        # calculate new lims of image
+        new_xlim = [xdata + (x - xdata) * scale for x in xlim]
+        new_ylim = [ydata + (y - ydata) * scale for y in ylim]
+
+        # to check if image not smaller than original
+        img_shape = self.images[index].get_array().shape
+        max_width = 1.1*img_shape[1]
+        max_height = 1.1*img_shape[0]
+        if (new_xlim[1] - new_xlim[0]) > max_width or (new_ylim[0] - new_ylim[1]) > max_height:
+            return
+
+        #Apply to all axes
+        for i, a in enumerate(self.axs):
+            if self.images[i] is not None:
+                img_shape = self.images[i].get_array().shape
+                a.set_xlim(*self.clamp_xlim(new_xlim, img_shape[1]))
+                a.set_ylim(*self.clamp_ylim(new_ylim, img_shape[0]))
+        self.draw()
+
+    def clamp_xlim(self, xlim, width):
+        x0, x1 = xlim
+        if x0 < 0:
+            x1 -= x0
+            x0 = 0
+        if x1 > width:
+            x0 -= (x1 - width)
+            x1 = width
+        return x0, x1
+
+    def clamp_ylim(self, ylim, height):
+        y0, y1 = ylim
+        if y1 < 0:
+            y0 -= y1
+            y1 = 0
+        if y0 > height:
+            y1 -= (y0 - height)
+            y0 = height
+        return y0, y1
+
+    def on_press(self, event):
+        if event.button == 1 and event.inaxes:
+            self.left_button_down = True
+            self.drag_start = (event.xdata, event.ydata)
+            self.drag_ax = event.inaxes
+
+    def on_release(self, event):
+        if event.button == 1:
+            self.left_button_down = False
+            self.drag_start = None
+            self.drag_ax = None
 
     def on_mouse_move(self,event):
         # check if on VNIR or SWIR, if not, erase
-        if event.inaxes not in self.axs[:2] :
+
+        if event.inaxes is None:
+            return
+
+        # Pan if in drag_mode
+
+        if self.left_button_down and event.inaxes == self.drag_ax and self.drag_start is not None:
+            dx = self.drag_start[0] - event.xdata
+            dy = self.drag_start[1] - event.ydata
+
+            xlim = self.drag_ax.get_xlim()
+            ylim = self.drag_ax.get_ylim()
+
+            new_xlim = (xlim[0] + dx, xlim[1] + dx)
+            new_ylim = (ylim[0] + dy, ylim[1] + dy)
+
+            #for all axes
+            for i, ax in enumerate(self.axs):
+                if self.images[i] is not None:
+                    img_shape = self.images[i].get_array().shape
+                    ax.set_xlim(*self.clamp_xlim(new_xlim, img_shape[1]))
+                    ax.set_ylim(*self.clamp_ylim(new_ylim, img_shape[0]))
+
+            self.draw()
+            return
+
+        # if no button is pressed -> live spectrum
+
+        if not self.logic.checkBox_live_spectrum.isChecked():
+            return
+
+        if event.inaxes not in self.axs[:2]:
             self.logic.canvas_spectra.update_live_spectra()
             return
 
@@ -952,7 +1051,11 @@ class Canvas_Spectra(FigureCanvas):
 
     def clear_spectra(self):
         self.ax.clear()
-        self.ax.set_axis_off()
+        self.ax.set_facecolor((0.4, 0.4, 0.4, 1))
+        self.ax.set_xlabel("Wavelength (nm)")
+        self.ax.set_ylabel("Reflectance")
+        self.ax.set_title("Live spectrum (no Ground Truth)")
+        self.ax.grid(True)
         self.draw()
 
     def load_spectra(self,wls, spectra_mean, spectra_std, GT_material, GT_colors,std=False,image_loaded=[False,False,False]):
@@ -1079,7 +1182,10 @@ class Canvas_Spectra(FigureCanvas):
         if spectrum is None or wavelength is None:
             if hasattr(self, "live_line"):
                 if self.live_line is not None:
-                    self.live_line.remove()
+                    try:
+                        self.live_line.remove()
+                    except Exception as e:
+                        print(f"[update_live_spectra] Could not remove live_line: {e}")
                     self.live_line = None
                     self.draw()
             return
@@ -1092,6 +1198,9 @@ class Canvas_Spectra(FigureCanvas):
 
         self.ax.relim()
         self.ax.autoscale_view()
+        maxR = 1
+        if np.max(spectrum) > maxR: maxR = np.max(spectrum)
+        self.ax.set_ylim((0, 0.05 + maxR))
         self.draw()
 
     def cut_long_string(self,text=None,len_max=20):
