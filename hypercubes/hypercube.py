@@ -32,6 +32,7 @@ class CubeInfoTemp:
     data_shape: Optional[Union[List[float], np.ndarray]] = None # cube shape [width, height, bands]
     crop: Optional[Union[List[float], np.ndarray]] = None # [x,y,dx,dy]
     wl_trans:Optional[str]= None # if need to transpose wl dim from dim 1 to dim 3
+    modif=False #to follow if some modif has been made is the app
 
 class Hypercube:
 

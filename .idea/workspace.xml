@@ -4,11 +4,17 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="ouverture des cubes dans data_viz elargie en format, ajout de la hash_up table pour association de cube, depandance UV differentes">
+    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="syncronize Drag and scroll for images and GT&#10;Open non h5&#10;live spectrum initiate if no GT">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/MainWindow.py" beforeDir="false" afterPath="$PROJECT_DIR$/MainWindow.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/data_vizualisation/data_vizualisation_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/data_vizualisation/data_vizualisation_tool.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data_vizualisation/data_vizualisation_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/data_vizualisation/data_vizualisation_window.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data_vizualisation/data_vizualisation_window.ui" beforeDir="false" afterPath="$PROJECT_DIR$/data_vizualisation/data_vizualisation_window.ui" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data_vizualisation/metadata_dock.py" beforeDir="false" afterPath="$PROJECT_DIR$/metadata/metadata_dock.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data_vizualisation/metadata_dock.ui" beforeDir="false" afterPath="$PROJECT_DIR$/metadata/metadata_dock.ui" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data_vizualisation/metadata_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/metadata/metadata_tool.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hypercubes/hypercube.py" beforeDir="false" afterPath="$PROJECT_DIR$/hypercubes/hypercube.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/interface/hypercube_manager.py" beforeDir="false" afterPath="$PROJECT_DIR$/interface/hypercube_manager.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/log/error.log" beforeDir="false" afterPath="$PROJECT_DIR$/log/error.log" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/log/suggestions.log" beforeDir="false" afterPath="$PROJECT_DIR$/log/suggestions.log" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -91,6 +97,8 @@
       <recent name="C:\Users\Usuario\Documents\GitHub\Hypertool\registration" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\Usuario\Documents\GitHub\Hypertool\data_vizualisation" />
+      <recent name="C:\Users\Usuario\Documents\GitHub\Hypertool\metadata" />
       <recent name="C:\Users\Usuario\Documents\GitHub\Hypertool\registration" />
       <recent name="C:\Users\Usuario\Documents\GitHub\Hypertool\ground_truth" />
       <recent name="C:\Users\Usuario\Documents\GitHub\Hypertool" />
@@ -133,14 +141,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1744020944801</updated>
-    </task>
-    <task id="LOCAL-00006" summary="Regisration GUI from chatGPT to adapt">
-      <option name="closed" value="true" />
-      <created>1744292569152</created>
-      <option name="number" value="00006" />
-      <option name="presentableId" value="LOCAL-00006" />
-      <option name="project" value="LOCAL" />
-      <updated>1744292569152</updated>
     </task>
     <task id="LOCAL-00007" summary="registration_images OK for grey image&#10;to do : &#10;- load hypercubes&#10;- save transformed hypercube">
       <option name="closed" value="true" />
@@ -526,7 +526,15 @@
       <option name="project" value="LOCAL" />
       <updated>1751372738567</updated>
     </task>
-    <option name="localTasksCounter" value="55" />
+    <task id="LOCAL-00055" summary="syncronize Drag and scroll for images and GT&#10;Open non h5&#10;live spectrum initiate if no GT">
+      <option name="closed" value="true" />
+      <created>1751572928997</created>
+      <option name="number" value="00055" />
+      <option name="presentableId" value="LOCAL-00055" />
+      <option name="project" value="LOCAL" />
+      <updated>1751572928997</updated>
+    </task>
+    <option name="localTasksCounter" value="56" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -578,7 +586,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Ground truth tool : ok for rgb visualisation + live spectrum" />
     <MESSAGE value="Added GT spectrum to live spectrum + std deviation.&#10;Resolve conflict between pixel selction and draggable." />
     <MESSAGE value="OK for selection rectangle and pixel of different color, multiple distance." />
     <MESSAGE value="selection with pixel drag OK (with inside path in option)" />
@@ -603,6 +610,7 @@
     <MESSAGE value="plein de trucs :-p" />
     <MESSAGE value="data_viz : &#10;- all metadata pop up OK&#10;- live spectrum ok&#10;- resize graph ok&#10;- 3 imeges same size OK" />
     <MESSAGE value="ouverture des cubes dans data_viz elargie en format, ajout de la hash_up table pour association de cube, depandance UV differentes" />
-    <option name="LAST_COMMIT_MESSAGE" value="ouverture des cubes dans data_viz elargie en format, ajout de la hash_up table pour association de cube, depandance UV differentes" />
+    <MESSAGE value="syncronize Drag and scroll for images and GT&#10;Open non h5&#10;live spectrum initiate if no GT" />
+    <option name="LAST_COMMIT_MESSAGE" value="syncronize Drag and scroll for images and GT&#10;Open non h5&#10;live spectrum initiate if no GT" />
   </component>
 </project>

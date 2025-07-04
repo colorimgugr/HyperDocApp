@@ -1,5 +1,34 @@
-2025-06-27 12:08:12,734 - INFO - test suggestion
-2025-06-27 12:08:27,005 - INFO - ole
-2025-06-27 12:08:31,638 - INFO - ole again
-2025-06-27 12:32:49,714 - INFO - Suggested
-2025-06-27 12:38:27,450 - INFO - test
+
+2025-07-03 22:14:14,261 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\MainWindow.py", line 315, in <lambda>
+    act_viz.triggered.connect(lambda checked, i=idx: self._send_to_dock(i, self.dock1))
+                                                     ^^^^^^^^^^^^^^^^^^
+AttributeError: 'MainApp' object has no attribute '_send_to_dock'. Did you mean: '_send_to_gt'?
+
+2025-07-03 22:14:46,404 - ERROR - User comment: j'ai voulu envoyer a l'outils visualisation et ho...bugg
+
+2025-07-03 22:15:06,063 - INFO - faire proprement l'envoi a data viz
+2025-07-04 09:30:29,317 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\metadata\metadata_tool.py", line 131, in update_metadata_label
+    st = f'The sample has been restored ?  <br> <b> {['NO','YES'][raw[0]]}</b>'
+                                                     ~~~~~~~~~~~~^^^^^^^^
+TypeError: only integer scalar arrays can be converted to a scalar index
+
+2025-07-04 09:30:39,068 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\metadata\metadata_tool.py", line 143, in update_metadata_label
+    st = f'The exposure time set for the capture was <b>{raw[0]:.2f}</b> ms.'
+                                                        ^^^^^^^^^^^^
+
+
+2025-07-04 11:01:17,951 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\registration\register_tool.py", line 820, in switch_fixe_mov
+    self.load_cube(switch=True)
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\registration\register_tool.py", line 325, in load_cube
+    self.slider_channel[idx].setMaximum(cube_data.shape[2] - 1)
+                                        ^^^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'shape'
+

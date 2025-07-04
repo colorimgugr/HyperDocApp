@@ -3,16 +3,12 @@
 
 # GUI Qt
 from PyQt5 import QtWidgets, QtCore
-from PyQt5.QtCore import QTimer,QSize, Qt,QEvent
+from PyQt5.QtCore import QTimer,QSize, Qt
 from PyQt5.QtGui import QFont,QIcon, QPalette, QColor
-from PyQt5.QtWidgets import (QStyleFactory, QDialog,QAction,QComboBox,QApplication, QMessageBox, QPushButton,QSizePolicy,
-                             QLabel,QToolButton,QMenu,QToolBar, QDockWidget,QVBoxLayout,QTextEdit,QDialog)
-
-import matplotlib.pyplot as plt
+from PyQt5.QtWidgets import (QStyleFactory, QAction, QPushButton, QSizePolicy,
+                             QLabel, QVBoxLayout, QTextEdit)
 
 ## System
-import sys
-import os
 
 ## exception gestion
 import traceback
@@ -23,8 +19,11 @@ from hypercubes.hypercube  import *
 from data_vizualisation.data_vizualisation_tool import Data_Viz_Window
 from registration.register_tool        import RegistrationApp
 from interface.hypercube_manager import HypercubeManager
-from data_vizualisation.metadata_tool import MetadataTool
+from metadata.metadata_tool import MetadataTool
 from ground_truth.ground_truth_tool import GroundTruthWidget
+
+# grafics to control changes
+import matplotlib.pyplot as plt
 
 # TODO : initier dans MainWindow les hypercubes et connecter les champs de chaque widget (yeah...big deal)
 # TODO : generate metadata position,height, width ,parentCube,name of registered cube or minicube
@@ -79,8 +78,6 @@ def apply_fusion_border_highlight(app,
         background-color: {base_bg};
     }}
     """)
-
-
 
 class MainApp(QtWidgets.QMainWindow):
     def __init__(self):
@@ -148,7 +145,7 @@ class MainApp(QtWidgets.QMainWindow):
         reg_widget.alignedCubeReady.connect(self.hypercube_manager.addCube)  # get signal from register tool
 
         # Action Add File in list of cubes
-        act_add = QAction("Add Cubes", self)
+        act_add = QAction("Open new cube(s)", self)
         act_add.triggered.connect(self._on_add_cube)
         self.toolbar.addAction(act_add)
 
@@ -172,7 +169,6 @@ class MainApp(QtWidgets.QMainWindow):
         act_suggestion.setToolTip("Add a suggestion for the developper")
         act_suggestion.triggered.connect(self.open_suggestion_box)
         self.toolbar.addAction(act_suggestion)
-
 
     def open_suggestion_box(self):
         self.suggestion_window = SuggestionWidget()
@@ -272,6 +268,22 @@ class MainApp(QtWidgets.QMainWindow):
             ci=CubeInfoTemp(filepath=path)
             self.hypercube_manager.addCube(ci)
 
+        if len(paths)==1:
+            qm = QMessageBox()
+            ans = qm.question(self, 'Cube loaded',
+                              "Do you want to send the loaded cube to the tools ?",
+                              qm.Yes | qm.No)
+            if ans==qm.Yes:
+
+                try:
+                    index = self.hypercube_manager.getIndexFromPath(paths[0])
+                    if index != -1:
+                        self._send_to_all(index)
+                except:
+                    QMessageBox.warning(self,'Cube not loaded',
+                              "Cube not loaded. Check format.")
+                    
+
     def _on_get_cube_info(self, insert_index):
         # 1) Récupère le CubeInfoTemp déjà présent
         ci = self.hypercube_manager._cubes[insert_index]
@@ -302,7 +314,19 @@ class MainApp(QtWidgets.QMainWindow):
         ci = self.hypercube_manager.getCubeInfo(index)
         widget.load_cube(cube_info=ci)
 
-    # todo : send to vizualisation tool
+    def _send_to_data_viz(self,index):
+        widget = self.data_viz_dock.widget()
+        ci = self.hypercube_manager.getCubeInfo(index)
+        print(ci.filepath)
+        widget.open_hypercubes_and_GT(filepath=ci.filepath)
+
+    def _send_to_all(self,index):
+        self._send_to_data_viz(index)
+        self._send_to_gt(index)
+        self._send_to_metadata(index)
+        self.reg_dock.widget().load_cube(1, self.hypercube_manager.paths[index])
+
+    # todo : send to all
 
     def _update_cube_menu(self, paths):
         """Met à jour le menu de cubes avec sous-menus et actions fonctionnelles."""
@@ -310,9 +334,17 @@ class MainApp(QtWidgets.QMainWindow):
         for idx, path in enumerate(paths):
             # Sous-menu pour chaque cube
             sub = QtWidgets.QMenu(path, self)
+            # Envoyer dant tous les docs
+            act_all = QtWidgets.QAction("Send to All tools", self)
+            act_all.triggered.connect(lambda checked, i=idx: self._send_to_all(i))
+            sub.addAction(act_all)
+
+            # Séparateur
+            sub.addSeparator()
+
             # Envoyer au dock viz
             act_viz = QtWidgets.QAction("Send to Vizualisation tool", self)
-            act_viz.triggered.connect(lambda checked, i=idx: self._send_to_dock(i, self.dock1))
+            act_viz.triggered.connect(lambda checked, i=idx: self._send_to_data_viz(i))
             sub.addAction(act_viz)
             # Envoyer au dock reg
             menu_load_reg=QtWidgets.QMenu("Send to Register Tool", sub)
@@ -367,7 +399,6 @@ logging.basicConfig(
     level=logging.ERROR,
     format="%(asctime)s - %(levelname)s - %(message)s"
 )
-
 
 # Configure suggestion logging (manually because second log)
 suggestion_logger = logging.getLogger("suggestion_logger")
@@ -492,12 +523,12 @@ if __name__ == "__main__":
     main = MainApp()
     main.show()
 
-    # folder=r'C:\Users\Usuario\Documents\DOC_Yannick\Hyperdoc_Test\Samples\minicubes/'
-    # cube_1='00001-VNIR-mock-up.h5'
-    # cube_2='00002-VNIR-mock-up.h5'
-    # paths=[folder+cube_1,folder+cube_2]
-    #
-    # main._on_add_cube(paths)
+    folder=r'C:\Users\Usuario\Documents\DOC_Yannick\HYPERDOC Database\Samples\minicubes/'
+    cube_1='00189-VNIR-mock-up.h5'
+    cube_2='00191-VNIR-mock-up.h5'
+    paths=[folder+cube_1,folder+cube_2]
+
+    main._on_add_cube(paths)
 
     # Timer for screen resolution check
     last_width = app.primaryScreen().size().width()
