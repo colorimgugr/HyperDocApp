@@ -59,6 +59,16 @@ class HypercubeManager(QtCore.QObject):
         """Return the CubeInfoTemp at the given index."""
         return self._cubes[index]
 
+    def getIndexFromPath(self, filepath: str) -> int:
+        """
+        Return the index of the cube with the given filepath.
+        Returns -1 if not found.
+        """
+        for i, ci in enumerate(self._cubes):
+            if ci.filepath == filepath:
+                return i
+        return -1
+
     @property
     def paths(self) -> List[str]:
         """List of cube filepaths."""

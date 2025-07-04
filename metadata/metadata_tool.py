@@ -1,8 +1,12 @@
 import re
-import os
 
 from hypercubes.hypercube import*
-from data_vizualisation.metadata_dock import*
+from metadata.metadata_dock import*
+
+from PyQt5.QtWidgets import (
+    QApplication,  QPushButton, QLabel, QVBoxLayout, QWidget, QScrollArea,QDialog,QFormLayout,
+     QMessageBox
+)
 
 # TODO : ici ou dans hypercube - generation automatique des metadata.
 # TODO : ajouter outils de generation de la valeur de la metadata (wl, bands,height,name,parent_cube,position,width)
@@ -34,6 +38,7 @@ class MetadataTool(QWidget, Ui_Metadata_tool):
         self.pushButton_reset_one.pressed.connect(self.reset_metadatum)
         self.toolButton_up.clicked.connect(lambda : self.step_combo(-1))
         self.toolButton_down.clicked.connect(lambda : self.step_combo(+1))
+        self.pushButton_see_all_metadata.clicked.connect(self.show_all_metadata)
 
     def step_combo(self, delta: int):
         combo = self.comboBox_metadata
@@ -72,7 +77,6 @@ class MetadataTool(QWidget, Ui_Metadata_tool):
         self.meta_load = cube.metadata_temp.copy()
         self.label_file_name_meta.setText(os.path.basename(self.cube_info.filepath))
         self.update_combo_meta(init=True)
-        print(self.cube_info.data_shape)
 
     def reset_metadatum(self):
         key = self.comboBox_metadata.currentText()
@@ -177,18 +181,16 @@ class MetadataTool(QWidget, Ui_Metadata_tool):
                 self.textEdit_metadata.setText(repr(type(raw)))
 
         #print on console to debugg/analyse
-        if isinstance(raw, np.ndarray):
-            # par exemple : forme et dtype
-            type_print = f"array shape={raw.shape}, dtype={raw.dtype}"
-        else:
-            type_print = repr(type(raw))
-
-        print(type_print)
+        # if isinstance(raw, np.ndarray):
+        #     # par exemple : forme et dtype
+        #     type_print = f"array shape={raw.shape}, dtype={raw.dtype}"
+        # else:
+        #     type_print = repr(type(raw))
+        # print(type_print)
 
     def keep_metadata(self):
         key = self.comboBox_metadata.currentText()
         raw_in=self.textEdit_metadata.toPlainText()
-        print(raw_in)
         meta_init = self.cube_info.metadata_temp[key]
         meta_valid=False
 
@@ -202,7 +204,6 @@ class MetadataTool(QWidget, Ui_Metadata_tool):
                 raw_in=raw_in.replace(']','')
                 raw_in = raw_in.replace('\n', '')
                 list_temp=raw_in.split(' ')
-                print(list_temp)
                 try :
                     self.cube_info.metadata_temp[key] = np.array(list_temp,dtype=meta_init.dtype)
                     meta_valid = True
@@ -243,16 +244,59 @@ class MetadataTool(QWidget, Ui_Metadata_tool):
         self.textEdit_metadata.setStyleSheet("QTextEdit  { color: black; }")
         self.update_metadata_label()
 
+    def show_all_metadata(self):
+
+
+        if self.cube_info.metadata_temp is None:
+            QMessageBox.information(self, "No Metadata", "No metadata available.")
+            return
+
+            # Window of dialog kind
+        dialog = QDialog(self)
+        dialog.setWindowTitle("All Metadata")
+        dialog.setModal(False)
+        layout = QVBoxLayout(dialog)
+
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        inner = QWidget()
+        form_layout = QFormLayout(inner)
+
+        # add rows to the form_layout
+        for key, val in self.cube_info.metadata_temp.items():
+            # Ignore entries too long
+            if key in ['spectra_mean', 'spectra_std', 'GT_cmap', 'wl']:
+                continue
+
+            try:
+                if isinstance(val, list) or isinstance(val, np.ndarray):
+                    val_str = ', '.join(str(v) for v in val)
+                elif isinstance(val, dict):
+                    val_str = str(val)
+                else:
+                    val_str = str(val)
+            except Exception as e:
+                val_str = f"<unable to display: {e}>"
+
+            form_layout.addRow(f"{key}:", QLabel(val_str))
+
+        #add scroll widget in dialog eindow layout
+        scroll.setWidget(inner)
+        layout.addWidget(scroll)
+
+        # Close push button
+        btn_close = QPushButton("Close")
+        btn_close.clicked.connect(dialog.accept)
+        layout.addWidget(btn_close)
+
+        dialog.setLayout(layout)
+        dialog.resize(500, 600)
+        dialog.exec()
 
 
 if __name__ == '__main__':
-    sample   = '00001-VNIR-mock-up.h5'
-    folder   = r'C:\Users\Usuario\Documents\DOC_Yannick\Hyperdoc_Test\Samples\minicubes'
-    # sample = 'jabon_guillermo_final.mat'
-    # sample = 'jabon_2-04-2025.mat'
-    # folder = r'C:\Users\Usuario\Downloads'
-    # sample = 'MPD41a_SWIR.mat'
-    # folder = r'C:\Users\Usuario\Documents\DOC_Yannick\Hyperdoc_Test\Archivo chancilleria'
+    folder = r'C:\Users\Usuario\Documents\DOC_Yannick\HYPERDOC Database\Samples\minicubes/'
+    sample = '00189-VNIR-mock-up.h5'
     filepath = os.path.join(folder, sample)
 
     cube = Hypercube(filepath=filepath, load_init=True)

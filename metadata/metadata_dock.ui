@@ -99,6 +99,13 @@
             </property>
            </widget>
           </item>
+          <item>
+           <widget class="QPushButton" name="pushButton_see_all_metadata">
+            <property name="text">
+             <string>See all metadata</string>
+            </property>
+           </widget>
+          </item>
          </layout>
         </widget>
         <widget class="QWidget" name="page_edit">

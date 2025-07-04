@@ -37,6 +37,8 @@ from matplotlib.pyplot import fill_between
 from data_vizualisation.data_vizualisation_window import*
 from hypercubes.hypercube import*
 
+#todo : fix distributions of images in Canvas_Images -> too much superposed
+
 class Data_Viz_Window(QWidget,Ui_DataVizualisation):
 
     def __init__(self,parent=None):
@@ -802,7 +804,11 @@ class Canvas_Image(FigureCanvas):
 
         # get wich image
         index = self.axs.index(ax)
-        if self.images[index] is None:
+
+        try :
+            if self.images[index] is None:
+                return
+        except:
             return
 
         # Zoom factor
@@ -884,10 +890,13 @@ class Canvas_Image(FigureCanvas):
 
             #for all axes
             for i, ax in enumerate(self.axs):
-                if self.images[i] is not None:
-                    img_shape = self.images[i].get_array().shape
-                    ax.set_xlim(*self.clamp_xlim(new_xlim, img_shape[1]))
-                    ax.set_ylim(*self.clamp_ylim(new_ylim, img_shape[0]))
+                try:
+                    if self.images[i] is not None:
+                        img_shape = self.images[i].get_array().shape
+                        ax.set_xlim(*self.clamp_xlim(new_xlim, img_shape[1]))
+                        ax.set_ylim(*self.clamp_ylim(new_ylim, img_shape[0]))
+                except:
+                    pass
 
             self.draw()
             return
@@ -903,7 +912,10 @@ class Canvas_Image(FigureCanvas):
 
         index = self.axs.index(event.inaxes)
 
-        if self.images[index] is None:
+        try :
+            if self.images[index] is None:
+                return
+        except:
             return
 
         try:
