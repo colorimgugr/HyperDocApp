@@ -7,7 +7,8 @@ from hypercubes.hypercube import CubeInfoTemp,Hypercube
 
 class HypercubeManager(QtCore.QObject):
     """Manage a collection of CubeInfoTemp objects and emit updates."""
-    cubesChanged = QtCore.pyqtSignal(list)
+    cubesChanged = QtCore.pyqtSignal(list)  # emit a change in cube list
+    metadataUpdated = QtCore.pyqtSignal(object)  # to emit a change in a cube_info attribute
 
     def __init__(self):
         super().__init__()
@@ -68,6 +69,43 @@ class HypercubeManager(QtCore.QObject):
             if ci.filepath == filepath:
                 return i
         return -1
+
+    def compare_metadata_dicts(self,d1, d2):
+        if d1.keys() != d2.keys():
+            return False
+
+        for key in d1:
+            v1 = d1[key]
+            v2 = d2[key]
+            print(v1,v2)
+
+            if isinstance(v1, np.ndarray) and isinstance(v2, np.ndarray):
+                if not np.array_equal(v1, v2):
+                    return False
+            elif isinstance(v1, list) and isinstance(v2, list):
+                if v1 != v2:
+                    return False
+            elif isinstance(v1, dict) and isinstance(v2, dict):
+                if v1 != v2:
+                    return False
+            else:
+                if v1 != v2:
+                    return False
+
+        return True
+
+    def updateMetadata(self, updated_ci: CubeInfoTemp):
+        index = self.getIndexFromPath(updated_ci.filepath)
+        if index == -1:
+            print(f"[Warning] Cube not found: {updated_ci.filepath}")
+            return
+
+        # to check if modif in hypercube ok before emitting
+        test = not self.compare_metadata_dicts(self._cubes[index].metadata_temp, updated_ci.metadata_temp)
+        if test:
+            self._cubes[index] = updated_ci
+            updated_ci.modif = True
+            self.metadataUpdated.emit(updated_ci)
 
     @property
     def paths(self) -> List[str]:

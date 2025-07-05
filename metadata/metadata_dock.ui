@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>315</width>
+    <width>330</width>
     <height>544</height>
    </rect>
   </property>
@@ -20,7 +20,10 @@
       <item alignment="Qt::AlignHCenter">
        <widget class="QLabel" name="label_file_name_meta">
         <property name="text">
-         <string>filepath of cube</string>
+         <string>No cube loaded</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
         </property>
        </widget>
       </item>
@@ -77,15 +80,18 @@
       </item>
       <item>
        <widget class="QCheckBox" name="checkBox_edit">
+        <property name="toolTip">
+         <string/>
+        </property>
         <property name="text">
-         <string>Edit Metadata</string>
+         <string>Edit/Create Metadata</string>
         </property>
        </widget>
       </item>
       <item>
        <widget class="QStackedWidget" name="stacked_metadata">
         <property name="currentIndex">
-         <number>0</number>
+         <number>1</number>
         </property>
         <widget class="QWidget" name="page_view">
          <layout class="QVBoxLayout" name="verticalLayout_view">
@@ -115,45 +121,77 @@
           </item>
           <item>
            <layout class="QGridLayout" name="gridLayout_2">
-            <item row="1" column="0">
+            <item row="2" column="0">
              <widget class="QPushButton" name="pushButton_add">
+              <property name="toolTip">
+               <string>Create a new metadatum or remove metadatum</string>
+              </property>
               <property name="text">
-               <string>Add New Metadata</string>
+               <string>Add/Remove Metadatum</string>
               </property>
              </widget>
             </item>
-            <item row="0" column="1">
+            <item row="2" column="1">
              <widget class="QPushButton" name="pushButton_generateMeta">
+              <property name="toolTip">
+               <string>Create/copy metadata structure for this cube</string>
+              </property>
               <property name="text">
                <string>Generate Metadata</string>
               </property>
              </widget>
             </item>
-            <item row="1" column="1">
-             <widget class="QPushButton" name="pushButton_save">
-              <property name="text">
-               <string>Valid Changes</string>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="0">
-             <widget class="QPushButton" name="pushButton_copyMetadata">
-              <property name="text">
-               <string>Copy from other cube</string>
-              </property>
-             </widget>
-            </item>
-            <item row="2" column="0">
-             <widget class="QPushButton" name="pushButton_reset_one">
-              <property name="text">
-               <string>Reset this metadata</string>
-              </property>
-             </widget>
-            </item>
-            <item row="2" column="1">
+            <item row="3" column="1">
              <widget class="QPushButton" name="pushButton_cancel">
+              <property name="toolTip">
+               <string>Go back to all initial values befire changes in Metadatatool</string>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">background-color: rgba(255, 170, 0, 100);</string>
+              </property>
               <property name="text">
-               <string>Reset All</string>
+               <string>Reset All Metadata</string>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="0">
+             <widget class="QPushButton" name="pushButton_reset_one">
+              <property name="toolTip">
+               <string>Reset current metadatum</string>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">background-color: rgba(255, 170, 0, 100);</string>
+              </property>
+              <property name="text">
+               <string>Reset Metadatum</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="0" colspan="2">
+             <widget class="QPushButton" name="pushButton_save">
+              <property name="toolTip">
+               <string>Valid changes made to metadatum</string>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">background-color: rgb(85, 170, 0,100);</string>
+              </property>
+              <property name="text">
+               <string>Valid Metadatum Change</string>
+              </property>
+             </widget>
+            </item>
+            <item row="4" column="0" colspan="2">
+             <widget class="QPushButton" name="pushButton_valid_all_changes">
+              <property name="toolTip">
+               <string>The modifications of metadatas wil be send to the cube in all tools.
+You can not reset the medatas to its original values unless load again the cube in the app. </string>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">background-color: rgba(85, 170, 0, 100);
+border-color: rgb(0, 0, 0);</string>
+              </property>
+              <property name="text">
+               <string>Send all metadata modification to the cube </string>
               </property>
              </widget>
             </item>
