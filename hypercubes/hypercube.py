@@ -18,6 +18,7 @@ import numpy as np
 
 # TODO : sortir HDF5BrowserWidget du fichier de la classe hypercube ?
 # TODO : si metadata à la racine, alors on garde toute la racine sauf le cube (ou une selection ?)
+# todo : before closing or removing cubes, check if modif have been made by comparing cube.cubeInfo.metadataTemp and cube.metadata
 
 @dataclass
 class CubeInfoTemp:
@@ -30,17 +31,21 @@ class CubeInfoTemp:
     wl_path: Optional[str] = None #wl location in the path
     metadata_temp: dict = field(default_factory=dict) # all metadatas modified in the app before saving
     data_shape: Optional[Union[List[float], np.ndarray]] = None # cube shape [width, height, bands]
-    crop: Optional[Union[List[float], np.ndarray]] = None # [x,y,dx,dy]
     wl_trans:Optional[str]= None # if need to transpose wl dim from dim 1 to dim 3
-    modif=False #to follow if some modif has been made is the app
+
+    # because only one filepath for one cube...and one cube for one filepath, let's define the cubeInfo equality
+    def __eq__(self, other):
+        if not isinstance(other, CubeInfoTemp):
+            return False
+        return self.filepath == other.filepath
 
 class Hypercube:
 
     """
-    Hyperspectral cube loader supporting:
-      • Legacy .mat (<v7.3) via scipy.io.loadmat
-      • HDF5 (.h5/.hdf5 or .mat v7.3) via h5py
-      • ENVI (.hdr + raw) via spectral.io.envi
+    Hyperspectral cube loader for format :
+    MATLAB .mat (<v7.3) via scipy.io.loadmat
+    HDF5 (.h5/.hdf5 or .mat v7.3) via h5py
+    ENVI (.hdr + raw) via spectral.io.envi
     """
 
     def __init__(self, filepath=None, data=None, wl=None, metadata=None, load_init=False,cube_info=None):
@@ -797,21 +802,9 @@ if __name__ == '__main__':
     import matplotlib.pyplot as plt
 
     # Example usage:
-    # sample   = '00001-VNIR-mock-up.mat'
-    # folder   = r'C:\Users\Usuario\Documents\DOC_Yannick\Hyperdoc_Test\Samples\minicubes'
-    # sample = 'jabon_guillermo_final.mat'
-    # sample = 'jabon_2-04-2025.mat'
-    # folder = r'C:\Users\Usuario\Downloads'
-    # sample = 'MPD41a_SWIR.mat'
-    # folder = r'C:\Users\Usuario\Documents\DOC_Yannick\Hyperdoc_Test\Archivo chancilleria'
-    # folder = r'C:\Users\Usuario\Documents\DOC_Yannick\Hyperdoc_Test\Samples\minicubes/'
-    # file_name = '00001-VNIR-mock-up.h5'
-    # folder = r'C:\Users\Usuario\Documents\DOC_Yannick\Hyperdoc_Test\Register_Test/'
-    # file_name = '00002-VNIR-mock-up.h5'
-    # folder=r'C:\Users\Usuario\Documents\DOC_Yannick\Hyperdoc_Test\Archivo chancilleria/'
-    # file_name='MPD41a_SWIR.mat'
-    folder=r'C:\Users\Usuario\Documents\DOC_Yannick\App_present_24_06\datas\Archivo chancilleria_for_Registering/'
-    file_name='reg_test.h5'
+
+    folder=r'C:\Users\Usuario\Documents\GitHub\Hypertool\metadata/'
+    file_name='model.h5'
     filepath = folder + file_name
 
     try:
@@ -823,8 +816,9 @@ if __name__ == '__main__':
             plt.imshow(rgb_img / np.max(rgb_img))
             plt.axis('off')
             plt.show()
-            print(cube.cube_info.metadata_temp['number'])
-            print(cube.cube_info.metadata_temp['parent_cube'])
+            for key in cube.metadata:
+                if key not in ['GTLabels','gtlabels','pixels_averaged','position','wl','GT_cmap','spectra_mean','spectra_std']:
+                    print(f'{key} : {cube.metadata[key]}')
 
     except Exception:
         print("Failed to load or display the hyperspectral cube.")

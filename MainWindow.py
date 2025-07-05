@@ -18,7 +18,7 @@ import logging
 from hypercubes.hypercube  import *
 from data_vizualisation.data_vizualisation_tool import Data_Viz_Window
 from registration.register_tool        import RegistrationApp
-from interface.hypercube_manager import HypercubeManager
+from hypercubes.hypercube_manager import HypercubeManager
 from metadata.metadata_tool import MetadataTool
 from ground_truth.ground_truth_tool import GroundTruthWidget
 
@@ -170,6 +170,11 @@ class MainApp(QtWidgets.QMainWindow):
         act_suggestion.triggered.connect(self.open_suggestion_box)
         self.toolbar.addAction(act_suggestion)
 
+        #### connect tools with hypercube manager for managinf changes in cubeInfoTemp
+        self.meta_dock.widget().metadataChanged.connect(self.hypercube_manager.updateMetadata)
+        self.hypercube_manager.metadataUpdated.connect(self.meta_dock.widget().on_metadata_updated)
+
+
     def open_suggestion_box(self):
         self.suggestion_window = SuggestionWidget()
         self.suggestion_window.show()
@@ -274,7 +279,6 @@ class MainApp(QtWidgets.QMainWindow):
                               "Do you want to send the loaded cube to the tools ?",
                               qm.Yes | qm.No)
             if ans==qm.Yes:
-
                 try:
                     index = self.hypercube_manager.getIndexFromPath(paths[0])
                     if index != -1:
@@ -282,7 +286,6 @@ class MainApp(QtWidgets.QMainWindow):
                 except:
                     QMessageBox.warning(self,'Cube not loaded',
                               "Cube not loaded. Check format.")
-                    
 
     def _on_get_cube_info(self, insert_index):
         # 1) Récupère le CubeInfoTemp déjà présent

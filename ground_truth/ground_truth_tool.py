@@ -1424,7 +1424,7 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
             # 1) Récupère les prototypes des classes labellisées
             classes = sorted(self.samples.keys())
             if not classes:
-                QMessageBox.warning(self, "Warning", "Select references pixels and try again !")
+                QMessageBox.warning(self, "Warning", "Choose Unsupervided classification or select references pixels and try again !")
                 return
 
             means = {}
