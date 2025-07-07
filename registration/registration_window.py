@@ -14,7 +14,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(838, 1088)
+        MainWindow.resize(1058, 1079)
         MainWindow.setMinimumSize(QtCore.QSize(200, 300))
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
@@ -174,6 +174,10 @@ class Ui_MainWindow(object):
         self.gridLayout_3.addWidget(self.checkBox_crop, 10, 0, 1, 1)
         spacerItem = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
         self.gridLayout_3.addItem(spacerItem, 2, 0, 1, 1)
+        self.checkBox_autorize_modify = QtWidgets.QCheckBox(self.groupBox)
+        self.checkBox_autorize_modify.setChecked(True)
+        self.checkBox_autorize_modify.setObjectName("checkBox_autorize_modify")
+        self.gridLayout_3.addWidget(self.checkBox_autorize_modify, 10, 1, 1, 1)
         self.gridLayout_3.setColumnStretch(0, 1)
         self.gridLayout_3.setColumnStretch(1, 1)
         self.verticalLayout_4.addWidget(self.groupBox)
@@ -315,6 +319,7 @@ class Ui_MainWindow(object):
         self.pushButton_getFeatures.setText(_translate("MainWindow", "Get features"))
         self.label_feature.setText(_translate("MainWindow", "<html><head/><body><p align=\"center\">% keypoints to keep</p></body></html>"))
         self.checkBox_crop.setText(_translate("MainWindow", "Only selected zone ?"))
+        self.checkBox_autorize_modify.setText(_translate("MainWindow", "Autorize modifying registered cube"))
         self.groupBox_Visualization.setTitle(_translate("MainWindow", "Visualization"))
         self.overlay_selector.setItemText(0, _translate("MainWindow", "Checkboard"))
         self.overlay_selector.setItemText(1, _translate("MainWindow", "Color"))

@@ -27,6 +27,8 @@ class MetadataTool(QWidget, Ui_Metadata_tool):
         self.setupUi(self)
         self.cube_info = cube_info if cube_info is not None else CubeInfoTemp()
         self.meta_load = self.cube_info.metadata_temp.copy()
+        self.hidden_meta=['wl','GT_cmap','spectra_mean','spectra_std','RGB']
+        self.not_editable=['GTLabels','gtlabels','bands','height','pixels_averaged','position','width']
 
         # connect combobox
         self.comboBox_metadata.currentIndexChanged.connect(self.update_metadata_label)
@@ -49,6 +51,7 @@ class MetadataTool(QWidget, Ui_Metadata_tool):
         self.pushButton_generateMeta.clicked.connect(self.generate_metadata)
         self.pushButton_add.clicked.connect(self.add_remove_metadatum)
         self.pushButton_valid_all_changes.clicked.connect(self.emit_updated_cube)
+        self.pushButton_load_cube.clicked.connect(self.open_cube)
 
     def ask_if_modif(self,index):
         discard=True
@@ -124,7 +127,7 @@ class MetadataTool(QWidget, Ui_Metadata_tool):
 
         if self.cube_info.metadata_temp :
             for key in self.cube_info.metadata_temp.keys():
-                if key not in ['wl','GT_cmap','spectra_mean','spectra_std']:
+                if key not in self.hidden_meta:
                     if key in ['GTLabels','pixels_averaged']:
                         try:
                             len(self.cube_info.metadata_temp[key])
@@ -291,9 +294,11 @@ class MetadataTool(QWidget, Ui_Metadata_tool):
         main_layout.addWidget(scroll_area)
 
         widgets = {}  # Dictionary: key -> (checkbox, lineedit)
+        metadata = {}  # Will hold the loaded metadata
 
         def load_cube():
             """Open file dialog and load metadata from another cube."""
+            nonlocal metadata  # to reuse in accept_copy
             path, _ = QFileDialog.getOpenFileName(
                 self, "Load Cube", "", "Cube files (*.h5 *.hdr *.mat);;All Files (*)"
             )
@@ -313,8 +318,6 @@ class MetadataTool(QWidget, Ui_Metadata_tool):
                     item.widget().deleteLater()
             widgets.clear()
 
-            # Re-add the global checkbox row
-
             # Add each metadata field
             for key, val in metadata.items():
                 hbox = QHBoxLayout()
@@ -323,6 +326,11 @@ class MetadataTool(QWidget, Ui_Metadata_tool):
                     lineedit.setText(" ".join(str(x) for x in np.array(val).flatten()))
                 else:
                     lineedit.setText(str(val))
+
+                if key in self.not_editable:
+                    lineedit.setReadOnly(True)
+                    lineedit.setStyleSheet("color: red;")
+
                 hbox.addWidget(lineedit)
 
                 checkbox = QCheckBox()
@@ -342,21 +350,24 @@ class MetadataTool(QWidget, Ui_Metadata_tool):
             """Apply selected metadata to current cube."""
             for key, (chk, line) in widgets.items():
                 if chk.isChecked():
-                    text = line.text().strip()
-                    if text == "":
-                        continue
-                    try:
-                        values = [float(x) if '.' in x else int(x) for x in text.split()]
-                        self.cube_info.metadata_temp[key] = np.array(values) if len(values) > 1 else values[0]
-                    except:
-                        self.cube_info.metadata_temp[key] = text
+                    if key in self.not_editable:
+                        # Direct copy from the source metadata
+                        self.cube_info.metadata_temp[key] = metadata[key]
+                    else:
+                        text = line.text().strip()
+                        if text == "":
+                            continue
+                        try:
+                            values = [float(x) if '.' in x else int(x) for x in text.split()]
+                            self.cube_info.metadata_temp[key] = np.array(values) if len(values) > 1 else values[0]
+                        except:
+                            self.cube_info.metadata_temp[key] = text
             dialog.accept()
 
         buttons.accepted.connect(accept_copy)
         buttons.rejected.connect(dialog.reject)
 
         dialog.resize(700, 600)
-
         if dialog.exec_() == QDialog.Accepted:
             self.update_combo_meta(init=True)
 
@@ -550,7 +561,7 @@ class MetadataTool(QWidget, Ui_Metadata_tool):
         self.label_metadata.setText(st)
 
         # edit text
-        if key in ['GTLabels','gtlabels','bands','height','pixels_averaged','position','width']:
+        if key in self.not_editable:
             self.textEdit_metadata.setReadOnly(True)
             self.textEdit_metadata.setStyleSheet("QTextEdit  { color: red; }")
         else:
@@ -652,11 +663,17 @@ class MetadataTool(QWidget, Ui_Metadata_tool):
         self.update_metadata_label()
 
     def show_all_metadata(self):
-        """open pop up in form style"""
+        """Open pop-up showing all metadata in scrollable form, with toggle to reveal hidden entries."""
+
+        from PyQt5.QtWidgets import (
+            QDialog, QVBoxLayout, QScrollArea, QWidget, QFormLayout,
+            QLabel, QPushButton, QCheckBox
+        )
+        from PyQt5.QtCore import Qt
+
         if self.cube_info.metadata_temp is None:
             QMessageBox.information(self, "No Metadata", "No metadata available.")
             return
-            # Window of dialog kind
 
         dialog = QDialog(self)
         dialog.setWindowTitle("All Metadata")
@@ -667,15 +684,17 @@ class MetadataTool(QWidget, Ui_Metadata_tool):
         scroll.setWidgetResizable(True)
         inner = QWidget()
         form_layout = QFormLayout(inner)
+        scroll.setWidget(inner)
+        layout.addWidget(scroll)
 
-        # add rows to the form_layout
+        check_hidden = QCheckBox("Show full values for large metadata")
+        layout.addWidget(check_hidden)
+
+        entries = {}  # key -> (full_str, QLabel)
+
         for key, val in self.cube_info.metadata_temp.items():
-            # Ignore entries too long
-            if key in ['spectra_mean', 'spectra_std', 'GT_cmap', 'wl']:
-                continue
-
             try:
-                if isinstance(val, list) or isinstance(val, np.ndarray):
+                if isinstance(val, (list, np.ndarray)):
                     val_str = ', '.join(str(v) for v in val)
                 elif isinstance(val, dict):
                     val_str = str(val)
@@ -684,19 +703,26 @@ class MetadataTool(QWidget, Ui_Metadata_tool):
             except Exception as e:
                 val_str = f"<unable to display: {e}>"
 
-            form_layout.addRow(f"{key}:", QLabel(val_str))
+            label_val = QLabel("HIDDEN" if key in self.hidden_meta else val_str)
+            label_val.setWordWrap(True)
+            form_layout.addRow(f"{key}:", label_val)
 
-        #add scroll widget in dialog eindow layout
-        scroll.setWidget(inner)
-        layout.addWidget(scroll)
+            entries[key] = (val_str, label_val)
 
-        # Close push button
+        def toggle_visibility(state):
+            for key in self.hidden_meta:
+                if key in entries:
+                    full_str, label = entries[key]
+                    label.setText(full_str if state == Qt.Checked else "HIDDEN")
+
+        check_hidden.stateChanged.connect(toggle_visibility)
+
         btn_close = QPushButton("Close")
         btn_close.clicked.connect(dialog.accept)
         layout.addWidget(btn_close)
 
         dialog.setLayout(layout)
-        dialog.resize(500, 600)
+        dialog.resize(600, 600)
         dialog.exec()
 
     def on_metadata_updated(self, updated_ci: CubeInfoTemp): #
@@ -714,8 +740,20 @@ class MetadataTool(QWidget, Ui_Metadata_tool):
         if ans==qm.Yes:
             self.metadataChanged.emit(self.cube_info)
             print(f"[MetadataTool] Metadata updated and signal emitted for {self.cube_info.filepath}")
+
         else:
             return
+
+    def open_cube(self,path=None):
+
+        if not path:
+            path,_=QFileDialog.getOpenFileName(self,"Open cube for Metadata tool")
+            if not path:
+                return
+
+        cube = Hypercube(filepath=path, load_init=True)
+        self.set_cube_info(cube.cube_info)
+        self.update_combo_meta(init=True)
 
 if __name__ == '__main__':
     filepath = None
@@ -723,7 +761,9 @@ if __name__ == '__main__':
     # folder = r'C:\Users\Usuario\Documents\DOC_Yannick\HYPERDOC Database\Samples\minicubes/'
     # sample = '00189-VNIR-mock-up.h5'
     folder=r'C:\Users\Usuario\Documents\DOC_Yannick\HYPERDOC Database\Other/'
-    sample= 'reg_test.h5'
+    # sample= 'reg_test.h5'
+    sample=  'MPD41a_VNIR.mat'
+
     filepath = os.path.join(folder, sample)
 
     app = QApplication(sys.argv)
@@ -741,8 +781,8 @@ if __name__ == '__main__':
 
     cube = Hypercube(filepath=filepath, load_init=True)
     meta_window.set_cube_info(cube.cube_info)
-
     meta_window.update_combo_meta(init=True)
+
     meta_window.show()
 
     sys.exit(app.exec_())

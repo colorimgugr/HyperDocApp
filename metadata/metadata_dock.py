@@ -69,6 +69,9 @@ class Ui_Metadata_tool(object):
         self.pushButton_see_all_metadata = QtWidgets.QPushButton(self.page_view)
         self.pushButton_see_all_metadata.setObjectName("pushButton_see_all_metadata")
         self.verticalLayout_view.addWidget(self.pushButton_see_all_metadata)
+        self.pushButton_load_cube = QtWidgets.QPushButton(self.page_view)
+        self.pushButton_load_cube.setObjectName("pushButton_load_cube")
+        self.verticalLayout_view.addWidget(self.pushButton_load_cube)
         self.stacked_metadata.addWidget(self.page_view)
         self.page_edit = QtWidgets.QWidget()
         self.page_edit.setObjectName("page_edit")
@@ -109,7 +112,7 @@ class Ui_Metadata_tool(object):
         self.verticalLayout_2.addWidget(self.frame)
 
         self.retranslateUi(Metadata_tool)
-        self.stacked_metadata.setCurrentIndex(1)
+        self.stacked_metadata.setCurrentIndex(0)
         QtCore.QMetaObject.connectSlotsByName(Metadata_tool)
 
     def retranslateUi(self, Metadata_tool):
@@ -119,6 +122,7 @@ class Ui_Metadata_tool(object):
         self.checkBox_edit.setText(_translate("Metadata_tool", "Edit/Create Metadata"))
         self.label_metadata.setText(_translate("Metadata_tool", "Votre texte ici…"))
         self.pushButton_see_all_metadata.setText(_translate("Metadata_tool", "See all metadata"))
+        self.pushButton_load_cube.setText(_translate("Metadata_tool", "Load cube"))
         self.pushButton_add.setToolTip(_translate("Metadata_tool", "Create a new metadatum or remove metadatum"))
         self.pushButton_add.setText(_translate("Metadata_tool", "Add/Remove Metadatum"))
         self.pushButton_generateMeta.setToolTip(_translate("Metadata_tool", "Create/copy metadata structure for this cube"))

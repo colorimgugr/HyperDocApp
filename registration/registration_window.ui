@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>838</width>
-    <height>1088</height>
+    <width>1058</width>
+    <height>1079</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -366,6 +366,16 @@
                      </size>
                     </property>
                    </spacer>
+                  </item>
+                  <item row="10" column="1">
+                   <widget class="QCheckBox" name="checkBox_autorize_modify">
+                    <property name="text">
+                     <string>Autorize modifying registered cube</string>
+                    </property>
+                    <property name="checked">
+                     <bool>true</bool>
+                    </property>
+                   </widget>
                   </item>
                  </layout>
                 </widget>

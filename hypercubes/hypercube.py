@@ -15,6 +15,7 @@ import sys
 from dataclasses import dataclass, field
 from typing import Optional, List, Union
 import numpy as np
+import copy
 
 # TODO : sortir HDF5BrowserWidget du fichier de la classe hypercube ?
 # TODO : si metadata à la racine, alors on garde toute la racine sauf le cube (ou une selection ?)
@@ -150,8 +151,10 @@ class Hypercube:
                     self.cube_info.data_path = "#refs#/d"
                     self.cube_info.wl_path = "#refs#/c"
                     self.cube_info.metadata_path = "Metadata"
-                    self.cube_info.metadata_temp = self.metadata.copy()
+                    self.cube_info.metadata_temp = copy.deepcopy(self.metadata)
                     self.cube_info.wl_dim = True
+                    self.cube_info.metadata_temp['wl']=self.wl
+                    self.cube_info.filepath=filepath
                     if self.data is not None:
                         self.cube_info.data_shape = self.data.shape
 
@@ -171,8 +174,10 @@ class Hypercube:
                     self.cube_info.data_path = "DataCube"
                     self.cube_info.wl_path = "@wl"
                     self.cube_info.metadata_path = "/"
-                    self.cube_info.metadata_temp = self.metadata.copy()
+                    self.cube_info.metadata_temp = copy.deepcopy(self.metadata)
                     self.cube_info.wl_trans = True
+                    self.cube_info.filepath=filepath
+
                     if self.data is not None:
                         self.cube_info.data_shape = self.data.shape
 
@@ -246,6 +251,12 @@ class Hypercube:
                     if self.data is not None:
                         self.cube_info.data_shape = self.data.shape
 
+                    try:
+                        self.cube_info.metadata_temp = copy.deepcopy(self.metadata)
+                        self.cube_info.filepath = filepath
+                    except:
+                        pass
+
                 except:
                     #HDF5 or MAT v7.3
                     with h5py.File(filepath, 'r') as f:
@@ -302,7 +313,7 @@ class Hypercube:
             try:
                 img = envi.open(filepath)
                 self.data = img.load().astype(np.float32)
-                self.metadata = img.metadata.copy()
+                self.metadata = copy.deepcopy(img.metadata)
 
                 wl = self.metadata.get('wavelength', self.metadata.get('wavelengths'))
                 if isinstance(wl, str):
@@ -337,7 +348,7 @@ class Hypercube:
             if 'name' not in self.cube_info.metadata_temp:
                 self.cube_info.metadata_temp['name']=self.filepath.split('/')[-1].split('.')[0]
 
-    def save(self,filepath=None,fmt=None):
+    def save(self,filepath=None,fmt=None,meta_from_cube_info=False):
         filters = (
             "HDF5 files (*.h5);;"
             "MATLAB files (*.mat);;"
@@ -356,6 +367,9 @@ class Hypercube:
 
             if filepath is None:
                 return
+
+            if meta_from_cube_info:
+                self.metadata=copy.deepcopy(self.cube_info.metadata_temp)
 
             sel = selected_filter.lower()
             if "hdf5" in sel:
@@ -387,95 +401,6 @@ class Hypercube:
             if not filepath.lower().endswith(".hdr"):
                 filepath += ".hdr"
             self.save_envi_cube(filepath)
-
-    # def save_hdf5_cube(self, filepath: str):
-    #     from PyQt5.QtWidgets import QMessageBox, QCheckBox
-    #
-    #     full_meta = self.metadata.copy()
-    #     filtered_meta = {}
-    #     ask_all = False
-    #     default_drop = False
-    #
-    #     with h5py.File(filepath, "w") as f:
-    #         # création du dataset principal
-    #         f.create_dataset("DataCube", data=self.data.transpose(2, 1, 0))
-    #
-    #         for key, val in full_meta.items():
-    #             print(f'{key}: {val}')
-    #
-    #         # itération sur les métadonnées
-    #         for key, val in full_meta.items():
-    #             # si on a déjà coché “Do this for all”, on applique la même décision
-    #             if ask_all and default_drop:
-    #                 # on drop sans rien écrire
-    #                 continue
-    #             print(key)
-    #
-    #             try:
-    #                 if key =='wl':
-    #                     if len(self.wl)==self.data.shape[2]:
-    #                        val=self.wl
-    #                 print(val)
-    #                 f.attrs[key] = val
-    #                 filtered_meta[key] = val
-    #
-    #             except OSError as e:
-    #                 # seulement si c’est bien le header trop gros
-    #                 if "object header message is too large" not in str(e):
-    #                     raise  # autre erreur → on remonte
-    #
-    #                 try:
-    #                     f.create_dataset(f"Meta_{key}", data=val)
-    #                 except Exception:
-    #                     pass
-    #
-    #                 # prompt interactif if we want to choose if new dataset
-    #
-    #                 # msg = QMessageBox()
-    #                 # msg.setIcon(QMessageBox.Question)
-    #                 # msg.setWindowTitle("Metadata too large")
-    #                 # msg.setText(f"The metadata '{key}' is too large to save in HDF5.")
-    #                 # msg.setInformativeText("Do you want to save without this metadata?")
-    #                 # yes_btn = msg.addButton("Yes", QMessageBox.AcceptRole)
-    #                 # no_btn = msg.addButton("No", QMessageBox.RejectRole)
-    #                 # dataset_btn = msg.addButton("Save as dataset", QMessageBox.ActionRole)
-    #                 # cancel_btn = msg.addButton("Cancel", QMessageBox.DestructiveRole)
-    #                 # cb = QCheckBox("Do this for all")
-    #                 # msg.setCheckBox(cb)
-    #                 # msg.exec_()
-    #
-    #                 # # gestion de la réponse
-    #                 # if msg.clickedButton() is cancel_btn:
-    #                 #     # on annule tout le save
-    #                 #     f.close()
-    #                 #     os.remove(filepath)  # ou on laisse le fichier incomplet
-    #                 #     return
-    #                 #
-    #                 # if msg.clickedButton() is dataset_btn:
-    #                 #     try:
-    #                 #         f.create_dataset(f"Meta_{key}", data=val)
-    #                 #     except Exception:
-    #                 #         pass
-    #                 #     filtered_meta[key] = val
-    #                 #     if cb.isChecked():
-    #                 #         ask_all = True
-    #                 #         default_drop = False
-    #                 #     continue
-    #                 #
-    #                 # drop = (msg.clickedButton() is yes_btn)
-    #                 # if cb.isChecked():
-    #                 #     ask_all = True
-    #                 #     default_drop = drop
-    #                 # if not drop:
-    #                 #     # user chose "Keep as attribute"
-    #                 #     try:
-    #                 #         f.attrs[key] = val
-    #                 #         filtered_meta[key] = val
-    #                 #     except:
-    #                 #         pass
-    #
-    #         # Optionnel : mettre à jour self.metadata pour refléter ce qui a été écrit
-    #         self.metadata = filtered_meta
 
     def save_hdf5_cube(self, filepath: str):
         # dtype HDF5 « variable-length UTF-8 string »
@@ -772,7 +697,6 @@ class SaveWindow(QDialog, Ui_Save_Window):
         else:
             opts['image_format']   = None
             opts['image_mode_rgb'] = False
-        opts['modify_metadata'] = self.checkBox_modif_metadata.isChecked()
         return opts
 
 def save_images(dirpath: str,

@@ -174,6 +174,7 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
         path_SWIR = None
         path_UV = None
         file_GT = None
+        UV=False #will be change in code if UV loaded
         self.image_loaded=[0,0,0] # hyp 0, hyp 1 and GT
 
         if filepath:quick_change=True # with arrows
@@ -360,6 +361,7 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
                     self.radioButton_VNIR.setChecked(True)
 
             elif self.spec_range[0] == 'UVIS':
+                UV=True
                 self.radioButton_UVIS.setEnabled(True)
                 if i_act==2 or not self.image_loaded[1]:
                     self.radioButton_UVIS.setChecked(True)
@@ -377,7 +379,7 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
 
         self.modif_sliders(default=True)
         self.horizontalSlider_transparency_GT.setValue(0)
-        self.update_image(load=True)
+        self.update_image(load=True,UV=UV)
         self.update_combo_meta(init=True)
 
         hyp = self.hyps[self.radioButton_SWIR.isChecked()]
