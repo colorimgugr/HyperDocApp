@@ -1,4 +1,5 @@
 # cd C:\Users\Usuario\Documents\GitHub\Hypertool
+# sys.excepthook = excepthook #set the exception handler
 # pyinstaller --noconsole --noconfirm --exclude-module tensorflow --exclude-module torch --icon="interface/icons/hyperdoc_logo_transparente.ico" --add-data "interface/icons:Hypertool/interface/icons" --add-data "ground_truth/Materials labels and palette assignation - Materials_labels_palette.csv:ground_truth"  --add-data "data_vizualisation/Spatially registered minicubes equivalence.csv:data_vizualisation"  MainWindow.py
 
 # GUI Qt

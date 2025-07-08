@@ -98,7 +98,7 @@
           <item>
            <widget class="QLabel" name="label_metadata">
             <property name="text">
-             <string>Votre texte ici…</string>
+             <string/>
             </property>
             <property name="wordWrap">
              <bool>true</bool>
