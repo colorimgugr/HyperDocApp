@@ -176,6 +176,11 @@ class MainApp(QtWidgets.QMainWindow):
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         self.toolbar.addWidget(spacer)
 
+        act_suggestion = QAction("SUGGESTIONS", self)
+        act_suggestion.setToolTip("Add a suggestion for the developper")
+        act_suggestion.triggered.connect(self.open_suggestion_box)
+        self.toolbar.addAction(act_suggestion)
+
         #### connect tools with hypercube manager for managing changes in cubeInfoTemp
         self.meta_dock.widget().metadataChanged.connect(self.hypercube_manager.updateMetadata)
 
@@ -462,15 +467,25 @@ class MainApp(QtWidgets.QMainWindow):
             self.cubeMenu.addMenu(sub)
 
 # Configure error logging
+# Get absolute path of log folder (support PyInstaller frozen mode)
+if getattr(sys, 'frozen', False):
+    base_path = sys._MEIPASS
+    exe_dir = os.path.dirname(sys.executable)
+else:
+    base_path = os.path.dirname(__file__)
+    exe_dir = base_path
+
+log_dir = os.path.join(exe_dir, "log")
+os.makedirs(log_dir, exist_ok=True)  # ← crée le dossier s’il n’existe pas
+
 logging.basicConfig(
-    filename="log/error.log",
+    filename=os.path.join(log_dir, "error.log"),
     level=logging.ERROR,
     format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
-# Configure suggestion logging (manually because second log)
 suggestion_logger = logging.getLogger("suggestion_logger")
-suggestion_handler = logging.FileHandler("log/suggestions.log")
+suggestion_handler = logging.FileHandler(os.path.join(log_dir, "suggestions.log"))
 suggestion_handler.setFormatter(logging.Formatter("%(asctime)s - %(message)s"))
 suggestion_logger.addHandler(suggestion_handler)
 suggestion_logger.setLevel(logging.INFO)
@@ -591,12 +606,12 @@ if __name__ == "__main__":
     main = MainApp()
     main.show()
 
-    folder='C:/Users/Usuario/Documents/DOC_Yannick/HYPERDOC Database/Samples/minicubes/'
-    cube_1='00189-VNIR-mock-up.h5'
-    cube_2='00191-VNIR-mock-up.h5'
-    paths=[folder+cube_1,folder+cube_2]
-
-    main._on_add_cube(paths)
+    # folder='C:/Users/Usuario/Documents/DOC_Yannick/HYPERDOC Database/Samples/minicubes/'
+    # cube_1='00189-VNIR-mock-up.h5'
+    # cube_2='00191-VNIR-mock-up.h5'
+    # paths=[folder+cube_1,folder+cube_2]
+    #
+    # main._on_add_cube(paths)
 
     # Timer for screen resolution check
     last_width = app.primaryScreen().size().width()

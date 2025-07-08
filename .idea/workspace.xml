@@ -4,15 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="[Metadata] copy from other cube -&gt; type keep for non editable like numpy&#10;open cube possibility&#10;[Registration] all metadata seems OK. Gestion des croped parent etc....">
+    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="Cube info loading and saving are syncronized with all tools (except visualize)&#10;[registration] manual features supression">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/MainWindow.py" beforeDir="false" afterPath="$PROJECT_DIR$/MainWindow.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ground_truth/ground_truth_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/ground_truth/ground_truth_tool.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hypercubes/hypercube.py" beforeDir="false" afterPath="$PROJECT_DIR$/hypercubes/hypercube.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hypercubes/hypercube_manager.py" beforeDir="false" afterPath="$PROJECT_DIR$/hypercubes/hypercube_manager.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/log/error.log" beforeDir="false" afterPath="$PROJECT_DIR$/log/error.log" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/metadata/metadata_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/metadata/metadata_tool.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/registration/register_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/registration/register_tool.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -108,9 +102,6 @@
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
       <option name="SDK_HOME" value="" />
       <option name="SDK_NAME" value="Python 3.12" />
       <option name="WORKING_DIRECTORY" value="C:\Users\Usuario\Documents\GitHub\Hypertool" />
@@ -142,14 +133,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1744020944801</updated>
-    </task>
-    <task id="LOCAL-00011" summary="Selection Zone OK&#10;Matching features viz OK">
-      <option name="closed" value="true" />
-      <created>1745940770594</created>
-      <option name="number" value="00011" />
-      <option name="presentableId" value="LOCAL-00011" />
-      <option name="project" value="LOCAL" />
-      <updated>1745940770594</updated>
     </task>
     <task id="LOCAL-00012" summary="register minicubes OK.">
       <option name="closed" value="true" />
@@ -535,7 +518,15 @@
       <option name="project" value="LOCAL" />
       <updated>1751917857950</updated>
     </task>
-    <option name="localTasksCounter" value="60" />
+    <task id="LOCAL-00060" summary="Cube info loading and saving are syncronized with all tools (except visualize)&#10;[registration] manual features supression">
+      <option name="closed" value="true" />
+      <created>1751934056860</created>
+      <option name="number" value="00060" />
+      <option name="presentableId" value="LOCAL-00060" />
+      <option name="project" value="LOCAL" />
+      <updated>1751934056862</updated>
+    </task>
+    <option name="localTasksCounter" value="61" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -587,7 +578,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Overlay transparency separate for for selection and GT&#10;GT and hyp image in QSplitter&#10;Supervised mode with thr" />
     <MESSAGE value="doublons de selection gerer" />
     <MESSAGE value="Merging GT and manual added&#10;add legend of color class when selecting" />
     <MESSAGE value="QSplitter OK&#10;Loading cube with reste state OK" />
@@ -612,6 +602,7 @@
     <MESSAGE value="Metadata tool copy from other cube et add/remove metadatum" />
     <MESSAGE value="Metadata tool copy from other cube -&gt; type keep for non editable like numpy&#10;open cube possibility" />
     <MESSAGE value="[Metadata] copy from other cube -&gt; type keep for non editable like numpy&#10;open cube possibility&#10;[Registration] all metadata seems OK. Gestion des croped parent etc...." />
-    <option name="LAST_COMMIT_MESSAGE" value="[Metadata] copy from other cube -&gt; type keep for non editable like numpy&#10;open cube possibility&#10;[Registration] all metadata seems OK. Gestion des croped parent etc...." />
+    <MESSAGE value="Cube info loading and saving are syncronized with all tools (except visualize)&#10;[registration] manual features supression" />
+    <option name="LAST_COMMIT_MESSAGE" value="Cube info loading and saving are syncronized with all tools (except visualize)&#10;[registration] manual features supression" />
   </component>
 </project>
