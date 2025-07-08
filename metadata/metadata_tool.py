@@ -12,13 +12,6 @@ from PyQt5.QtWidgets import (
      QMessageBox,QFileDialog,QDialogButtonBox,QHBoxLayout,QCheckBox,QLineEdit,QComboBox
 )
 
-
-# TODO : ici ou dans hypercube - generation automatique des metadata.
-# TODO : ajouter outils de generation de la valeur de la metadata (wl, bands,height,name,parent_cube,position,width)
-# TODO : propose edit all Metadata : type formulaire with add_meta possibility
-# TODO : save data
-# TODO : check type when creating/copy from another cube -> protect from editing when added to the form at first ?
-
 class MetadataTool(QWidget, Ui_Metadata_tool):
 
     metadataChanged = pyqtSignal(object)
@@ -618,7 +611,7 @@ class MetadataTool(QWidget, Ui_Metadata_tool):
             msg_box = QMessageBox(self)
             msg_box.setWindowTitle("Type problem")
             msg_box.setIcon(QMessageBox.Warning)
-            msg_box.setText("The type is not the same as inital metadatum type.\nDo you want to <b>force type of metadatum to string </b> or cancel modification ?")
+            msg_box.setText("The type is not the same as initial metadatum type.\nDo you want to <b>force type of metadatum to string </b> or cancel modification ?")
             force_button = msg_box.addButton("Force type to string ? ", QMessageBox.AcceptRole)
             cancel_button = msg_box.addButton("Cancel modification", QMessageBox.RejectRole)
             msg_box.exec()

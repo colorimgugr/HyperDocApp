@@ -44,3 +44,64 @@ Traceback (most recent call last):
                      ^^^
 UnboundLocalError: cannot access local variable 'ext' where it is not associated with a value
 
+2025-07-08 10:08:55,638 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\AppData\Roaming\Python\Python312\site-packages\pandas\core\indexes\base.py", line 3805, in get_loc
+    return self._engine.get_loc(casted_key)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "index.pyx", line 167, in pandas._libs.index.IndexEngine.get_loc
+  File "index.pyx", line 196, in pandas._libs.index.IndexEngine.get_loc
+  File "pandas\\_libs\\hashtable_class_helper.pxi", line 2606, in pandas._libs.hashtable.Int64HashTable.get_item
+  File "pandas\\_libs\\hashtable_class_helper.pxi", line 2630, in pandas._libs.hashtable.Int64HashTable.get_item
+KeyError: 0
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\data_vizualisation\data_vizualisation_tool.py", line 208, in open_hypercubes_and_GT
+    cube_asoc = self.minicube_association_table.loc[self.minicube_association_table['VNIR'] == base_name]['SWIR'][0]
+                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^
+  File "C:\Users\Usuario\AppData\Roaming\Python\Python312\site-packages\pandas\core\series.py", line 1121, in __getitem__
+    return self._get_value(key)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Usuario\AppData\Roaming\Python\Python312\site-packages\pandas\core\series.py", line 1237, in _get_value
+    loc = self.index.get_loc(label)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Usuario\AppData\Roaming\Python\Python312\site-packages\pandas\core\indexes\base.py", line 3812, in get_loc
+    raise KeyError(key) from err
+KeyError: 0
+
+2025-07-08 14:26:00,843 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\AppData\Roaming\Python\Python312\site-packages\pandas\core\indexes\base.py", line 3805, in get_loc
+    return self._engine.get_loc(casted_key)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "index.pyx", line 167, in pandas._libs.index.IndexEngine.get_loc
+  File "index.pyx", line 196, in pandas._libs.index.IndexEngine.get_loc
+  File "pandas\\_libs\\hashtable_class_helper.pxi", line 2606, in pandas._libs.hashtable.Int64HashTable.get_item
+  File "pandas\\_libs\\hashtable_class_helper.pxi", line 2630, in pandas._libs.hashtable.Int64HashTable.get_item
+KeyError: 0
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\MainWindow.py", line 408, in <lambda>
+    act_all.triggered.connect(lambda checked, i=idx: self._send_to_all(i))
+                                                     ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\MainWindow.py", line 386, in _send_to_all
+    self._send_to_data_viz(index)
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\MainWindow.py", line 383, in _send_to_data_viz
+    widget.open_hypercubes_and_GT(filepath=ci.filepath)
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\data_vizualisation\data_vizualisation_tool.py", line 208, in open_hypercubes_and_GT
+    cube_asoc = self.minicube_association_table.loc[self.minicube_association_table['VNIR'] == base_name]['SWIR'][0]
+                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^
+  File "C:\Users\Usuario\AppData\Roaming\Python\Python312\site-packages\pandas\core\series.py", line 1121, in __getitem__
+    return self._get_value(key)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Usuario\AppData\Roaming\Python\Python312\site-packages\pandas\core\series.py", line 1237, in _get_value
+    loc = self.index.get_loc(label)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Usuario\AppData\Roaming\Python\Python312\site-packages\pandas\core\indexes\base.py", line 3812, in get_loc
+    raise KeyError(key) from err
+KeyError: 0
+

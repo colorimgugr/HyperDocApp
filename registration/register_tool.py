@@ -10,7 +10,7 @@ import numpy as np
 import cv2
 from IPython.core.display_functions import update_display
 from PyQt5.QtWidgets import (
-    QApplication, QWidget,QMainWindow, QVBoxLayout, QPushButton,QSpinBox,
+    QApplication, QWidget,QMainWindow, QVBoxLayout, QPushButton,QSpinBox,QProgressBar,
     QLabel, QFileDialog, QHBoxLayout, QMessageBox, QComboBox, QDialog,QLineEdit,
     QGraphicsView, QGraphicsScene, QGraphicsPixmapItem,QRubberBand,QFormLayout,QDialogButtonBox
 )
@@ -18,6 +18,9 @@ from PyQt5.QtGui import QPixmap, QImage, QTransform,  QPen, QColor
 from PyQt5.QtCore import Qt, QPointF, QRectF, QRect, QPoint,QSize,pyqtSignal,QStandardPaths
 from PyQt5 import QtCore
 import warnings
+
+from sympy.physics.secondquant import wicks
+
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 import os, uuid, tempfile
 import random
@@ -62,8 +65,56 @@ def overlay_checkerboard(fixed, aligned, tile_size=20):
                 result[y:y+tile_size, x:x+tile_size] = aligned[y:y+tile_size, x:x+tile_size]
     return result
 
+def find_paired_cube_path(current_path):
+    """
+    À partir du chemin d'un cube VNIR ou SWIR, essaie de trouver son homologue.
+    Retourne le chemin du fichier si trouvé, sinon None.
+    """
+    if not current_path:
+        return None
+
+    dirname, basename = os.path.split(current_path)
+
+    if "SWIR" in basename:
+        alt_name = basename.replace("SWIR", "VNIR")
+    elif "VNIR" in basename:
+        alt_name = basename.replace("VNIR", "SWIR")
+    else:
+        return None  # Aucun tag identifiable
+
+    alt_path = os.path.join(dirname, alt_name)
+    return alt_path if os.path.exists(alt_path) else None
+
+class LoadingDialog(QDialog):
+    def __init__(self, message="Loading...", filename=None, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Please wait")
+        self.setModal(True)
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
+
+        layout = QVBoxLayout(self)
+
+        label = QLabel(message)
+        label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(label)
+
+        if filename:
+            label_file = QLabel(f"<i>{os.path.basename(filename)}</i>")
+            label_file.setAlignment(Qt.AlignCenter)
+            layout.addWidget(label_file)
+
+        self.progress = QProgressBar()
+        self.progress.setRange(0, 0)  # mode indéterminé
+        layout.addWidget(self.progress)
+
+        self.setFixedWidth(350)
+
 class ZoomableGraphicsView(QGraphicsView):
-    middleClicked = pyqtSignal(QPointF)
+    middleClicked = pyqtSignal(QPointF) # suppres features
+    moveFeatureStart = pyqtSignal(QPointF) # movefeatures
+    moveFeatureUpdate = pyqtSignal(QPointF)
+    moveFeatureEnd = pyqtSignal()
+
     def __init__(self):
         super().__init__()
         self.setScene(QGraphicsScene())
@@ -79,6 +130,10 @@ class ZoomableGraphicsView(QGraphicsView):
         self.last_rect_item = None
         self.rect_coords = None
 
+        # Moving point
+        self.editing_match = None  # (match_index, side: "left"/"right")
+        self.setMouseTracking(True)  # enable mouseMoveEvent without press
+
     def setImage(self, pixmap):
         self.clear_rectangle()
         self.scene().clear()
@@ -93,15 +148,28 @@ class ZoomableGraphicsView(QGraphicsView):
         self.scale(zoom, zoom)
 
     def mousePressEvent(self, event):
-        if event.button() == Qt.RightButton and self.pixmap_item:
+        if event.button() == Qt.RightButton and self.pixmap_item: # rectangle selection
             self.viewport().setCursor(Qt.CrossCursor)
             self.origin = event.pos()
             self.rubber_band.setGeometry(QRect(self.origin, QSize()))
             self.rubber_band.show()
             self._selecting = True
-        if event.button() == Qt.MiddleButton and self.pixmap_item:
+
+        elif event.button() == Qt.MiddleButton and self.pixmap_item: # feature supress
             scene_pos = self.mapToScene(event.pos())
             self.middleClicked.emit(scene_pos)
+
+        elif event.button() == Qt.LeftButton and event.modifiers() == Qt.ControlModifier and self.pixmap_item: # feature supress
+            scene_pos = self.mapToScene(event.pos())
+            self.middleClicked.emit(scene_pos)
+            event.accept()
+            return
+
+        elif event.button() == Qt.LeftButton and event.modifiers() == Qt.AltModifier and self.pixmap_item:
+            scene_pos = self.mapToScene(event.pos())
+            self.moveFeatureStart.emit(scene_pos)
+            event.accept()
+            return
 
         super().mousePressEvent(event)
 
@@ -113,6 +181,11 @@ class ZoomableGraphicsView(QGraphicsView):
             y = min(max(event.pos().y(), 0), max_h)
             rect = QRect(self.origin, QPoint(x, y)).normalized()
             self.rubber_band.setGeometry(rect)
+
+        elif self.editing_match is not None:
+            scene_pos = self.mapToScene(event.pos())
+            self.moveFeatureUpdate.emit(scene_pos)
+
         super().mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event):
@@ -156,6 +229,11 @@ class ZoomableGraphicsView(QGraphicsView):
             self.last_rect_item = self.scene().addRect(
                 x_min, y_min, width, height, QPen(QColor("red"))
             )
+
+        if self.editing_match is not None:
+            self.moveFeatureEnd.emit()
+            self.editing_match = None
+
         super().mouseReleaseEvent(event)
 
     def get_rect_coords(self):
@@ -193,6 +271,7 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
         self.matches= None # only %selected matches
         self.matches_all=None #all matches list
         self.parent_aligned_for_minicubes=None # to use as parent_cube for mincubes extraction
+        self.auto_load_lock = False #to control auto_load and do not have infinite loop
 
         self.manual_feature_modif=False #to see if manual have been made in features selection
         self.selected_zone=[0,0]
@@ -211,7 +290,7 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
         self.pushButton_register.clicked.connect(self.register_imageAndCube)
         self.checkBox_crop.clicked.connect(self.check_selected_zones)
         self.pushButton_save_cube.clicked.connect(self.open_save_dialog)
-        self.pushButton_validRegistration.clicked.connect(self.valid_registration)
+        self.pushButton_reset.clicked.connect(self.reset_all)
 
         self.pushButton_switch_images.clicked.connect(self.switch_fixe_mov)
 
@@ -232,6 +311,9 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
         self.viewer_label=[self.label_fixed,self.label_moving]
 
         self.viewer_aligned.middleClicked.connect(self.middle_click_on_match) #interaction for features supress
+        self.viewer_aligned.moveFeatureStart.connect(self.start_move_feature) # move features
+        self.viewer_aligned.moveFeatureUpdate.connect(self.update_move_feature)
+        self.viewer_aligned.moveFeatureEnd.connect(self.end_move_feature)
 
         self.setLayout(self.main_layout)
 
@@ -270,32 +352,6 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
             self.spinBox_mov_channel.setEnabled(True)
 
         self.update_images()
-
-    def valid_registration(self):
-        # save aligned to temp dir
-
-        name_moving = self.moving_cube.filepath.split('/')[-1].split('.')[0]
-
-        if self.viewer_aligned.get_rect_coords() is not None:
-            valid_crop = QMessageBox.question(self, 'Croped zone', "Do you want to valid only croped zone ?",
-                                               QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
-
-            if valid_crop:
-                y, x, dy, dx = self.viewer_aligned.get_rect_coords()
-                y, x, dy, dx = map(int, (y, x, dy, dx))
-                self.aligned_cube.cube_info.metadata_temp['position'] =[y, x, dy, dx]
-                self.aligned_cube.cube_info.metadata_temp['parent_cube']=name_moving
-
-        try :
-            temp_path = os.path.join(tempfile.gettempdir(), name_moving+"_aligned_cube.h5")
-            self.aligned_cube.filepath=temp_path
-            self.aligned_cube.cube_info.filepath=temp_path
-
-            self.aligned_cube.save(filepath=temp_path,fmt='HDF5')
-            self.alignedCubeReady.emit(self.aligned_cube.cube_info)
-            # self.pushButton_validRegistration.setEnabled(False)
-        except:
-            pass
 
     def update_images(self):
 
@@ -386,21 +442,42 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
             return  # important : on sort de la méthode après le switch
 
         else :
+
+            load_fixe_auto = False
+
             if fname is None:
                 fname, _ = QFileDialog.getOpenFileName(self, ['Load Fixed Cube','Load Moving Cube'][i_mov])
 
             if fname:
+                which_cube=['FIXED','MOVING'][i_mov]
+                message_progress=  "Loading "+which_cube+" cube..."
+                loading = LoadingDialog(message_progress, filename=fname, parent=self)
+                loading.show()
+                QApplication.processEvents()
+
                 if fname[-3:] in['mat', '.h5']:
                     if i_mov:
                         self.moving_cube.open_hyp(fname, open_dialog=False)
                         cube=self.moving_cube.data
                         wl=self.moving_cube.wl
                         self.cubeLoaded.emit(fname)  # Notify the manager
+
+
                     else:
                         self.fixed_cube.open_hyp(fname, open_dialog=False)
                         cube=self.fixed_cube.data
                         wl = self.fixed_cube.wl
                         self.cubeLoaded.emit(fname)  # Notify the manager
+
+                    # Auto-load paired cube if not already loaded
+                    paired_path=None
+                    if not self.auto_load_lock:
+                        paired_path = find_paired_cube_path(fname)
+
+                        if paired_path:
+                            load_fixe_auto = True
+                        else:
+                            print(f"[Auto-load] Aucun cube équivalent trouvé pour : {fname}")
 
                     self.cube = [self.fixed_cube, self.moving_cube]
 
@@ -440,6 +517,13 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
                 self.viewer_img[i_mov].setImage(np_to_qpixmap(img))
                 suffixe_label = [" (fixed)", " (moving)"][i_mov]
                 self.viewer_label[i_mov].setText(self.cube[i_mov].filepath.split('/')[-1] + suffixe_label)
+
+                loading.close()
+
+            if not self.auto_load_lock and paired_path is not None:
+                self.auto_load_lock = True
+                self.load_cube(i_mov=1 - i_mov, fname=paired_path)
+                self.auto_load_lock = False
 
         self.pushButton_register.setEnabled(False)
 
@@ -647,7 +731,6 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
         self.update_display()
         self.pushButton_register.setEnabled(True)
         self.pushButton_save_cube.setEnabled(True)
-        self.pushButton_validRegistration.setEnabled(True)
         self.parent_aligned_for_minicubes = None
 
     def choose_register_method_ecc(self):
@@ -690,6 +773,9 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
 
     def update_keypoints_display(self):
 
+        if self.matches_all is None:
+            return
+
         self.update_slider_packet()
 
         keypoints_per_packet = self.spinBox_keypointPerPacket.value()
@@ -717,6 +803,13 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
 
         combined = np.hstack((fixed_img_vis, moving_img_vis))
 
+        def index_to_color(idx):
+            # Une fonction simple pour faire un "arc-en-ciel" déterministe
+            r = (37 * idx) % 256
+            g = (97 * idx) % 256
+            b = (173 * idx) % 256
+            return (r, g, b)
+
         for i, m in enumerate(selected_matches):
             kp1 = self.kp1[m.queryIdx]
             kp2 = self.kp2[m.trainIdx]
@@ -725,7 +818,7 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
             pt2 = tuple(np.round(kp2.pt).astype(int))
             pt2_shifted = (int(pt2[0] + fixed_img_vis.shape[1]), pt2[1])  # Décalage pour image de droite
 
-            color = tuple(np.random.randint(0, 255, 3).tolist())
+            color = index_to_color(start_idx + i)
             cv2.circle(combined, pt1, 5, color, thickness = 2)
             cv2.circle(combined, pt2_shifted, 5, color, thickness = 2)
             cv2.line(combined, pt1, pt2_shifted, color, thickness = 2)
@@ -742,13 +835,21 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
 
     def update_slider_packet(self):
         # update max slider
-        n_packet=int(len(self.matches_all)/self.spinBox_keypointPerPacket.value())
-        if len(self.matches_all)%self.spinBox_keypointPerPacket.value() !=0:
-            n_packet+=1
+        if self.matches_all is None:
+            return
+
+        n_features=len(self.matches_all)
+        n_features_per_packet=self.spinBox_keypointPerPacket.value()
+        n_packet=int(n_features/n_features_per_packet)
+        # if n_features%n_features_per_packet !=0:
+        #     n_packet+=1
         self.horizontalSlider_keyPacketToShow.setMaximum(n_packet)
         # update label
         packet_show=self.horizontalSlider_keyPacketToShow.value()
-        self.label_packetToShow.setText(f'packet {packet_show +1}/{n_packet}')
+        feat_start=packet_show*n_features_per_packet
+        feat_stop=(packet_show+1)*n_features_per_packet-1
+        if feat_stop>=n_features:feat_stop=n_features
+        self.label_packetToShow.setText(f'features {feat_start} to {feat_stop} /{n_features}')
         if packet_show>n_packet*self.features_slider.value()/ 100:
             self.label_packetToShow.setStyleSheet(u"color: rgb(255, 0, 0);")
         else:
@@ -921,10 +1022,10 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
                 lineedit_reg_name = QLineEdit()
                 lineedit_reg_name.setText(os.path.basename(save_path_align).split('.')[0])
                 form_layout.addRow(QLabel('name'), lineedit_reg_name)
-                lineedit_reg_cubeinfo = QLineEdit()
-                try: lineedit_reg_cubeinfo.setText(mini_align_cube.cube_info.metadata_temp['cubeinfo'])
-                except: pass
-                form_layout.addRow(QLabel("cubeinfo"), lineedit_reg_cubeinfo)
+
+                lineedit_reg_parent = QLineEdit()
+                lineedit_reg_parent.setText(mini_align_cube.cube_info.metadata_temp['parent_cube'])
+                form_layout.addRow(QLabel("parent_cube"), lineedit_reg_parent)
 
                 if save_both:
                     form_layout.addRow(QLabel(""))
@@ -933,19 +1034,28 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
                     lineedit_fix_name.setText(os.path.basename(save_path_fixed).split('.')[0])
 
                     form_layout.addRow(QLabel('name'), lineedit_fix_name)
-                    lineedit_fix_cubeinfo = QLineEdit()
-                    try:
-                        lineedit_fix_cubeinfo.setText(mini_fixed_cube.cube_info.metadata_temp['cubeinfo'])
-                    except:
-                        pass
-                    form_layout.addRow(QLabel("cubeinfo"), lineedit_fix_cubeinfo)
+
+                    lineedit_fix_parent = QLineEdit()
+                    lineedit_fix_parent.setText(mini_fixed_cube.cube_info.metadata_temp['parent_cube'])
+                    form_layout.addRow(QLabel("parent_cube"), lineedit_fix_parent)
 
                 form_layout.addRow(QLabel(""))
+
+                if save_both:
+                    form_layout.addRow(QLabel("<b><div align='center'>FOR BOTH CUBES</div></b>"))
+
+                lineedit_cubeinfo = QLineEdit()
+                try:
+                    lineedit_cubeinfo.setText(mini_align_cube.cube_info.metadata_temp['cubeinfo'])
+                except:
+                    pass
+                form_layout.addRow(QLabel("cubeinfo"), lineedit_cubeinfo)
 
                 lineedit_number = QLineEdit()
                 try: lineedit_number.setText(os.path.basename(save_path_fixed).split('.')[0].split('_')[-1])
                 except:pass
                 form_layout.addRow(QLabel("number"), lineedit_number)
+
 
                 layout.addLayout(form_layout)
 
@@ -956,12 +1066,14 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
                 def on_accept():
 
                     mini_align_cube.cube_info.metadata_temp['name'] = lineedit_reg_name.text().strip()
-                    mini_align_cube.cube_info.metadata_temp['cubeinfo'] = lineedit_reg_cubeinfo.text().strip()
+                    mini_align_cube.cube_info.metadata_temp['cubeinfo'] = lineedit_cubeinfo.text().strip()
                     mini_align_cube.cube_info.metadata_temp['number'] = lineedit_number.text().strip()
+                    mini_align_cube.cube_info.metadata_temp['parent_cube'] = lineedit_reg_parent.text().strip()
                     if save_both:
                         mini_fixed_cube.cube_info.metadata_temp['name'] = lineedit_fix_name.text().strip()
-                        mini_fixed_cube.cube_info.metadata_temp['cubeinfo'] = lineedit_fix_cubeinfo.text().strip()
+                        mini_fixed_cube.cube_info.metadata_temp['cubeinfo'] = lineedit_cubeinfo.text().strip()
                         mini_fixed_cube.cube_info.metadata_temp['number'] = lineedit_number.text().strip()
+                        mini_fixed_cube.cube_info.metadata_temp['parent_cube'] = lineedit_fix_parent.text().strip()
 
                     dialog.accept()
 
@@ -970,7 +1082,6 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
 
                 dialog.setLayout(layout)
                 dialog.exec_()
-
 
         else:
             fixed_img = self.fixed_img
@@ -1122,6 +1233,7 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
             if real_idx is not None:
                 del self.matches_all[real_idx]
                 self.update_keypoints_display()
+                self.checkBox_autorize_modify.setChecked(False)
             dialog.accept()
 
         buttons.accepted.connect(on_accept)
@@ -1129,17 +1241,96 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
 
         dialog.exec_()
 
-    def clean_cache(self):
-        import glob
-        cache = tempfile.gettempdir()
-        for f in glob.glob(os.path.join(cache, "aligned_*.h5")):
-            try:
-                os.remove(f)
-            except:
-                pass
+    def start_move_feature(self, scene_pos):
+        if self.overlay_selector.currentText() != "View Matches":
+            return
 
+        clicked_x, clicked_y = scene_pos.x(), scene_pos.y()
+        img_width = self.fixed_img.shape[1]
+        min_dist = 15
 
-# TODO : clean different load and save function in data_viz and register and openSave
+        for i, match in enumerate(self.currently_displayed_matches):
+            pt1 = np.array(self.kp1[match.queryIdx].pt)
+            pt2 = np.array(self.kp2[match.trainIdx].pt) + np.array([img_width, 0])
+            if np.linalg.norm(pt1 - [clicked_x, clicked_y]) < min_dist:
+                self.viewer_aligned.editing_match = (i, "left")
+                return
+            elif np.linalg.norm(pt2 - [clicked_x, clicked_y]) < min_dist:
+                self.viewer_aligned.editing_match = (i, "right")
+                return
+
+    def update_move_feature(self, scene_pos):
+        if not self.viewer_aligned.editing_match:
+            return
+
+        idx_display, side = self.viewer_aligned.editing_match
+        real_idx = self.match_display_to_global_index.get(idx_display, None)
+        if real_idx is None:
+            return
+
+        match = self.matches_all[real_idx]
+
+        if side == "left":
+            self.kp1[match.queryIdx].pt = (scene_pos.x(), scene_pos.y())
+        elif side == "right":
+            self.kp2[match.trainIdx].pt = (scene_pos.x() - self.fixed_img.shape[1], scene_pos.y())
+
+        self.update_keypoints_display()
+
+    def end_move_feature(self):
+        self.checkBox_autorize_modify.setChecked(False)
+
+    def reset_all(self):
+        # reinit cube and images
+        self.fixed_cube = Hypercube()
+        self.moving_cube = Hypercube()
+        self.aligned_cube = Hypercube()
+        self.fixed_img = None
+        self.moving_img = None
+        self.aligned_img = None
+        self.img = [None, None]
+
+        # clean features and variables
+        self.kp1 = None
+        self.kp2 = None
+        self.matches = None
+        self.matches_all = None
+        self.currently_displayed_matches = []
+        self.match_display_to_global_index = {}
+        self.manual_feature_modif = False
+        self.parent_aligned_for_minicubes = None
+
+        # Reset sliders
+        for slider, spin in zip(self.slider_channel + self.spinBox_channel,
+                                self.slider_channel + self.spinBox_channel):
+            slider.setValue(0)
+            slider.setEnabled(False)
+            spin.setValue(0)
+            spin.setEnabled(False)
+
+        self.horizontalSlider_keyPacketToShow.setValue(0)
+        self.features_slider.setValue(50)
+
+        # Reset rectangles
+        for viewer in self.viewer_img:
+            viewer.clear_rectangle()
+
+        # Reset images & labels
+        for viewer in self.viewer_img:
+            viewer.setImage(QPixmap())
+        for label in self.viewer_label:
+            label.setText("")
+
+        # Reset aligned viewer
+        self.viewer_aligned.setImage(QPixmap())
+
+        # Buttons disabled les boutons
+        self.pushButton_register.setEnabled(False)
+        self.pushButton_save_cube.setEnabled(False)
+
+        # checkbox to intial state
+        self.checkBox_crop.setChecked(False)
+        self.checkBox_autorize_modify.setChecked(True)
 
 def save_cropped_registered_images(self):
     if self.fixed_img is None or self.aligned_img is None:
@@ -1174,13 +1365,12 @@ if __name__ == '__main__':
 
     window = RegistrationApp()
     window.show()
-    window.clean_cache()
     app.setStyle('Fusion')
 
-    folder_cube=r'C:\Users\Usuario\Documents\DOC_Yannick\Hyperdoc_Test\Archivo chancilleria/'
-    path_fixed_cube=folder_cube+'MPD41a_SWIR.mat'
-    path_moving_cube=folder_cube+'MPD41a_VNIR.mat'
-    window.load_cube(0,path_fixed_cube)
-    window.load_cube(1,path_moving_cube)
+    # folder_cube=r'C:\Users\Usuario\Documents\DOC_Yannick\Hyperdoc_Test\Archivo chancilleria/'
+    # path_fixed_cube=folder_cube+'MPD41a_SWIR.mat'
+    # path_moving_cube=folder_cube+'MPD41a_VNIR.mat'
+    # window.load_cube(0,path_fixed_cube)
+    # window.load_cube(1,path_moving_cube)
 
     sys.exit(app.exec_())

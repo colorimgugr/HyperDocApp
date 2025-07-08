@@ -204,28 +204,24 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
                         cube_asoc = matching_rows['SWIR'].iloc[0]
                         path_SWIR = filepath.replace(base_name, cube_asoc)
                     else:
-                        path_SWIR = None  # ou lève une exception ou gère autrement
-                        cube_asoc = self.minicube_association_table.loc[self.minicube_association_table['VNIR'] == base_name]['SWIR'][0]
-                        path_SWIR=filepath.replace(base_name,cube_asoc)
+                        cube_asoc = None
+                        path_SWIR = None
 
         elif 'SWIR' in filepath or cube.wl[-1] >= 1100:
             path_SWIR = filepath
             if 'SWIR' in filepath:
                 path_VNIR = filepath.replace("SWIR", "VNIR")
                 if not os.path.exists(path_VNIR):
-                    # use table
-                    base_name=os.path.basename(filepath).split('.')[0]
-
-                    matching_rows = self.minicube_association_table[self.minicube_association_table['SWIR'] == base_name]
+                    base_name = os.path.basename(filepath).split('.')[0]
+                    matching_rows = self.minicube_association_table[
+                        self.minicube_association_table['SWIR'] == base_name]
 
                     if not matching_rows.empty:
                         cube_asoc = matching_rows['VNIR'].iloc[0]
                         path_VNIR = filepath.replace(base_name, cube_asoc)
                     else:
-                        path_VNIR = None  # ou lève une exception ou gère autrement
-                        cube_asoc = \
-                        self.minicube_association_table.loc[self.minicube_association_table['SWIR'] == base_name]['VNIR'][0]
-                        path_VNIR = filepath.replace(base_name, cube_asoc)
+                        cube_asoc = None
+                        path_VNIR = None
         else:
             path_UV=filepath
 
