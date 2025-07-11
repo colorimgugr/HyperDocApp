@@ -4,23 +4,25 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="[main] open all bugg fixed&#10;[register] modif features, sliders bugg and labels and groups, click to select, auto load other, progress bar reset all, cubeinfo unique and parent cube editable at save.">
-      <change afterPath="$PROJECT_DIR$/get_requirement.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/hypercubes/matlab_engine_search.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/hypercubes/matlab_env_path.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/hypercubes/matlab_loader.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/install_requirements.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/interface/some_widget_for_interface.py" afterDir="false" />
+    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="Lot of things but most of all matlab.engine">
+      <change afterPath="$PROJECT_DIR$/hypercubes/matlab_engine_control.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/hypercubes/matlab_subprocess.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Hypertool.xmind" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/MainWindow.py" beforeDir="false" afterPath="$PROJECT_DIR$/MainWindow.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/MainWindow.spec" beforeDir="false" afterPath="$PROJECT_DIR$/MainWindow.spec" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data_vizualisation/data_vizualisation_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/data_vizualisation/data_vizualisation_tool.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/get_requirement.py" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/ground_truth/ground_truth_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/ground_truth/ground_truth_tool.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ground_truth/ground_truth_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/ground_truth/ground_truth_window.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ground_truth/ground_truth_window.ui" beforeDir="false" afterPath="$PROJECT_DIR$/ground_truth/ground_truth_window.ui" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/hypercubes/hypercube.py" beforeDir="false" afterPath="$PROJECT_DIR$/hypercubes/hypercube.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hypercubes/matlab_engine_search.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/hypercubes/matlab_env_path.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/hypercubes/matlab_loader.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/install_requirements.py" beforeDir="false" afterPath="$PROJECT_DIR$/install_requirements.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/log/error.log" beforeDir="false" afterPath="$PROJECT_DIR$/log/error.log" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/metadata/metadata_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/metadata/metadata_tool.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/registration/register_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/registration/register_tool.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test.py" beforeDir="false" afterPath="$PROJECT_DIR$/test.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/test.py" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -147,14 +149,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1744020944801</updated>
-    </task>
-    <task id="LOCAL-00014" summary="Load personal OK&#10;check if transpose needed">
-      <option name="closed" value="true" />
-      <created>1746546300030</created>
-      <option name="number" value="00014" />
-      <option name="presentableId" value="LOCAL-00014" />
-      <option name="project" value="LOCAL" />
-      <updated>1746546300030</updated>
     </task>
     <task id="LOCAL-00015" summary="Load in VizTool OK">
       <option name="closed" value="true" />
@@ -540,7 +534,15 @@
       <option name="project" value="LOCAL" />
       <updated>1752005647626</updated>
     </task>
-    <option name="localTasksCounter" value="63" />
+    <task id="LOCAL-00063" summary="Lot of things but most of all matlab.engine">
+      <option name="closed" value="true" />
+      <created>1752109688328</created>
+      <option name="number" value="00063" />
+      <option name="presentableId" value="LOCAL-00063" />
+      <option name="project" value="LOCAL" />
+      <updated>1752109688330</updated>
+    </task>
+    <option name="localTasksCounter" value="64" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -592,7 +594,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="QSplitter OK&#10;Loading cube with reste state OK" />
     <MESSAGE value="GT_table_viz works now very nice. To be inserted in GT tool." />
     <MESSAGE value="Supression of .ui previous try of class assignment" />
     <MESSAGE value="Connection table and GT tools. &#10;right click interaction added on table." />
@@ -617,6 +618,18 @@
     <MESSAGE value="Cube info loading and saving are syncronized with all tools (except visualize)&#10;[registration] manual features supression" />
     <MESSAGE value="[main] correction of suggestions suprresion" />
     <MESSAGE value="[main] open all bugg fixed&#10;[register] modif features, sliders bugg and labels and groups, click to select, auto load other, progress bar reset all, cubeinfo unique and parent cube editable at save." />
-    <option name="LAST_COMMIT_MESSAGE" value="[main] open all bugg fixed&#10;[register] modif features, sliders bugg and labels and groups, click to select, auto load other, progress bar reset all, cubeinfo unique and parent cube editable at save." />
+    <MESSAGE value="Lot of things but most of all matlab.engine" />
+    <option name="LAST_COMMIT_MESSAGE" value="Lot of things but most of all matlab.engine" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/MainWindow.py</url>
+          <line>8</line>
+          <option name="timeStamp" value="1" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
 </project>

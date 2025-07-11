@@ -561,17 +561,17 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
                 self.cube.metadata=self.cube.cube_info.metadata_temp
                 filepath=self.cube.cube_info.filepath
                 ext = os.path.splitext(filepath)[1].lower()
-                match ext:
-                    case  ".mat":
-                        fmt='MATLAB'
-                    case ".h5":
-                        fmt='HDF5'
-                    case ".hdf5":
-                        fmt = 'HDF5'
-                    case '.hdr':
-                        fmt='ENVI'
-                    case _:
-                        fmt = 'HDF5'
+
+                if ext ==  ".mat":
+                    fmt='MATLAB'
+                elif ext == ".h5":
+                    fmt='HDF5'
+                elif ext == ".hdf5":
+                    fmt = 'HDF5'
+                elif ext == '.hdr':
+                    fmt='ENVI'
+                else :
+                    fmt = 'HDF5'
 
                 self.cube.save(filepath,fmt=fmt)
                 self.cube_saved.emit(self.cube.cube_info)
@@ -1007,11 +1007,11 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
                 )
                 self.spec_ax.plot(
                     x_graph, mu, '--',
-                    color=col, label=f'Class {c}'
+                    color=col, label=f"Class {c}"
                 )
             if self.spec_ax.get_legend_handles_labels()[1]:
                 self.spec_ax.legend(loc='upper right', fontsize='small')
-            self.spec_ax.set_title(f'Spectra')
+            self.spec_ax.set_title(f"Spectra")
             self.spec_canvas.setVisible(True)
 
         for patch in self.selected_span_patch:
@@ -1069,7 +1069,12 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         loading.show()
         QApplication.processEvents()
 
-        cube = Hypercube(filepath=path, load_init=True)
+        try :
+            cube = Hypercube(filepath=path, load_init=True)
+        except:
+            QMessageBox.information(self,"Problem at loading","Impossible to load this cube. Please check format.")
+            loading.close()
+            return
 
         loading.close()
 

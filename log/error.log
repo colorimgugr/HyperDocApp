@@ -1,132 +1,34 @@
-
-
-2025-07-08 01:16:30,065 - ERROR - Uncaught exception:
+2025-07-11 17:37:28,972 - ERROR - Uncaught exception:
 Traceback (most recent call last):
-  File "C:\Users\Usuario\Documents\GitHub\Hypertool\ground_truth\ground_truth_tool.py", line 583, in keep_GT
-    self.cube.save(filepath,fmt=fmt)
-                                ^^^
-UnboundLocalError: cannot access local variable 'fmt' where it is not associated with a value
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\ground_truth\ground_truth_tool.py", line 1098, in load_cube
+    if self.wl[-1] < 1100 and self.wl[0] > 350:
+TypeError: 'NoneType' object is not subscriptable
 
-2025-07-08 01:20:39,612 - ERROR - Uncaught exception:
+2025-07-11 18:06:38,628 - ERROR - Uncaught exception:
 Traceback (most recent call last):
-  File "C:\Users\Usuario\Documents\GitHub\Hypertool\ground_truth\ground_truth_tool.py", line 586, in keep_GT
-    self.cube_saved.emit(self.cube.ci)
-                         ^^^^^^^^^^^^
-AttributeError: 'Hypercube' object has no attribute 'ci'
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\ground_truth\ground_truth_tool.py", line 1098, in load_cube
+    if self.wl[-1] < 1100 and self.wl[0] > 350:
+       ~~~~~~~^^^^
+TypeError: 'NoneType' object is not subscriptable
 
-2025-07-08 01:44:51,625 - ERROR - Uncaught exception:
+2025-07-11 18:08:36,729 - ERROR - Uncaught exception:
 Traceback (most recent call last):
-  File "C:\Users\Usuario\Documents\GitHub\Hypertool\registration\register_tool.py", line 959, in on_accept
-    mini_fixed_cube.cube_info.metadata_temp['name'] = lineedit_fix_name.text().strip()
-                                                      ^^^^^^^^^^^^^^^^^
-NameError: cannot access free variable 'lineedit_fix_name' where it is not associated with a value in enclosing scope. Did you mean: 'lineedit_reg_name'?
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\ground_truth\ground_truth_tool.py", line 1098, in load_cube
+    if self.wl[-1] < 1100 and self.wl[0] > 350:
+       ~~~~~~~^^^^
+TypeError: 'NoneType' object is not subscriptable
 
-2025-07-08 01:45:03,050 - ERROR - Uncaught exception:
+2025-07-11 18:25:02,986 - ERROR - Uncaught exception:
 Traceback (most recent call last):
-  File "C:\Users\Usuario\Documents\GitHub\Hypertool\registration\register_tool.py", line 959, in on_accept
-    mini_fixed_cube.cube_info.metadata_temp['name'] = lineedit_fix_name.text().strip()
-                                                      ^^^^^^^^^^^^^^^^^
-NameError: cannot access free variable 'lineedit_fix_name' where it is not associated with a value in enclosing scope. Did you mean: 'lineedit_reg_name'?
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\ground_truth\ground_truth_tool.py", line 1098, in load_cube
+    if self.wl[-1] < 1100 and self.wl[0] > 350:
+       ~~~~~~~^^^^
+TypeError: 'NoneType' object is not subscriptable
 
-2025-07-08 01:45:16,488 - ERROR - Uncaught exception:
+2025-07-11 18:27:03,891 - ERROR - Uncaught exception:
 Traceback (most recent call last):
-  File "C:\Users\Usuario\Documents\GitHub\Hypertool\registration\register_tool.py", line 959, in on_accept
-    mini_fixed_cube.cube_info.metadata_temp['name'] = lineedit_fix_name.text().strip()
-                                                      ^^^^^^^^^^^^^^^^^
-NameError: cannot access free variable 'lineedit_fix_name' where it is not associated with a value in enclosing scope. Did you mean: 'lineedit_reg_name'?
-
-2025-07-08 01:45:50,391 - ERROR - Uncaught exception:
-Traceback (most recent call last):
-  File "C:\Users\Usuario\Documents\GitHub\Hypertool\registration\register_tool.py", line 780, in open_save_dialog
-    self.save_cube_with_options(opts)
-  File "C:\Users\Usuario\Documents\GitHub\Hypertool\registration\register_tool.py", line 1072, in save_cube_with_options
-    save_path_fixed+=ext
-                     ^^^
-UnboundLocalError: cannot access local variable 'ext' where it is not associated with a value
-
-2025-07-08 10:08:55,638 - ERROR - Uncaught exception:
-Traceback (most recent call last):
-  File "C:\Users\Usuario\AppData\Roaming\Python\Python312\site-packages\pandas\core\indexes\base.py", line 3805, in get_loc
-    return self._engine.get_loc(casted_key)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "index.pyx", line 167, in pandas._libs.index.IndexEngine.get_loc
-  File "index.pyx", line 196, in pandas._libs.index.IndexEngine.get_loc
-  File "pandas\\_libs\\hashtable_class_helper.pxi", line 2606, in pandas._libs.hashtable.Int64HashTable.get_item
-  File "pandas\\_libs\\hashtable_class_helper.pxi", line 2630, in pandas._libs.hashtable.Int64HashTable.get_item
-KeyError: 0
-
-The above exception was the direct cause of the following exception:
-
-Traceback (most recent call last):
-  File "C:\Users\Usuario\Documents\GitHub\Hypertool\data_vizualisation\data_vizualisation_tool.py", line 208, in open_hypercubes_and_GT
-    cube_asoc = self.minicube_association_table.loc[self.minicube_association_table['VNIR'] == base_name]['SWIR'][0]
-                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^
-  File "C:\Users\Usuario\AppData\Roaming\Python\Python312\site-packages\pandas\core\series.py", line 1121, in __getitem__
-    return self._get_value(key)
-           ^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\Usuario\AppData\Roaming\Python\Python312\site-packages\pandas\core\series.py", line 1237, in _get_value
-    loc = self.index.get_loc(label)
-          ^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\Usuario\AppData\Roaming\Python\Python312\site-packages\pandas\core\indexes\base.py", line 3812, in get_loc
-    raise KeyError(key) from err
-KeyError: 0
-
-2025-07-08 14:26:00,843 - ERROR - Uncaught exception:
-Traceback (most recent call last):
-  File "C:\Users\Usuario\AppData\Roaming\Python\Python312\site-packages\pandas\core\indexes\base.py", line 3805, in get_loc
-    return self._engine.get_loc(casted_key)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "index.pyx", line 167, in pandas._libs.index.IndexEngine.get_loc
-  File "index.pyx", line 196, in pandas._libs.index.IndexEngine.get_loc
-  File "pandas\\_libs\\hashtable_class_helper.pxi", line 2606, in pandas._libs.hashtable.Int64HashTable.get_item
-  File "pandas\\_libs\\hashtable_class_helper.pxi", line 2630, in pandas._libs.hashtable.Int64HashTable.get_item
-KeyError: 0
-
-The above exception was the direct cause of the following exception:
-
-Traceback (most recent call last):
-  File "C:\Users\Usuario\Documents\GitHub\Hypertool\MainWindow.py", line 408, in <lambda>
-    act_all.triggered.connect(lambda checked, i=idx: self._send_to_all(i))
-                                                     ^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\Usuario\Documents\GitHub\Hypertool\MainWindow.py", line 386, in _send_to_all
-    self._send_to_data_viz(index)
-  File "C:\Users\Usuario\Documents\GitHub\Hypertool\MainWindow.py", line 383, in _send_to_data_viz
-    widget.open_hypercubes_and_GT(filepath=ci.filepath)
-  File "C:\Users\Usuario\Documents\GitHub\Hypertool\data_vizualisation\data_vizualisation_tool.py", line 208, in open_hypercubes_and_GT
-    cube_asoc = self.minicube_association_table.loc[self.minicube_association_table['VNIR'] == base_name]['SWIR'][0]
-                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^
-  File "C:\Users\Usuario\AppData\Roaming\Python\Python312\site-packages\pandas\core\series.py", line 1121, in __getitem__
-    return self._get_value(key)
-           ^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\Usuario\AppData\Roaming\Python\Python312\site-packages\pandas\core\series.py", line 1237, in _get_value
-    loc = self.index.get_loc(label)
-          ^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\Usuario\AppData\Roaming\Python\Python312\site-packages\pandas\core\indexes\base.py", line 3812, in get_loc
-    raise KeyError(key) from err
-KeyError: 0
-
-2025-07-09 14:12:27,033 - ERROR - Uncaught exception:
-Traceback (most recent call last):
-  File "C:\Users\Usuario\Documents\GitHub\Hypertool\MainWindow.py", line 137, in toggle_dock
-    self.dock.move(screen_center - dock_size / 2)
-                   ~~~~~~~~~~~~~~^~~~~~~~~~~~~~~
-TypeError: unsupported operand type(s) for -: 'QPoint' and 'QSize'
-
-2025-07-09 14:18:08,318 - ERROR - Uncaught exception:
-Traceback (most recent call last):
-  File "C:\Users\Usuario\Documents\GitHub\Hypertool\MainWindow.py", line 137, in toggle_dock
-    self.dock.move(screen_center - dock_size / 2)
-                   ~~~~~~~~~~~~~~^~~~~~~~~~~~~~~
-TypeError: unsupported operand type(s) for -: 'QPoint' and 'QSize'
-
-2025-07-10 03:02:23,762 - ERROR - Uncaught exception:
-Traceback (most recent call last):
-  File "C:\Users\Usuario\Documents\GitHub\Hypertool\ground_truth\ground_truth_tool.py", line 1072, in load_cube
-    cube = Hypercube(filepath=path, load_init=True)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\Usuario\Documents\GitHub\Hypertool\hypercubes\hypercube.py", line 69, in __init__
-    self.open_hyp(default_path=filepath, open_dialog=False)
-  File "C:\Users\Usuario\Documents\GitHub\Hypertool\hypercubes\hypercube.py", line 194, in open_hyp
-    from hypercubes.matlab_engine_search import setup_matlab_engine, load_mat_file_with_engine
-ImportError: cannot import name 'load_mat_file_with_engine' from 'hypercubes.matlab_engine_search' (C:\Users\Usuario\Documents\GitHub\Hypertool\hypercubes\matlab_engine_search.py)
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\ground_truth\ground_truth_tool.py", line 1098, in load_cube
+    if self.wl[-1] < 1100 and self.wl[0] > 350:
+       ~~~~~~~^^^^
+TypeError: 'NoneType' object is not subscriptable
 

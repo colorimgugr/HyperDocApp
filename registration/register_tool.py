@@ -3,27 +3,25 @@
 # pyinstaller --noconsole --exclude-module tensorflow --exclude-module torch --icon="registration_icon.ico"   register_tool.py
 
 import sys
-from fileinput import filename
-from importlib.metadata import metadata
+import os
+import warnings
 
 import numpy as np
 import cv2
 from PyQt5.QtWidgets import (
-    QApplication, QWidget,QMainWindow, QVBoxLayout, QPushButton,QSpinBox,QProgressBar,
-    QLabel, QFileDialog, QHBoxLayout, QMessageBox, QComboBox, QDialog,QLineEdit,
-    QGraphicsView, QGraphicsScene, QGraphicsPixmapItem,QRubberBand,QFormLayout,QDialogButtonBox
+    QApplication, QMainWindow, QVBoxLayout, QPushButton, QSpinBox, QProgressBar,
+    QLabel, QFileDialog, QHBoxLayout, QMessageBox, QComboBox, QDialog, QLineEdit,
+    QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QRubberBand, QFormLayout, QDialogButtonBox
 )
-from PyQt5.QtGui import QPixmap, QImage, QTransform,  QPen, QColor
-from PyQt5.QtCore import Qt, QPointF, QRectF, QRect, QPoint,QSize,pyqtSignal,QStandardPaths
+from PyQt5.QtGui import QPixmap, QImage, QTransform, QPen, QColor
+from PyQt5.QtCore import Qt, QPointF, QRectF, QRect, QPoint, QSize, pyqtSignal, QStandardPaths
 from PyQt5 import QtCore
-import warnings
-
-from sympy.physics.secondquant import wicks
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
-import os, uuid, tempfile
-import random
 
+from registration.registration_window import *
+from hypercubes.hypercube import *
+from interface.some_widget_for_interface import LoadingDialog
 # TODO : Manual outling features
 # TODO : Clean Cache to to well od close and save as.
 # TODO : Trier les save depuis tool et depuis main -> Metadatas a bien reflechir.
@@ -823,7 +821,7 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
         feat_start=packet_show*n_features_per_packet
         feat_stop=(packet_show+1)*n_features_per_packet-1
         if feat_stop>=n_features:feat_stop=n_features
-        self.label_packetToShow.setText(f'features {feat_start} to {feat_stop} / {n_features}')
+        self.label_packetToShow.setText(f"features {feat_start} to {feat_stop} / {n_features}")
         if packet_show>n_packet*self.features_slider.value()/ 100:
             self.label_packetToShow.setStyleSheet(u"color: rgb(255, 0, 0);")
         else:
@@ -906,7 +904,7 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
                 elif msg_box.clickedButton() == only_aligned:
                     save_both=False
 
-        print(f'save both : {save_both}')
+        print(f"save both : {save_both}")
 
         mini_fixed_cube = Hypercube(data=self.fixed_cube.data,metadata=self.fixed_cube.cube_info.metadata_temp, wl=self.fixed_cube.wl, cube_info=self.fixed_cube.cube_info)
         mini_align_cube = Hypercube(data=self.moving_cube.data, wl=self.moving_cube.wl,metadata=self.moving_cube.cube_info.metadata_temp,
@@ -1120,20 +1118,19 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
         try :
             mini_align_cube.save(save_path_align,fmt=fmt,meta_from_cube_info=True)
             if len(save_path_align.split('.'))==1:
-                match fmt:
-                    case "MATLAB":
-                        ext = '.mat'
-                    case "HDF5":
-                        ext = '.h5'
-                    case "ENVI":
-                        ext = '.hdr'
-                    case _:
-                        ext = '.h5'
+                if fmt == "MATLAB":
+                    ext = '.mat'
+                elif fmt == "HDF5":
+                    ext = '.h5'
+                elif fmt == "ENVI":
+                    ext = '.hdr'
+                else :
+                    ext = '.h5'
                 save_path_align+=ext
 
             mini_align_cube.cube_info.filepath=save_path_align
             self.cube_saved.emit(mini_align_cube.cube_info)
-            print(f'mini_align_cube save {mini_align_cube.cube_info.filepath}')
+            print(f"mini_align_cube save {mini_align_cube.cube_info.filepath}")
             if flag_save_aligned or not opts['crop_cube']:
                 self.parent_aligned_for_minicubes=mini_align_cube
                 self.checkBox_autorize_modify.setChecked(False)
@@ -1146,15 +1143,14 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
         if save_both:
             mini_fixed_cube.save(save_path_fixed,fmt=fmt,meta_from_cube_info=True)
             if len(save_path_fixed.split('.'))==1:
-                match fmt:
-                    case "MATLAB":
-                        ext = '.mat'
-                    case "HDF5":
-                        ext = '.h5'
-                    case "ENVI":
-                        ext = '.hdr'
-                    case _:
-                        ext = '.h5'
+                if fmt == "MATLAB":
+                    ext = '.mat'
+                elif fmt == "HDF5":
+                    ext = '.h5'
+                elif fmt == "ENVI":
+                    ext = '.hdr'
+                else :
+                    ext = '.h5'
                 save_path_fixed+=ext
             mini_fixed_cube.cube_info.filepath=save_path_fixed
             self.cube_saved.emit(mini_fixed_cube.cube_info)

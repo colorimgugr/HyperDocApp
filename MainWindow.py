@@ -1,7 +1,10 @@
 # cd C:\Users\Usuario\Documents\GitHub\Hypertool
+# python MainWindow.py
 # sys.excepthook = excepthook #set the exception handler
-# pyinstaller  --noconfirm --exclude-module tensorflow --exclude-module torch --exclude-module matlab --icon="interface/icons/hyperdoc_logo_transparente.ico" --add-data "interface/icons:Hypertool/interface/icons" --add-data "ground_truth/Materials labels and palette assignation - Materials_labels_palette.csv:ground_truth"  --add-data "data_vizualisation/Spatially registered minicubes equivalence.csv:data_vizualisation"  MainWindow.py
-# --noconsole
+# pyinstaller  --noconfirm --noconsole --exclude-module tensorflow --exclude-module torch --exclude-module matlab --icon="interface/icons/hyperdoc_logo_transparente.ico" --add-data "interface/icons:Hypertool/interface/icons" --add-data "ground_truth/Materials labels and palette assignation - Materials_labels_palette.csv:ground_truth"  --add-data "data_vizualisation/Spatially registered minicubes equivalence.csv:data_vizualisation"  MainWindow.py
+# C:\Envs\py37test\Scripts\activate
+
+
 # GUI Qt
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtCore import QTimer,QSize, Qt
@@ -24,11 +27,6 @@ from ground_truth.ground_truth_tool import GroundTruthWidget
 
 # grafics to control changes
 import matplotlib.pyplot as plt
-
-# TODO : initier dans MainWindow les hypercubes et connecter les champs de chaque widget (yeah...big deal)
-# TODO : generate metadata position,height, width ,parentCube,name of registered cube or minicube
-# TODO : generate a list of basic Metadatas keys with types
-# todo : gestion of signal/slot for in tool load hypercubes.
 
 def apply_fusion_border_highlight(app,
                                   border_color: str = "#888888",
@@ -196,13 +194,21 @@ class MainApp(QtWidgets.QMainWindow):
         self.resize(1200, 800)
         self.setCentralWidget(QtWidgets.QWidget())
 
-        if getattr(sys, 'frozen', False): # pynstaller case
+        # if getattr(sys, 'frozen', False): # pynstaller case
+        #     self.BASE_DIR = sys._MEIPASS
+        # else :
+        #     self.BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+
+        if getattr(sys, 'frozen', False):
+            # Exécution depuis l’exécutable PyInstaller
             self.BASE_DIR = sys._MEIPASS
-        else :
-            self.BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+        else:
+            # Exécution en tant que script Python
+            CURRENT_FILE_DIR = os.path.dirname(os.path.abspath(__file__))
+            self.BASE_DIR = os.path.abspath(os.path.join(CURRENT_FILE_DIR, ".."))
 
-
-        self.ICONS_DIR = os.path.join(self.BASE_DIR, "Hypertool/interface/icons")
+        self.ICONS_DIR = os.path.join(self.BASE_DIR,"Hypertool","interface", "icons")
+        # self.ICONS_DIR = os.path.join(self.BASE_DIR, "Hypertool/interface/icons")
         icon_main= "Hyperdoc_logo_transparente_CIMLab.png"
         self.setWindowIcon(QIcon(os.path.join(self.ICONS_DIR,icon_main)))
 
@@ -352,6 +358,7 @@ class MainApp(QtWidgets.QMainWindow):
         # act = dock.toggleViewAction()
         # act.setIcon(QIcon(os.path.join(self.ICONS_DIR, icon_name)))
 
+        print(os.path.join(self.ICONS_DIR, icon_name))
         act = QAction(QIcon(os.path.join(self.ICONS_DIR, icon_name)), tooltip, self)
         act.setToolTip(tooltip)
         act.setCheckable(False)
@@ -440,13 +447,13 @@ class MainApp(QtWidgets.QMainWindow):
     def save_cube(self,index=None):
         ci     = self.hypercube_manager.getCubeInfo(index)
 
-        ans=QMessageBox.question(self,'Save modification',f'Sure to save modification on disc for the cube :\n{ci.filepath}', QMessageBox.Yes | QMessageBox.Cancel)
+        ans=QMessageBox.question(self,'Save modification',f"Sure to save modification on disc for the cube :\n{ci.filepath}", QMessageBox.Yes | QMessageBox.Cancel)
         if ans==QMessageBox.Cancel:
             return
 
         cube=Hypercube(filepath=ci.filepath,metadata=ci.metadata_temp)
         cube.save(filepath=ci.filepath)
-        print(f'cube saves as {ci.filepath}')
+        print(f"cube saves as {ci.filepath}")
 
     def _on_add_cube(self,paths=None):
         if not isinstance(paths, (list, tuple)) or len(paths) == 0:
@@ -715,14 +722,18 @@ def update_font(_app,width=None,_font="Segoe UI",):
     plt.rcParams.update({"font.size": font_size + 3, "font.family": _font})
 
 def check_resolution_change():
-    """ Vérifie si la résolution a changé et met à jour la police si besoin """
+    """ Check if resolution change to adapt font size """
     global last_width  # On garde la dernière largeur connue
-    screen = app.screenAt(main.geometry().center())
-    current_width = screen.size().width()
+    center_point = main.geometry().center()
+    screen = app.screenAt(center_point)
 
-    if current_width != last_width:
-        update_font(app,current_width)
-        last_width = current_width
+    if screen is not None:
+        current_width = screen.size().width()
+        if current_width != last_width:
+            update_font(app, current_width)
+            last_width = current_width
+    else:
+        print("[⚠️] Fenêtre en dehors de tout écran détecté. Résolution inchangée.")
 
 if __name__ == "__main__":
 
@@ -739,9 +750,9 @@ if __name__ == "__main__":
     try:
         import matlab.engine
 
-        print("✅ matlab.engine loaded with success")
+        print(" [ :-) ] matlab.engine loaded with success")
     except Exception as e:
-        print(f"❌ Failed to load matlab.engine: {e}")
+        print(f" [ !!! ] Failed to load matlab.engine: {e}")
 
     # Timer for screen resolution check
     last_width = app.primaryScreen().size().width()

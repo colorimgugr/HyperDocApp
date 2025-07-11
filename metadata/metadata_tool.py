@@ -486,77 +486,76 @@ class MetadataTool(QWidget, Ui_Metadata_tool):
         raw = self.cube_info.metadata_temp[key]
 
         try :
-            match key:
-                case 'GTLabels' | 'gtlabels':
-                    if len(raw.shape)==2:
-                        st=f'GT indexes : <b>{(' , ').join(raw[0])}</b>  <br>  GT names : <b>{(' , ').join(raw[1])}</b>'
-                    elif len(raw.shape)==1:
-                        st=f'GT indexes : <b>{(raw[0])}</b>  <br>  GT names : <b>{raw[1]}</b>'
+            if key == 'GTLabels' | 'gtlabels':
+                if len(raw.shape)==2:
+                    st=f"GT indexes : <b>{(' , ').join(raw[0])}</b>  <br>  GT names : <b>{(' , ').join(raw[1])}</b>"
+                elif len(raw.shape)==1:
+                    st=f"GT indexes : <b>{(raw[0])}</b>  <br>  GT names : <b>{raw[1]}</b>"
 
-                case 'aged':
-                    st=f'The sample has been aged ? <br> <b>{raw}</b>'
+            elif key == 'aged':
+                st=f"The sample has been aged ? <br> <b>{raw}</b>"
 
-                case 'bands':
-                    st=f'The camera have <b>{raw[0]}</b> spectral bands.'
+            elif key == 'bands':
+                st=f"The camera have <b>{raw[0]}</b> spectral bands."
 
-                case 'date':
-                    if len(raw)>1:info=raw
-                    else: info=raw[0]
-                    st=f'Date of the sample : <b>{info}</b>'
+            elif key == 'date':
+                if len(raw)>1:info=raw
+                else: info=raw[0]
+                st=f"Date of the sample : <b>{info}</b>"
 
-                case 'device':
-                    st=f'Capture made with the device : <br> <b>{raw}</b>'
+            elif key == 'device':
+                st=f"Capture made with the device : <br> <b>{raw}</b>"
 
-                case 'illumination':
-                    st=f'Lamp used for the capture : <br> <b>{raw}</b>'
+            elif key == 'illumination':
+                st=f"Lamp used for the capture : <br> <b>{raw}</b>"
 
-                case 'name':
-                    st=f'Name of the minicube : <br> <b>{raw}</b>'
+            elif key == 'name':
+                st=f"Name of the minicube : <br> <b>{raw}</b>"
 
-                case 'number':
-                    st = f'Number of the minicube : <br> <b>{raw}</b>'
+            elif key == 'number':
+                st = f"Number of the minicube : <br> <b>{raw}</b>"
 
-                case 'parent_cube':
-                    st = f'Parent cube of the minicube : <br> <b>{raw}</b>'
+            elif key == 'parent_cube':
+                st = f"Parent cube of the minicube : <br> <b>{raw}</b>"
 
-                case 'pixels_averaged':
-                    st = f'The number of pixels used for the <b>{len(raw)}</b> mean spectra of the GT materials are : <br> <b>{(' , ').join([str(r) for r in raw])}</b> '
+            elif key == 'pixels_averaged':
+                st = f"The number of pixels used for the <b>{len(raw)}</b> mean spectra of the GT materials are : <br> <b>{(' , ').join([str(r) for r in raw])}</b> "
 
-                case 'reference_white':
-                    st = f'The reference white used for reflectance measurement is : <br> <b>{raw}</b>'
+            elif key == 'reference_white':
+                st = f"The reference white used for reflectance measurement is : <br> <b>{raw}</b>"
 
-                case 'restored':
-                        st = f'The sample has been restored ?  <br> <b> {['NO','YES'][raw[0]]}</b>'
+            elif key == 'restored':
+                    st = f"The sample has been restored ?  <br> <b> {['NO','YES'][raw[0]]}</b>"
 
-                case 'stage':
-                    st = f'The capture was made with a  <b>{raw}</b> stage'
+            elif key == 'stage':
+                st = f"The capture was made with a  <b>{raw}</b> stage"
 
-                case 'reference_white':
-                    st = f'The reference white used for reflectance measurement is : <br> <b>{raw}</b>'
+            elif key == 'reference_white':
+                st = f"The reference white used for reflectance measurement is : <br> <b>{raw}</b>"
 
-                case 'substrate':
-                    st = f'The substrate of the sample is : <br> <b>{raw}</b>'
+            elif key == 'substrate':
+                st = f"The substrate of the sample is : <br> <b>{raw}</b>"
 
-                case 'texp':
-                    st = f'The exposure time set for the capture was <b>{raw[0]:.2f}</b> ms.'
+            elif key == 'texp':
+                st = f"The exposure time set for the capture was <b>{raw[0]:.2f}</b> ms."
 
-                case 'height':
-                    st = f'The height of the minicube <b>{raw[0]}</b> pixels.'
+            elif key == 'height':
+                st = f"The height of the minicube <b>{raw[0]}</b> pixels."
 
-                case 'width':
-                    st = f'The width of the minicube <b>{raw[0]}</b> pixels.'
+            elif key == 'width':
+                st = f"The width of the minicube <b>{raw[0]}</b> pixels."
 
-                case 'position':
-                    st = f'The (x,y) coordinate of the upper right pixel of the minicube in the parent cube is : <br> <b>({raw[0]},{raw[1]})</b>'
+            elif key == 'position':
+                st = f"The (x,y) coordinate of the upper right pixel of the minicube in the parent cube is : <br> <b>({raw[0]},{raw[1]})</b>"
 
-                case 'range':
-                    val=['UV','VNIR : 400 - 1000 nm','SWIR : 900 - 1700 nm'][list(raw).index(1)]
-                    st = f'The range of the capture is : <br> <b>{val}</b>'
+            elif key == 'range':
+                val=['UV','VNIR : 400 - 1000 nm','SWIR : 900 - 1700 nm'][list(raw).index(1)]
+                st = f"The range of the capture is : <br> <b>{val}</b>"
 
-                case _:
-                    st=f'<b>{self.cube_info.metadata_temp[key]}</b>'
+            else :
+                st=f"<b>{self.cube_info.metadata_temp[key]}</b>"
         except:
-            st=f'<b> !!! PROBLEM WITH METADATUM FORMAT !!! <br> <br> Here the raw :  <br> <br> {raw} </b>'
+            st=f"<b> !!! PROBLEM WITH METADATUM FORMAT !!! <br> <br> Here the raw :  <br> <br> {raw} </b>"
 
         self.label_metadata.setText(st)
 

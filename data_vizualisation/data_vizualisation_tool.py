@@ -438,75 +438,76 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
             key='cubeinfo'
         hyp = self.hyps[self.radioButton_SWIR.isChecked()]
         raw = hyp.metadata[key]
-        match key:
-            case 'GTLabels':
-                if len(raw.shape)==2:
-                    st=f'GT indexes : <b>{(' , ').join(raw[0])}</b>  <br>  GT names : <b>{(' , ').join(raw[1])}</b>'
-                elif len(raw.shape)==1:
-                    st=f'GT indexes : <b>{(raw[0])}</b>  <br>  GT names : <b>{raw[1]}</b>'
 
-            case 'aged':
-                st=f'The sample has been aged ? <br> <b>{raw}</b>'
 
-            case 'bands':
-                st=f'The camera have <b>{raw[0]}</b> spectral bands.'
+        if key == 'GTLabels':
+            if len(raw.shape)==2:
+                st=f"GT indexes : <b>{(' , ').join(raw[0])}</b>  <br>  GT names : <b>{(' , ').join(raw[1])}</b>"
+            elif len(raw.shape)==1:
+                st=f"GT indexes : <b>{(raw[0])}</b>  <br>  GT names : <b>{raw[1]}</b>"
 
-            case 'date':
-                if len(raw)>1:info=raw
-                else: info=raw[0]
-                st=f'Date of the sample : <b>{info}</b>'
+        elif key == 'aged':
+            st=f"The sample has been aged ? <br> <b>{raw}</b>"
 
-            case 'device':
-                st=f'Capture made with the device : <br> <b>{raw}</b>'
+        elif key == 'bands':
+            st=f"The camera have <b>{raw[0]}</b> spectral bands."
 
-            case 'illumination':
-                st=f'Lamp used for the capture : <br> <b>{raw}</b>'
+        elif key == 'date':
+            if len(raw)>1:info=raw
+            else: info=raw[0]
+            st=f"Date of the sample : <b>{info}</b>"
 
-            case 'name':
-                st=f'Name of the minicube : <br> <b>{raw}</b>'
+        elif key == 'device':
+            st=f"Capture made with the device : <br> <b>{raw}</b>"
 
-            case 'number':
-                st = f'Number of the minicube : <br> <b>{raw}</b>'
+        elif key == 'illumination':
+            st=f"Lamp used for the capture : <br> <b>{raw}</b>"
 
-            case 'parent_cube':
-                st = f'Parent cube of the minicube : <br> <b>{raw}</b>'
+        elif key == 'name':
+            st=f"Name of the minicube : <br> <b>{raw}</b>"
 
-            case 'pixels_averaged':
-                st = f'The number of pixels used for the <b>{len(raw)}</b> mean spectra of the GT materials are : <br> <b>{(' , ').join([str(r) for r in raw])}</b> '
+        elif key == 'number':
+            st = f"Number of the minicube : <br> <b>{raw}</b>"
 
-            case 'reference_white':
-                st = f'The reference white used for reflectance measurement is : <br> <b>{raw}</b>'
+        elif key == 'parent_cube':
+            st = f"Parent cube of the minicube : <br> <b>{raw}</b>"
 
-            case 'restored':
-                st = f'The sample has been restored ?  <br> <b> {['NO','YES'][raw[0]]}</b>'
+        elif key == 'pixels_averaged':
+            st = f"The number of pixels used for the <b>{len(raw)}</b> mean spectra of the GT materials are : <br> <b>{(' , ').join([str(r) for r in raw])}</b> "
 
-            case 'stage':
-                st = f'The capture was made with a  <b>{raw}</b> stage'
+        elif key == 'reference_white':
+            st = f"The reference white used for reflectance measurement is : <br> <b>{raw}</b>"
 
-            case 'reference_white':
-                st = f'The reference white used for reflectance measurement is : <br> <b>{raw}</b>'
+        elif key == 'restored':
+            st = f"The sample has been restored ?  <br> <b> {['NO','YES'][raw[0]]}</b>"
 
-            case 'substrate':
-                st = f'The substrate of the sample is : <br> <b>{raw}</b>'
+        elif key == 'stage':
+            st = f"The capture was made with a  <b>{raw}</b> stage"
 
-            case 'texp':
-                st = f'The exposure time set for the capture was <b>{raw[0]:.2f}</b> ms.'
+        elif key == 'reference_white':
+            st = f"The reference white used for reflectance measurement is : <br> <b>{raw}</b>"
 
-            case 'height':
-                st = f'The height of the minicube <b>{raw[0]}</b> pixels.'
+        elif key == 'substrate':
+            st = f"The substrate of the sample is : <br> <b>{raw}</b>"
 
-            case 'width':
-                st = f'The width of the minicube <b>{raw[0]}</b> pixels.'
+        elif key == 'texp':
+            st = f"The exposure time set for the capture was <b>{raw[0]:.2f}</b> ms."
 
-            case 'position':
-                st = f'The (x,y) coordinate of the upper right pixel of the minicube in the parent cube is : <br> <b>({raw[0]},{raw[1]})</b>'
+        elif key == 'height':
+            st = f"The height of the minicube <b>{raw[0]}</b> pixels."
 
-            case 'range':
-                val=['UV','VNIR : 400 - 1000 nm','SWIR : 900 - 1700 nm'][list(raw).index(1)]
-                st = f'The range of the capture is : <br> <b>{val}</b>'
+        elif key == 'width':
+            st = f"The width of the minicube <b>{raw[0]}</b> pixels."
 
-            case _:
-                st=f'<b>{hyp.metadata[key]}</b>'
+        elif key == 'position':
+            st = f"The (x,y) coordinate of the upper right pixel of the minicube in the parent cube is : <br> <b>({raw[0]},{raw[1]})</b>"
+
+        elif key == 'range':
+            val=['UV','VNIR : 400 - 1000 nm','SWIR : 900 - 1700 nm'][list(raw).index(1)]
+            st = f"The range of the capture is : <br> <b>{val}</b>"
+
+        else :
+            st=f"<b>{hyp.metadata[key]}</b>"
 
         self.label_metadata.setText(st)
 
@@ -653,7 +654,7 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
                     rgb_image/=np.max(rgb_image)
                     rgb_images.append(rgb_image)
                     if type(hyp.metadata['number']) is str and type(hyp.metadata['parent_cube']) is str :
-                        title=f'{hyp.metadata['number']} - {hyp.metadata['parent_cube']}'
+                        title=f"{hyp.metadata['number']} - {hyp.metadata['parent_cube']}"
                     else :
                         title=hyp.cube_info.metadata_temp['name']
                 else:
@@ -722,9 +723,9 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
                 None, "Sauvegarder l'image", "", "Images PNG (*.png);;Images JPEG (*.jpg)"
             )
             self.canvas_image.save_image(filepath)
-            self.label_general_message.setText(f'Images saved as : \n {filepath}')
+            self.label_general_message.setText(f"Images saved as : \n {filepath}")
         except:
-            self.label_general_message.setText(f'Saving images FAILED')
+            self.label_general_message.setText(f"Saving images FAILED")
 
     def save_spectra(self):
         file_name, _ = QFileDialog.getSaveFileName(self, "Enregistrer le fichier", "",
@@ -736,7 +737,7 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
 
                 if term in ['.png','.jpg','.svg']:
                     self.canvas_spectra.save_spectra(file_name)
-                    self.label_general_message.setText(f'Spectra image saved as : {file_name.split('/')[-1]}')
+                    self.label_general_message.setText(f"Spectra image saved as : {file_name.split('/')[-1]}")
 
                 else:
                     delimiter = '\t'
@@ -755,7 +756,7 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
 
                                 np.savetxt(file_name.replace('.',end_name[i]), data.T, header=header, comments='', delimiter='\t')
 
-                    self.label_general_message.setText(f'Spectra values saved as : {file_name.split('/')[-1]}')
+                    self.label_general_message.setText(f"Spectra values saved as : {file_name.split('/')[-1]}")
 
         except:
             self.label_general_message.setText('Saving spectra FAILED')
