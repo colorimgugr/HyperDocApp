@@ -5,24 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="Lot of things but most of all matlab.engine">
-      <change afterPath="$PROJECT_DIR$/hypercubes/matlab_engine_control.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/hypercubes/matlab_subprocess.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Hypertool.xmind" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/MainWindow.py" beforeDir="false" afterPath="$PROJECT_DIR$/MainWindow.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/MainWindow.spec" beforeDir="false" afterPath="$PROJECT_DIR$/MainWindow.spec" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data_vizualisation/data_vizualisation_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/data_vizualisation/data_vizualisation_tool.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/get_requirement.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ground_truth/ground_truth_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/ground_truth/ground_truth_tool.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hypercubes/hypercube.py" beforeDir="false" afterPath="$PROJECT_DIR$/hypercubes/hypercube.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hypercubes/matlab_engine_search.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/hypercubes/matlab_env_path.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/hypercubes/matlab_loader.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/install_requirements.py" beforeDir="false" afterPath="$PROJECT_DIR$/install_requirements.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/log/error.log" beforeDir="false" afterPath="$PROJECT_DIR$/log/error.log" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/metadata/metadata_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/metadata/metadata_tool.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/registration/register_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/registration/register_tool.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test.py" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -118,6 +101,9 @@
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
       <option name="SDK_HOME" value="" />
       <option name="SDK_NAME" value="Python 3.12" />
       <option name="WORKING_DIRECTORY" value="C:\Users\Usuario\Documents\GitHub\Hypertool" />
@@ -626,7 +612,7 @@
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/MainWindow.py</url>
-          <line>8</line>
+          <line>7</line>
           <option name="timeStamp" value="1" />
         </line-breakpoint>
       </breakpoints>
