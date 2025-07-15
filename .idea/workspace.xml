@@ -4,23 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="Ground Truth Features fixed.&#10;- cursor cross interference fixed,&#10;- updating spectra fixed&#10;- max R fixed &#10;- groups of widgets in tabs to have more space&#10;- add check box for live toggle&#10;- all made again because of a fucking error of merging :-/">
-      <change afterPath="$PROJECT_DIR$/data_vizualisation/Spatially registered minicubes equivalence.csv" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/Hypertool.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/Hypertool.iml" afterDir="false" />
+    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="[Register]ui + [Main] save on exit + [GT] keep GT_label_map in metadata y png with palette">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/MainWindow.py" beforeDir="false" afterPath="$PROJECT_DIR$/MainWindow.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data_vizualisation/data_vizualisation_dock.ui" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/data_vizualisation/data_vizualisation_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/data_vizualisation/data_vizualisation_tool.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data_vizualisation/data_vizualisation_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/data_vizualisation/data_vizualisation_window.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data_vizualisation/data_vizualisation_window.ui" beforeDir="false" afterPath="$PROJECT_DIR$/data_vizualisation/data_vizualisation_window.ui" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ground_truth/GT_icon.ico" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ground_truth/ground_truth_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/ground_truth/ground_truth_tool.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ground_truth/ground_truth_window.ui" beforeDir="false" afterPath="$PROJECT_DIR$/ground_truth/ground_truth_window.ui" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/hypercubes/hypercube.py" beforeDir="false" afterPath="$PROJECT_DIR$/hypercubes/hypercube.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/log/error.log" beforeDir="false" afterPath="$PROJECT_DIR$/log/error.log" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/registration/register_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/registration/register_tool.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/registration/registration_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/registration/registration_window.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/registration/registration_window.ui" beforeDir="false" afterPath="$PROJECT_DIR$/registration/registration_window.ui" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -147,14 +134,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1744020944801</updated>
-    </task>
-    <task id="LOCAL-00016" summary="Dockable window started.&#10;First test OK but widget not connected">
-      <option name="closed" value="true" />
-      <created>1746628584567</created>
-      <option name="number" value="00016" />
-      <option name="presentableId" value="LOCAL-00016" />
-      <option name="project" value="LOCAL" />
-      <updated>1746628584567</updated>
     </task>
     <task id="LOCAL-00017" summary="Dockable window started.&#10;toolbar ok">
       <option name="closed" value="true" />
@@ -540,7 +519,15 @@
       <option name="project" value="LOCAL" />
       <updated>1752509077761</updated>
     </task>
-    <option name="localTasksCounter" value="65" />
+    <task id="LOCAL-00065" summary="[Register]ui + [Main] save on exit + [GT] keep GT_label_map in metadata y png with palette">
+      <option name="closed" value="true" />
+      <created>1752580162251</created>
+      <option name="number" value="00065" />
+      <option name="presentableId" value="LOCAL-00065" />
+      <option name="project" value="LOCAL" />
+      <updated>1752580162252</updated>
+    </task>
+    <option name="localTasksCounter" value="66" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -592,7 +579,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Supression of .ui previous try of class assignment" />
     <MESSAGE value="Connection table and GT tools. &#10;right click interaction added on table." />
     <MESSAGE value="handle of classe suppresion ok" />
     <MESSAGE value="Add, suppres and reset bands working (on the graph)" />
@@ -617,6 +603,7 @@
     <MESSAGE value="[main] open all bugg fixed&#10;[register] modif features, sliders bugg and labels and groups, click to select, auto load other, progress bar reset all, cubeinfo unique and parent cube editable at save." />
     <MESSAGE value="Lot of things but most of all matlab.engine" />
     <MESSAGE value="Ground Truth Features fixed.&#10;- cursor cross interference fixed,&#10;- updating spectra fixed&#10;- max R fixed &#10;- groups of widgets in tabs to have more space&#10;- add check box for live toggle&#10;- all made again because of a fucking error of merging :-/" />
-    <option name="LAST_COMMIT_MESSAGE" value="Ground Truth Features fixed.&#10;- cursor cross interference fixed,&#10;- updating spectra fixed&#10;- max R fixed &#10;- groups of widgets in tabs to have more space&#10;- add check box for live toggle&#10;- all made again because of a fucking error of merging :-/" />
+    <MESSAGE value="[Register]ui + [Main] save on exit + [GT] keep GT_label_map in metadata y png with palette" />
+    <option name="LAST_COMMIT_MESSAGE" value="[Register]ui + [Main] save on exit + [GT] keep GT_label_map in metadata y png with palette" />
   </component>
 </project>

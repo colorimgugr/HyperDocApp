@@ -22,7 +22,7 @@ class MetadataTool(QWidget, Ui_Metadata_tool):
         self.setupUi(self)
         self.cube_info = cube_info if cube_info is not None else CubeInfoTemp()
         self.meta_load = self.cube_info.metadata_temp.copy()
-        self.hidden_meta=['wl','GT_cmap','spectra_mean','spectra_std','RGB']
+        self.hidden_meta=['wl','GT_cmap','spectra_mean','spectra_std','RGB','gt_cmap',]
         self.not_editable=['GTLabels','gtlabels','bands','height','pixels_averaged','position','width']
 
         # connect combobox

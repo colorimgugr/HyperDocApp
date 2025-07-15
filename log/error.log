@@ -48,3 +48,10 @@ Traceback (most recent call last):
                                                                                    ^^^^^^^^^
 NameError: name 'path_VNIR' is not defined
 
+2025-07-15 18:18:47,892 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\metadata\metadata_tool.py", line 486, in update_metadata_label
+    raw = self.cube_info.metadata_temp[key]
+          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^
+KeyError: 'cubeinfo'
+

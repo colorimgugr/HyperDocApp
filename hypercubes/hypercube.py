@@ -1,4 +1,6 @@
 import os
+from copy import deepcopy
+
 import h5py
 from spectral.io import envi
 from scipy.io import loadmat
@@ -94,9 +96,7 @@ class Hypercube:
 
     def open_hyp(self, default_path="", open_dialog=True, show_exception=True):
         """
-        Open a hyperspectral cube file:
-          • .mat or .h5/.hdf5 → browser dialog to pick cube/wl/metadata
-          • .hdr → ENVI reader
+        Open a hyperspectral cube file: try with .h5 . mat with different methods and with .hdr for ENVI.
         """
 
         flag_loaded=False
@@ -104,7 +104,6 @@ class Hypercube:
         if QApplication.instance() is None: # to open Qt app if used as main without other Qapp opened
             self._qt_app = QApplication([])
 
-        # 1) File selection
         if open_dialog:
             app = QApplication.instance() or QApplication([])
             filepath, _ = QFileDialog.getOpenFileName(
@@ -113,7 +112,7 @@ class Hypercube:
             )
             if not filepath:
                 return
-            self.filepath = filepath
+
         else:
             filepath = default_path
 
@@ -121,72 +120,162 @@ class Hypercube:
 
         ext = os.path.splitext(filepath)[1].lower()
 
-        #test with matlab new format
+        #test with matlab
         if ext == ".mat":
-
+            is_v7p3=False
             try:
-                # v7.3 .mat are HDF5 → this will fail for legacy .mat
                 with h5py.File(filepath, "r") as f:
-                    # your hard‐coded layout
-                    self.wl = f["#refs#/d"][:].flatten()
-                    raw = f["#refs#/c"][:]
-                    self.data = np.transpose(raw, (2, 1, 0))
-                    # rebuild metadata if any
-                    self.metadata = {}
-                    if "Metadata" in f:
-                        meta_grp = f["Metadata"]
-                        for name, ds in meta_grp.items():
-                            arr = ds[()]
-                            mclass = ds.attrs.get("MATLAB_class", b"").decode()
-
-                            if mclass == "char":
-                                # convertir codes ASCII en str
-                                bb = np.asarray(arr, np.uint8).flatten()
-                                bb = bb[bb != 0]  # retirer les zéros
-                                self.metadata[name] = bb.tobytes().decode("utf-8", errors="ignore")
-
-                            elif mclass == "logical":
-                                self.metadata[name] = np.asarray(arr, dtype=bool)
-
-                            else:
-                                # double, single, int, etc.
-                                self.metadata[name] = arr
-
-                    self.cube_info.data_path = "#refs#/d"
-                    self.cube_info.wl_path = "#refs#/c"
-                    self.cube_info.metadata_path = "Metadata"
-                    self.cube_info.metadata_temp = copy.deepcopy(self.metadata)
-                    self.cube_info.wl_dim = True
-                    self.cube_info.metadata_temp['wl']=self.wl
-                    self.cube_info.filepath=filepath
-                    if self.data is not None:
-                        self.cube_info.data_shape = self.data.shape
-
-                flag_loaded=True  # success → no dialog
-
-            except Exception:
+                    is_v7p3 = True
+            except:
                 pass
+            print(f'.mat is v7.3 : {is_v7p3}')
+            if is_v7p3 :  # new format
+               try:#automatic hypercube_classic_save of CIL
+                    with h5py.File(filepath, "r") as f:
 
-            # with old format clasic save
-            try :
-                mat_dict = loadmat(filepath)
-                self.cube.data=mat_dict['DataCube']
-                self.cube.wl=mat_dict['wl']
+                        self.wl = f["#refs#/d"][:].flatten()
+                        raw = f["#refs#/c"][:]
+                        self.data = np.transpose(raw, (2, 1, 0))
+                        # rebuild metadata if any
+                        self.metadata = {}
+                        if "Metadata" in f:
+                            meta_grp = f["Metadata"]
+                            for name, ds in meta_grp.items():
+                                arr = ds[()]
+                                mclass = ds.attrs.get("MATLAB_class", b"").decode()
+
+                                if mclass == "char":
+                                    # convertir codes ASCII en str
+                                    bb = np.asarray(arr, np.uint8).flatten()
+                                    bb = bb[bb != 0]  # retirer les zéros
+                                    self.metadata[name] = bb.tobytes().decode("utf-8", errors="ignore")
+
+                                elif mclass == "logical":
+                                    self.metadata[name] = np.asarray(arr, dtype=bool)
+
+                                else:
+                                    # double, single, int, etc.
+                                    self.metadata[name] = arr
+
+                        self.cube_info.data_path = "#refs#/d"
+                        self.cube_info.wl_path = "#refs#/c"
+                        self.cube_info.metadata_path = "Metadata"
+                        self.cube_info.wl_trans = True
+                        flag_loaded=True  # success
+                        print('loaded .mat v7p3 with classic hypercube look')
+               except Exception:
+                   pass
+
+               if not flag_loaded:
+                   # on essaye avec le browser
+                    if self.look_with_browser(filepath):
+                        try:
+
+                            flag_loaded=True
+                            print('loaded .mat v7p3 with BROWSER')
+                        except:
+                            pass
+
+            else :
+                # with old format classic save
                 try :
-                    self.cube.metadata=mat_dict['metadata']
+                    mat_dict = loadmat(filepath)
+                    self.data=mat_dict['DataCube']
+                    self.wl=mat_dict['wl']
+                    try :
+                        metadata_struct=mat_dict['metadata'][0]
+                        self.metadata={name: metadata_struct[name][0] for name in metadata_struct.dtype.names}
+                    except:
+                        pass
+
+                    self.cube_info.wl_trans = True
+
+                    flag_loaded=True
+                    print('Loaded .mat NO v7p3 with classic')
                 except:
                     pass
 
-                self.cube_info.data_path = "DataCube"
-                self.cube_info.wl_path = "wl"
-                self.cube_info.metadata_path = "metadata"
-                self.cube_info.metadata_temp = copy.deepcopy(self.metadata)
-                self.cube_info.wl_dim = True
-                self.cube_info.metadata_temp['wl'] = self.wl
-                self.cube_info.filepath = filepath
-                flag_loaded=True
-            except:
-                pass
+                if not flag_loaded:
+                    if self.look_with_browser(filepath=filepath):
+
+
+                        try:
+                            mat_dict = loadmat(filepath)
+                            # data cube
+                            arr = mat_dict[self.cube_info.data_path]
+                            if arr is None:
+                                QMessageBox.critical(None, "Error",
+                                                     f"Variable '{self.cube_info.data_path}' not found.")
+                                self.reinit_cube()
+                                return
+                            data_arr = np.array(arr)
+                            if data_arr.ndim != 3:
+                                QMessageBox.critical(None, "Error",
+                                                     f"Expected 3D array, got shape {data_arr.shape}.")
+                                self.reinit_cube()
+                                return
+
+                            if self.cube_info.wl_trans:
+                                self.data = np.transpose(data_arr, (2, 1, 0))
+                            else:
+                                self.data = data_arr
+
+                            # wavelengths
+                            if self.cube_info.wl_path:
+                                wl_arr = mat_dict[self.cube_info.wl_path]
+                                self.wl = np.array(wl_arr).flatten() if wl_arr is not None else None
+                            else:
+                                self.wl = None
+
+                            # metadata
+                            self.metadata = {}
+                            if self.cube_info.metadata_path:
+                                try:
+                                    metadata_struct = mat_dict[self.cube_info.metadata_path][0]
+                                    self.metadata = {name: metadata_struct[name][0] for name in
+                                                     metadata_struct.dtype.names}
+                                except:
+                                    pass
+
+                            print('loaded .mat NO v7p3 with BROWSER')
+                            flag_loaded=True
+                        except:
+                            pass
+
+            if not flag_loaded:
+                # try:
+                #     self.look_with_matlab_engine(filepath)
+                #     flag_loaded=True
+                # except:
+                #     print('Matlab.engine loading failed')
+
+                if not flag_loaded:
+                    try:
+                        from hypercubes.matlab_subprocess import load_mat_file_with_matlab_obj
+
+                        msg_box = QMessageBox()
+                        msg_box.setIcon(QMessageBox.Information)
+                        msg_box.setWindowTitle("Loading Cube via MATLAB")
+                        msg_box.setText(
+                            "MATLAB is running in the background and may open a console.\n\n"
+                            "This may take up to one minute. Please wait..."
+                        )
+                        msg_box.setStandardButtons(QMessageBox.Ok)
+                        msg_box.show()
+                        from PyQt5.QtCore import QTimer
+                        QTimer.singleShot(10000, msg_box.close) #close after a time in ms
+
+                        data, wl, meta = load_mat_file_with_matlab_obj(filepath)
+                        self.data = data
+                        self.wl = wl
+                        self.metadata = meta
+
+                        flag_loaded = True
+
+                    except Exception as e:
+                        if show_exception:
+                            QMessageBox.critical(None, "MATLAB Subprocess Error",
+                                                 f"MATLAB Subprocess loading failed:\n{e}")
 
         elif ext in (".h5", ".hdf5"):
             try:
@@ -207,176 +296,59 @@ class Hypercube:
                         self.cube_info.data_shape = self.data.shape
 
                 flag_loaded=True  # success → no dialog
+                print('.h5 loaded from classic')
 
             except Exception:
                 pass
 
-        # try with matlab engine
-        if ext ==".mat" and not flag_loaded:
-            # try:
-            #     from hypercubes.matlab_engine_control import get_matlab_engine, load_mat_file_with_engine
-            #
-            #     get_matlab_engine()
-            #
-            #     try:
-            #         data, wl, meta = load_mat_file_with_engine(filepath)
-            #         self.data = data
-            #         self.wl = wl
-            #         self.metadata = meta
-            #         self.cube_info.data_shape = self.data.shape
-            #         self.cube_info.filepath = filepath
-            #         self.cube_info.metadata_temp = copy.deepcopy(self.metadata)
-            #         flag_loaded = True
-            #
-            #     except Exception as e:
-            #         if show_exception:
-            #             QMessageBox.critical(None, "MATLAB Engine Error",
-            #                                  f"MATLAB Engine loading cube failed :\n{e}")
-            #
-            # except:
-            #     print('Matlab.engine loading failed')
+            if not flag_loaded:
 
-            if not flag_loaded :
-                try:
-                    from hypercubes.matlab_subprocess import load_mat_file_with_matlab_obj
-
-                    QMessageBox.information(
-                        None,
-                        "Loading Cube via MATLAB",
-                        "MATLAB is running in the background and may open a console.\n\n"
-                        "This may take up to one minute. Please wait..."
-                    )
-
-                    data, wl, meta = load_mat_file_with_matlab_obj(filepath)
-                    self.data = data
-                    self.wl = wl
-                    self.metadata = meta
-                    self.cube_info.data_shape = self.data.shape
-                    self.cube_info.filepath = filepath
-                    self.cube_info.metadata_temp = copy.deepcopy(self.metadata)
-                    flag_loaded = True
-
-                except Exception as e:
-                    if show_exception:
-                        QMessageBox.critical(None, "MATLAB Subprocess Error",
-                                             f"MATLAB Subprocess loading failed:\n{e}")
-
-        if ext in (".mat", ".h5", ".hdf5") and not flag_loaded:
-
-            try:
-
-                widget = HDF5BrowserWidget(cube_info=self.cube_info,
-                                           filepath = filepath,closable = True)
-                loop = QEventLoop()
-
-                widget.accepted.connect(lambda ci: loop.quit())
-                widget.rejected.connect(loop.quit)
-                widget.show()
-                loop.exec_()
-
-                # after loop, check whether user clicked OK
-                if not widget._accepted:
-                    # user cancelled
-                    self.reinit_cube()
-                    return
-
-                # else retrieve their paths
-
-                try:
-                    mat_dict = loadmat(filepath)
-
-                    # data cube
-                    arr = mat_dict.get(self.cube_info.data_path)
-                    if arr is None:
-                        QMessageBox.critical(None, "Error",
-                                             f"Variable '{self.cube_info.data_path}' not found.")
-                        self.reinit_cube()
-                        return
-                    data_arr = np.array(arr)
-                    if data_arr.ndim != 3:
-                        QMessageBox.critical(None, "Error",
-                                             f"Expected 3D array, got shape {data_arr.shape}.")
-                        self.reinit_cube()
-                        return
-
-                    if self.cube_info.wl_trans:
-                        self.data = np.transpose(data_arr, (2, 1, 0))
-                    else:
-                        self.data=data_arr
-
-                    # wavelengths
-                    if self.cube_info.wl_path:
-                        wl_arr = mat_dict.get(self.cube_info.wl_path)
-                        self.wl = np.array(wl_arr).flatten() if wl_arr is not None else None
-                    else:
-                        self.wl = None
-
-                    # metadata
-                    self.metadata = {}
-                    if self.cube_info.metadata_path:
-                        meta_val = mat_dict.get(self.cube_info.metadata_path)
-                        if meta_val is not None:
-                            key = sel['meta_path'].split('/')[-1]
-                            self.metadata[key] = meta_val
-
-                    if self.data is not None:
-                        self.cube_info.data_shape = self.data.shape
-
+                if self.look_with_browser(filepath=filepath):
                     try:
-                        self.cube_info.metadata_temp = copy.deepcopy(self.metadata)
-                        self.cube_info.filepath = filepath
+                        with h5py.File(filepath, 'r') as f:
+                            raw = f[self.cube_info.data_path][:]
+                            self.data = np.transpose(raw, (2, 1, 0))
+
+                            # wavelengths
+                            wl_sel = self.cube_info.wl_path or ""
+                            if wl_sel:
+                                if '@' in wl_sel:
+                                    grp, _, attr = wl_sel.rpartition('@')
+                                    vals = (f.attrs[attr] if not grp or grp == '/'
+                                            else f[grp].attrs[attr])
+                                else:
+                                    vals = f[wl_sel][:]
+                                self.wl = np.array(vals).flatten()
+                            else:
+                                self.wl = None
+
+                            # metadata
+                            self.metadata = {}
+                            meta_sel = self.cube_info.metadata_path or ""
+                            if meta_sel == '/':
+                                self.metadata = {k: f.attrs[k] for k in f.attrs}
+                            elif '@' in meta_sel:
+                                grp, _, attr = meta_sel.rpartition('@')
+                                self.metadata[attr] = (
+                                    f.attrs[attr] if not grp or grp == '/'
+                                    else f[grp].attrs[attr]
+                                )
+                            elif meta_sel:
+                                obj = f[meta_sel]
+                                if isinstance(obj, h5py.Group):
+                                    for k, ds in obj.items():
+                                        self.metadata[k] = ds[()]
+                                else:
+                                    name = meta_sel.split('/')[-1]
+                                    self.metadata[name] = obj[()]
+
+                            if self.data is not None:
+                                self.cube_info.data_shape = self.data.shape
+
+                        flag_loaded=True
+                        print('loaded .h5 from browser')
                     except:
                         pass
-
-                except:
-                    #HDF5 or MAT v7.3
-                    with h5py.File(filepath, 'r') as f:
-                        raw = f[self.cube_info.data_path][:]
-                        self.data = np.transpose(raw, (2, 1, 0))
-
-                        # wavelengths
-                        wl_sel = self.cube_info.wl_path or ""
-                        if wl_sel:
-                            if '@' in wl_sel:
-                                grp, _, attr = wl_sel.rpartition('@')
-                                vals = (f.attrs[attr] if not grp or grp == '/'
-                                        else f[grp].attrs[attr])
-                            else:
-                                vals = f[wl_sel][:]
-                            self.wl = np.array(vals).flatten()
-                        else:
-                            self.wl = None
-
-                        # metadata
-                        self.metadata = {}
-                        meta_sel = self.cube_info.metadata_path or ""
-                        if meta_sel == '/':
-                            self.metadata = {k: f.attrs[k] for k in f.attrs}
-                        elif '@' in meta_sel:
-                            grp, _, attr = meta_sel.rpartition('@')
-                            self.metadata[attr] = (
-                                f.attrs[attr] if not grp or grp == '/'
-                                else f[grp].attrs[attr]
-                            )
-                        elif meta_sel:
-                            obj = f[meta_sel]
-                            if isinstance(obj, h5py.Group):
-                                for k, ds in obj.items():
-                                    self.metadata[k] = ds[()]
-                            else:
-                                name = meta_sel.split('/')[-1]
-                                self.metadata[name] = obj[()]
-
-                        if self.data is not None:
-                            self.cube_info.data_shape = self.data.shape
-
-                flag_loaded=True
-
-            except Exception as e:
-                if show_exception:
-                    QMessageBox.critical(None, "Error", f"Failed to read file: {e}")
-                self.reinit_cube()
-                return
 
         # 3) ENVI (.hdr + raw)
         # TODO : cube info fill with ENVI files
@@ -386,14 +358,17 @@ class Hypercube:
                 self.data = img.load().astype(np.float32)
                 self.metadata = copy.deepcopy(img.metadata)
 
-                wl = self.metadata.get('wavelength', self.metadata.get('wavelengths'))
+                wl = self.metadata.get('wavelength')
+                if wl is None:
+                    wl=self.metadata.get('wl')
+
                 if isinstance(wl, str):
                     wl_list = wl.strip('{}').split(',')
                     self.wl = np.array(wl_list, dtype=np.float32)
                 else:
                     self.wl = np.array(wl, dtype=np.float32) if wl is not None else None
 
-                return
+                flag_loaded=True
 
             except Exception as e:
                 if show_exception:
@@ -402,7 +377,6 @@ class Hypercube:
                         f"Failed to read ENVI file:\n{e}"
                     )
                 self.reinit_cube()
-                return
 
         # 4) Unsupported
         else:
@@ -416,8 +390,70 @@ class Hypercube:
                 return
 
         if flag_loaded:
+            metadata_raw=copy.deepcopy(self.metadata)
+            self.metadata = {k: self.simplify_metadata_value(v) for k, v in metadata_raw.items()}
+            self.cube_info.metadata_temp = copy.deepcopy(self.metadata)
+            self.cube_info.metadata_temp['wl'] = self.wl
+            self.cube_info.filepath = filepath
+            if self.data is not None:
+                self.cube_info.data_shape = self.data.shape
+
             if 'name' not in self.cube_info.metadata_temp:
                 self.cube_info.metadata_temp['name']=self.filepath.split('/')[-1].split('.')[0]
+
+    def look_with_matlab_engine(self,filepath=None):
+        from hypercubes.matlab_engine_control import get_matlab_engine, load_mat_file_with_engine
+
+        get_matlab_engine()
+
+        try:
+            data, wl, meta = load_mat_file_with_engine(filepath)
+            self.data = data
+            self.wl = wl
+            self.metadata = meta
+            self.cube_info.data_shape = self.data.shape
+            self.cube_info.filepath = filepath
+            self.cube_info.metadata_temp = copy.deepcopy(self.metadata)
+            flag_loaded = True
+
+        except Exception as e:
+            QMessageBox.critical(None, "MATLAB Engine Error",
+                                     f"MATLAB Engine loading cube failed :\n{e}")
+
+    def simplify_metadata_value(self,value):
+        # if scalar numpy ->  Python type
+        if isinstance(value, np.generic):
+            return value.item()
+
+        elif isinstance(value, np.ndarray):
+            if value.shape == ():  #  pur scalar
+                return self.simplify_metadata_value(value.item())
+            elif value.size == 1 :
+                return self.simplify_metadata_value(value.item())
+            else:
+                return value
+
+        # if not scalar numpy or line numpy array
+        return value
+
+    def look_with_browser(self,filepath=None):
+        widget = HDF5BrowserWidget(cube_info=self.cube_info,
+                                   filepath=filepath, closable=True)
+        loop = QEventLoop()
+
+        widget.accepted.connect(lambda ci: loop.quit())
+        widget.rejected.connect(loop.quit)
+        widget.show()
+        loop.exec_()
+
+        # after loop, check whether user clicked OK
+        if not widget._accepted:
+            # user cancelled
+            self.reinit_cube()
+            return False
+
+
+        return True
 
     def save(self,filepath=None,fmt=None,meta_from_cube_info=False):
         filters = (
@@ -457,6 +493,17 @@ class Hypercube:
                 # gérer son fichier raw associé (.img ou .dat)
                 if not filepath.lower().endswith(".hdr"):
                     filepath += ".hdr"
+
+        if fmt is None:
+            if filepath.split('.')[-1] in ['h5','h5p']:
+                fmt='HDF5'
+            elif filepath.split('.')[-1] in ['mat']:
+                fmt='MATLAB'
+            elif filepath.split('.')[-1] in ['hdr']:
+                fmt='ENVI'
+            else:
+                fmt='HDF5'
+
 
         if fmt=='HDF5':
             if not filepath.lower().endswith(".h5"):
@@ -539,7 +586,7 @@ class Hypercube:
                        interleave: str = "bil",
                        dtype_code: int = 4):
 
-        os.makedirs(filepath, exist_ok=True)
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
         hdr_meta = {
             "lines": self.data.shape[0],
             "samples": self.data.shape[1],
@@ -549,7 +596,8 @@ class Hypercube:
         }
         if self.metadata is not None:
            hdr_meta.update(self.metadata)
-        envi.save_image(filepath, self.data.astype(np.float32), metadata=hdr_meta)
+        print(filepath)
+        envi.save_image(filepath, self.data, dtype=np.float32, metadata=hdr_meta)
 
     def save_matlab_cube(self,filepath: str):
         from scipy.io import savemat
@@ -792,30 +840,20 @@ def save_images(dirpath: str,
 
 if __name__ == '__main__':
     import matplotlib
-    matplotlib.use('Qt5Agg')  # backend matplotlib → Qt5
-    # matplotlib.use('TkAgg')
-    import matplotlib.pyplot as plt
 
-    # Example usage:
-
+    # folder = r'C:\Users\Usuario\Documents\DOC_Yannick\HYPERDOC Database\Other'
+    # fname = 'MPD41a_VNIR.mat'
+    # fname='MPD41a_SWIR_test_save.mat'
     folder = r'C:\Users\Usuario\Documents\DOC_Yannick\HYPERDOC Database\Samples\minicubes'
-    fname = '00189-VNIR-mock-up.h5'
+    # fname = '00280-VNIR-mock-up.h5'
+    # fname='00280-VNIR-mock-up_test.h5'
+    fname='00280-VNIR-mock-up_test_02.hdr'
+    # fname = '00280-VNIR-mock-up.mat'
+
     import os
 
     filepath = os.path.join(folder, fname)
 
-    try:
-        cube = Hypercube(filepath=filepath, load_init=True)
-        if cube.data is not None:
-            print('cube.data is not None')
-            rgb_img = cube.get_rgb_image([50, 30, 10])
-            plt.figure()
-            plt.imshow(rgb_img / np.max(rgb_img))
-            plt.axis('off')
-            plt.show()
-            for key in cube.metadata:
-                if key not in ['GTLabels','gtlabels','pixels_averaged','position','wl','GT_cmap','spectra_mean','spectra_std']:
-                    print(f"{key} : {cube.metadata[key]}")
-
-    except Exception:
-        print("Failed to load or display the hyperspectral cube.")
+    cube = Hypercube(filepath=filepath, load_init=True)
+    for key in cube.metadata:
+        print(f' {key} (type: {type(cube.metadata[key]).__name__})-> {cube.metadata[key]}')
