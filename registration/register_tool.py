@@ -22,6 +22,7 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 from registration.registration_window import *
 from hypercubes.hypercube import *
 from interface.some_widget_for_interface import LoadingDialog
+
 # TODO : Manual outling features
 # TODO : Clean Cache to to well od close and save as.
 # TODO : Trier les save depuis tool et depuis main -> Metadatas a bien reflechir.
@@ -82,7 +83,6 @@ def find_paired_cube_path(current_path):
 
     alt_path = os.path.join(dirname, alt_name)
     return alt_path if os.path.exists(alt_path) else None
-
 
 class ZoomableGraphicsView(QGraphicsView):
     middleClicked = pyqtSignal(QPointF) # suppres features
@@ -420,82 +420,90 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
             if fname is None:
                 fname, _ = QFileDialog.getOpenFileName(self, ['Load Fixed Cube','Load Moving Cube'][i_mov])
 
-            if fname:
-                which_cube=['FIXED','MOVING'][i_mov]
-                message_progress=  "[Register Tool] Loading "+which_cube+" cube..."
-                loading = LoadingDialog(message_progress, filename=fname, parent=self)
-                loading.show()
-                QApplication.processEvents()
+            if not fname:
+                return
 
-                if fname[-3:] in['mat', '.h5']:
-                    if i_mov:
-                        self.moving_cube.open_hyp(fname, open_dialog=False)
-                        cube=self.moving_cube.data
-                        wl=self.moving_cube.wl
-                        self.cubeLoaded.emit(fname)  # Notify the manager
+            which_cube=['FIXED','MOVING'][i_mov]
+            message_progress=  "[Register Tool] Loading "+which_cube+" cube..."
+            loading = LoadingDialog(message_progress, filename=fname, parent=self)
+            loading.show()
+            QApplication.processEvents()
 
-
-                    else:
-                        self.fixed_cube.open_hyp(fname, open_dialog=False)
-                        cube=self.fixed_cube.data
-                        wl = self.fixed_cube.wl
-                        self.cubeLoaded.emit(fname)  # Notify the manager
-
-                    # Auto-load paired cube if not already loaded
-                    paired_path=None
-                    if not self.auto_load_lock:
-                        paired_path = find_paired_cube_path(fname)
-
-                        if paired_path:
-                            load_fixe_auto = True
-                        else:
-                            print(f"[Auto-load] Aucun cube équivalent trouvé pour : {fname}")
-
-                    self.cube = [self.fixed_cube, self.moving_cube]
-
-                    # self.slider_channel[i_mov].setMaximum(cube.shape[2]-1)
-                    self.slider_channel[i_mov].setMaximum(int(np.max(wl)))
-                    self.slider_channel[i_mov].setMinimum(int(np.min(wl)))
-                    self.slider_channel[i_mov].setSingleStep(int(wl[1]-wl[0]))
-
-                    # self.spinBox_channel[i_mov].setMaximum(cube.shape[2] - 1)
-                    self.spinBox_channel[i_mov].setMaximum(int(np.max(wl)))
-                    self.spinBox_channel[i_mov].setMinimum(int(np.min(wl)))
-                    self.spinBox_channel[i_mov].setSingleStep(int(wl[1] - wl[0]))
-
-                    if cube.shape[2]==121:
-                        self.slider_channel[i_mov].setValue(750)
-                        self.spinBox_channel[i_mov].setValue(750)
-                    elif cube.shape[2]==161:
-                        self.slider_channel[i_mov].setValue(1300)
-                        self.spinBox_channel[i_mov].setValue(1300)
-
-                    mode = ['one', 'whole'][self.radioButton_whole[i_mov].isChecked()]
-                    chan = np.argmin(np.abs(self.slider_channel[i_mov].value()-wl))
-                    img = self.cube_to_img(cube, mode, chan)
-                    img =(img * 256 / np.max(img)).astype('uint8')
-                else:
-                    img = cv2.imread(fname, cv2.IMREAD_GRAYSCALE)
-
-                self.viewer_img[i_mov].clear_rectangle()
-
+            if fname[-3:] in['mat', '.h5']:
                 if i_mov:
-                    self.moving_img=img
+                    self.moving_cube.open_hyp(fname, open_dialog=False)
+                    cube=self.moving_cube.data
+                    wl=self.moving_cube.wl
+                    self.cubeLoaded.emit(fname)  # Notify the manager
+
                 else:
-                    self.fixed_img = img
+                    self.fixed_cube.open_hyp(fname, open_dialog=False)
+                    cube=self.fixed_cube.data
+                    wl = self.fixed_cube.wl
+                    self.cubeLoaded.emit(fname)  # Notify the manager
 
-                self.img = [self.fixed_img, self.moving_img]
+                # Auto-load paired cube if not already loaded
+                paired_path=None
+                if not self.auto_load_lock:
+                    paired_path = find_paired_cube_path(fname)
 
-                self.viewer_img[i_mov].setImage(np_to_qpixmap(img))
-                suffixe_label = [" (fixed)", " (moving)"][i_mov]
-                self.viewer_label[i_mov].setText(self.cube[i_mov].filepath.split('/')[-1] + suffixe_label)
+                    if paired_path:
+                        load_fixe_auto = True
+                    else:
+                        print(f"[Auto-load] Aucun cube équivalent trouvé pour : {fname}")
 
+                self.cube = [self.fixed_cube, self.moving_cube]
+
+                # self.slider_channel[i_mov].setMaximum(cube.shape[2]-1)
+                self.slider_channel[i_mov].setMaximum(int(np.max(wl)))
+                self.slider_channel[i_mov].setMinimum(int(np.min(wl)))
+                self.slider_channel[i_mov].setSingleStep(int(wl[1]-wl[0]))
+
+                # self.spinBox_channel[i_mov].setMaximum(cube.shape[2] - 1)
+                self.spinBox_channel[i_mov].setMaximum(int(np.max(wl)))
+                self.spinBox_channel[i_mov].setMinimum(int(np.min(wl)))
+                self.spinBox_channel[i_mov].setSingleStep(int(wl[1] - wl[0]))
+
+                if cube.shape[2]==121:
+                    self.slider_channel[i_mov].setValue(750)
+                    self.spinBox_channel[i_mov].setValue(750)
+                elif cube.shape[2]==161:
+                    self.slider_channel[i_mov].setValue(1300)
+                    self.spinBox_channel[i_mov].setValue(1300)
+
+                mode = ['one', 'whole'][self.radioButton_whole[i_mov].isChecked()]
+                chan = np.argmin(np.abs(self.slider_channel[i_mov].value()-wl))
+                img = self.cube_to_img(cube, mode, chan)
+                img =(img * 256 / np.max(img)).astype('uint8')
+            else :
+                # try :
+                #     img = cv2.imread(fname, cv2.IMREAD_GRAYSCALE)
+                # except:
+                #     loading.close()
+                #     return
+                QMessageBox.critical(self,"Invalid file","This file can not be opened by this tool.")
                 loading.close()
+                return
 
-            if not self.auto_load_lock and paired_path is not None:
-                self.auto_load_lock = True
-                self.load_cube(i_mov=1 - i_mov, fname=paired_path)
-                self.auto_load_lock = False
+            self.viewer_img[i_mov].clear_rectangle()
+
+            if i_mov:
+                self.moving_img=img
+            else:
+                self.fixed_img = img
+
+            self.img = [self.fixed_img, self.moving_img]
+
+            self.viewer_img[i_mov].setImage(np_to_qpixmap(img))
+            suffixe_label = [" (fixed)", " (moving)"][i_mov]
+            self.viewer_label[i_mov].setText(self.cube[i_mov].filepath.split('/')[-1] + suffixe_label)
+
+            loading.close()
+
+        if not self.auto_load_lock and paired_path is not None and self.checkBox_auto_load_complental.isChecked():
+            self.auto_load_lock = True
+            self.load_cube(i_mov=1 - i_mov, fname=paired_path)
+            self.auto_load_lock = False
 
         self.pushButton_register.setEnabled(False)
 

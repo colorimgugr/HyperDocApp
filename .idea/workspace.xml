@@ -4,12 +4,23 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="Lot of things but most of all matlab.engine">
+    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="Ground Truth Features fixed.&#10;- cursor cross interference fixed,&#10;- updating spectra fixed&#10;- max R fixed &#10;- groups of widgets in tabs to have more space&#10;- add check box for live toggle&#10;- all made again because of a fucking error of merging :-/">
+      <change afterPath="$PROJECT_DIR$/data_vizualisation/Spatially registered minicubes equivalence.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/Hypertool.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/Hypertool.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/MainWindow.py" beforeDir="false" afterPath="$PROJECT_DIR$/MainWindow.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data_vizualisation/data_vizualisation_dock.ui" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data_vizualisation/data_vizualisation_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/data_vizualisation/data_vizualisation_tool.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data_vizualisation/data_vizualisation_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/data_vizualisation/data_vizualisation_window.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data_vizualisation/data_vizualisation_window.ui" beforeDir="false" afterPath="$PROJECT_DIR$/data_vizualisation/data_vizualisation_window.ui" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ground_truth/GT_icon.ico" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/ground_truth/ground_truth_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/ground_truth/ground_truth_tool.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ground_truth/ground_truth_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/ground_truth/ground_truth_window.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ground_truth/ground_truth_window.ui" beforeDir="false" afterPath="$PROJECT_DIR$/ground_truth/ground_truth_window.ui" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hypercubes/hypercube.py" beforeDir="false" afterPath="$PROJECT_DIR$/hypercubes/hypercube.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/log/error.log" beforeDir="false" afterPath="$PROJECT_DIR$/log/error.log" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/registration/register_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/registration/register_tool.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/registration/registration_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/registration/registration_window.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/registration/registration_window.ui" beforeDir="false" afterPath="$PROJECT_DIR$/registration/registration_window.ui" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -67,24 +78,24 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "Python.HyperdocApp_core_v3.5.1.executor": "Run",
-    "Python.HyperdocApp_main_.executor": "Run",
-    "Python.Hyperdoc_GUI_design.executor": "Run",
-    "Python.Run in console.executor": "Run",
-    "Python.Test_update.executor": "Run",
-    "Python.Unnamed.executor": "Run",
-    "Python.hypercube_app_v26.executor": "Run",
-    "Python.open.executor": "Run",
-    "Python.register_images.executor": "Run",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "main",
-    "last_opened_file_path": "C:/Users/Usuario/Documents/GitHub/Hypertool",
-    "settings.editor.selected.configurable": "preferences.keymap"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Python.HyperdocApp_core_v3.5.1.executor&quot;: &quot;Run&quot;,
+    &quot;Python.HyperdocApp_main_.executor&quot;: &quot;Run&quot;,
+    &quot;Python.Hyperdoc_GUI_design.executor&quot;: &quot;Run&quot;,
+    &quot;Python.Run in console.executor&quot;: &quot;Run&quot;,
+    &quot;Python.Test_update.executor&quot;: &quot;Run&quot;,
+    &quot;Python.Unnamed.executor&quot;: &quot;Run&quot;,
+    &quot;Python.hypercube_app_v26.executor&quot;: &quot;Run&quot;,
+    &quot;Python.open.executor&quot;: &quot;Run&quot;,
+    &quot;Python.register_images.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/Usuario/Documents/GitHub/Hypertool&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.keymap&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="C:\Users\Usuario\Documents\GitHub\Hypertool" />
@@ -136,14 +147,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1744020944801</updated>
-    </task>
-    <task id="LOCAL-00015" summary="Load in VizTool OK">
-      <option name="closed" value="true" />
-      <created>1746610626729</created>
-      <option name="number" value="00015" />
-      <option name="presentableId" value="LOCAL-00015" />
-      <option name="project" value="LOCAL" />
-      <updated>1746610626729</updated>
     </task>
     <task id="LOCAL-00016" summary="Dockable window started.&#10;First test OK but widget not connected">
       <option name="closed" value="true" />
@@ -529,7 +532,15 @@
       <option name="project" value="LOCAL" />
       <updated>1752109688330</updated>
     </task>
-    <option name="localTasksCounter" value="64" />
+    <task id="LOCAL-00064" summary="Ground Truth Features fixed.&#10;- cursor cross interference fixed,&#10;- updating spectra fixed&#10;- max R fixed &#10;- groups of widgets in tabs to have more space&#10;- add check box for live toggle&#10;- all made again because of a fucking error of merging :-/">
+      <option name="closed" value="true" />
+      <created>1752509077761</created>
+      <option name="number" value="00064" />
+      <option name="presentableId" value="LOCAL-00064" />
+      <option name="project" value="LOCAL" />
+      <updated>1752509077761</updated>
+    </task>
+    <option name="localTasksCounter" value="65" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -581,7 +592,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="GT_table_viz works now very nice. To be inserted in GT tool." />
     <MESSAGE value="Supression of .ui previous try of class assignment" />
     <MESSAGE value="Connection table and GT tools. &#10;right click interaction added on table." />
     <MESSAGE value="handle of classe suppresion ok" />
@@ -606,6 +616,7 @@
     <MESSAGE value="[main] correction of suggestions suprresion" />
     <MESSAGE value="[main] open all bugg fixed&#10;[register] modif features, sliders bugg and labels and groups, click to select, auto load other, progress bar reset all, cubeinfo unique and parent cube editable at save." />
     <MESSAGE value="Lot of things but most of all matlab.engine" />
-    <option name="LAST_COMMIT_MESSAGE" value="Lot of things but most of all matlab.engine" />
+    <MESSAGE value="Ground Truth Features fixed.&#10;- cursor cross interference fixed,&#10;- updating spectra fixed&#10;- max R fixed &#10;- groups of widgets in tabs to have more space&#10;- add check box for live toggle&#10;- all made again because of a fucking error of merging :-/" />
+    <option name="LAST_COMMIT_MESSAGE" value="Ground Truth Features fixed.&#10;- cursor cross interference fixed,&#10;- updating spectra fixed&#10;- max R fixed &#10;- groups of widgets in tabs to have more space&#10;- add check box for live toggle&#10;- all made again because of a fucking error of merging :-/" />
   </component>
 </project>

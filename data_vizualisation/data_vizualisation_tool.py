@@ -104,6 +104,7 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
         self.checkBox_std.clicked.connect(lambda:self.update_spectra (load=False))
         self.pushButton_next_cube.clicked.connect(self.next_cube)
         self.pushButton_prev_cube.clicked.connect(self.prev_cube)
+        self.pushButton_search_GT_files.clicked.connect(self.search_gt_in_files)
 
         for elem in [self.pushButton_next_cube,self.pushButton_prev_cube,self.pushButton_save_image,self.horizontalSlider_red_channel,self.horizontalSlider_green_channel,self.horizontalSlider_blue_channel,self.spinBox_red_channel,self.spinBox_green_channel,self.spinBox_blue_channel,self.checkBox_std,self.pushButton_save_spectra,self.horizontalSlider_transparency_GT,self.radioButton_VNIR,self.radioButton_rgb_user,self.radioButton_rgb_default,self.radioButton_SWIR,self.radioButton_grayscale]:
             elem.setEnabled(False)
@@ -174,7 +175,7 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
         path_SWIR = None
         path_UV = None
         file_GT = None
-        UV=False #will be change in code if UV loaded
+        UV=False # will be change in code if UV loaded
         self.image_loaded=[0,0,0] # hyp 0, hyp 1 and GT
 
         if filepath:quick_change=True # with arrows
@@ -316,33 +317,31 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
                     qm=QMessageBox()
                     ans=qm.question(self, 'No GT found', "No Ground Truth found for this minicube.\nDo you want to open the Ground Truth manually ?", qm.Yes | qm.No)
                     if ans==qm.Yes:
-                        filepath, _ = QFileDialog.getOpenFileName(self, "Open Ground Truth PNG image",path_VNIR,
-                                                                  "PNG (*.png)")
-                        try:
-                            path_GT = filepath
-
-                            self.GT.load_image(path_GT)
-                            self.image_loaded[2] = True
-                            self.folder_GT=os.path.dirname(filepath)
-
+                        try :
+                            self.search_gt_in_files()
+                            return # return here because update widgets already alled in search_gt_in_files()
                         except:
-                            msg = QMessageBox()
-                            msg.setIcon(QMessageBox.Icon.Warning)
-                            msg.setText("No Ground Truth found.")
-                            msg.setWindowTitle("GT not found")
-                            msg.setStandardButtons(QMessageBox.StandardButton.Ok)
-                            msg.exec()
+                            pass
 
+        self.update_widgets()
+
+    def update_widgets(self):
         ## Update widgets
 
+        UV = False
         # get last cube selected  :
-        i_act=0
+        i_act = 0
         for radio in self.radioButtons_ActiveHyp:
             if radio.isChecked():
                 break
-            i_act+=1
+            i_act += 1
 
-        for elem in [self.pushButton_next_cube,self.pushButton_prev_cube,self.pushButton_save_image,self.horizontalSlider_red_channel,self.horizontalSlider_green_channel,self.horizontalSlider_blue_channel,self.spinBox_red_channel,self.spinBox_green_channel,self.spinBox_blue_channel,self.checkBox_std,self.pushButton_save_spectra,self.horizontalSlider_transparency_GT,self.radioButton_VNIR,self.radioButton_rgb_user,self.radioButton_rgb_default,self.radioButton_SWIR,self.radioButton_grayscale]:
+        for elem in [self.pushButton_next_cube, self.pushButton_prev_cube, self.pushButton_save_image,
+                     self.horizontalSlider_red_channel, self.horizontalSlider_green_channel,
+                     self.horizontalSlider_blue_channel, self.spinBox_red_channel, self.spinBox_green_channel,
+                     self.spinBox_blue_channel, self.checkBox_std, self.pushButton_save_spectra,
+                     self.horizontalSlider_transparency_GT, self.radioButton_VNIR, self.radioButton_rgb_user,
+                     self.radioButton_rgb_default, self.radioButton_SWIR, self.radioButton_grayscale]:
             elem.setEnabled(True)
 
         for radio in self.radioButtons_ActiveHyp:
@@ -351,18 +350,18 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
             radio.setChecked(False)
 
         if self.image_loaded[0]:
-            if self.spec_range[0]=='VNIR':
+            if self.spec_range[0] == 'VNIR':
                 self.radioButton_VNIR.setEnabled(True)
-                if i_act==0 or not self.image_loaded[1] or i_act==2:
+                if i_act == 0 or not self.image_loaded[1] or i_act == 2:
                     self.radioButton_VNIR.setChecked(True)
 
             elif self.spec_range[0] == 'UVIS':
-                UV=True
+                UV = True
                 self.radioButton_UVIS.setEnabled(True)
-                if i_act==2 or not self.image_loaded[1]:
+                if i_act == 2 or not self.image_loaded[1]:
                     self.radioButton_UVIS.setChecked(True)
 
-        if  self.image_loaded[1]:
+        if self.image_loaded[1]:
             self.radioButton_SWIR.setEnabled(True)
             if i_act == 1 or not self.image_loaded[0]:
                 self.radioButton_SWIR.setChecked(True)
@@ -406,6 +405,32 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
 
         self.label_general_message.setText(message)
 
+    def search_gt_in_files(self):
+        path_def=""
+        if self.image_loaded[0]:
+            path_def=os.path.dirname(self.hyps[0].cube_info.filepath)
+        elif self.image_loaded[1]:
+            path_def=os.path.dirname(self.hyps[1].cube_info.filepath)
+
+        filepath, _ = QFileDialog.getOpenFileName(self, "Open Ground Truth PNG image", path_def,
+                                                  "PNG (*.png)")
+        try:
+            path_GT = filepath
+
+            self.GT.load_image(path_GT)
+            self.image_loaded[2] = True
+            self.folder_GT = os.path.dirname(filepath)
+
+        except:
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Icon.Warning)
+            msg.setText("No Ground Truth found.")
+            msg.setWindowTitle("GT not found")
+            msg.setStandardButtons(QMessageBox.StandardButton.Ok)
+            msg.exec()
+
+        self.update_widgets()
+
     def update_combo_meta(self,init=False):
         hyp = self.hyps[self.radioButton_SWIR.isChecked()]
 
@@ -438,7 +463,6 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
             key='cubeinfo'
         hyp = self.hyps[self.radioButton_SWIR.isChecked()]
         raw = hyp.metadata[key]
-
 
         if key == 'GTLabels':
             if len(raw.shape)==2:
@@ -1302,7 +1326,7 @@ def check_resolution_change():
 
 if __name__ == "__main__":
 
-    sys.excepthook = excepthook
+    # sys.excepthook = excepthook
     app = QApplication(sys.argv)
 
     window = Data_Viz_Window()

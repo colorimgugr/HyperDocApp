@@ -1,6 +1,6 @@
 # cd C:\Users\Usuario\Documents\GitHub\Hypertool\ground_truth
 # python -m PyQt5.uic.pyuic -o registration_window.py registration_window.ui
-# pyinstaller  --exclude-module tensorflow --exclude-module torch --icon="GT_icon.ico" --add-data "ground_truth/Materials labels and palette assignation - Materials_labels_palette.csv;ground_truth"  ground_truth_tool.py
+# pyinstaller  --exclude-module tensorflow --exclude-module torch --add-data "ground_truth/Materials labels and palette assignation - Materials_labels_palette.csv;ground_truth"  ground_truth_tool.py
 # opts   --noconsole --onefile
 
 # Gnl
@@ -25,6 +25,7 @@ from matplotlib.path import Path
 # Maths
 import numpy as np
 import cv2
+from PIL import Image
 from scipy.spatial import distance as spdist
 
 # Intern
@@ -394,6 +395,8 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
                 return False
             pos = self.viewer_left.mapToScene(event.pos())
             x, y = int(pos.x()), int(pos.y())
+            if x < 0 or y < 0:
+                return True
 
             if (x, y) not in self._pixel_coords:
                 self._pixel_coords.append((x, y))
@@ -401,8 +404,10 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
                 H, W = self.data.shape[:2]
                 self._preview_mask = np.zeros((H, W), dtype=bool)
 
-            self._preview_mask[y, x] = True
-            self.show_image(preview=True)
+                H, W = self._preview_mask.shape
+                if 0 <= y < H and 0 <= x < W:
+                    self._preview_mask[y, x] = True
+                    self.show_image(preview=True)
 
             return True
 
@@ -535,7 +540,7 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         return False
 
     def save_GT(self):
-        # On envoie dans metadata : map de GT, class_counts (pixels_averaged), 'GT_cmap','spectra_mean','spectra_std'
+        # We send to metadata : map de GT, class_counts (pixels_averaged), 'GT_cmap','spectra_mean','spectra_std'
 
         if self.cls_map is None:
             QMessageBox.warning(self, "Warning", "Nothig to keep. Launch segmentation first")
@@ -550,6 +555,14 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
 
         self.cube.cube_info.metadata_temp['GTLabels']=[GT_num,GT_name]
         self.cube.cube_info.metadata_temp['GT_cmap']=GT_cmap
+
+        # to get label_map from cls_map
+        GT_label_map = np.full_like(self.cls_map, fill_value=-1, dtype=np.uint8)
+        for class_index, (label_GT, _, _) in self.class_info.items():
+            mask = self.cls_map == class_index
+            GT_label_map[mask] = label_GT
+
+        self.cube.cube_info.metadata_temp['gt_label_map']=GT_label_map.astype(np.uint8)
 
         self.cube.cube_info.metadata_temp['spectra_mean']=list(self.class_means.values())
         self.cube.cube_info.metadata_temp['spectra_std']=list(self.class_stds.values())
@@ -567,11 +580,22 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
             if not path:
                 return
 
-            cv2.imwrite(path, self.GT_image)
+            img = Image.fromarray(GT_label_map.astype(np.uint8), mode='P') # to save png with palette
+            palette = []
+            for i in range(GT_cmap.shape[1]):
+                r = int(GT_cmap[0, i] * 255)
+                g = int(GT_cmap[1, i] * 255)
+                b = int(GT_cmap[2, i] * 255)
+                palette.extend([r, g, b])
+
+            img.putpalette(palette)
+            img.save(path)
+
+            # cv2.imwrite(path, self.GT_image) #if classical [R,G,B] png
 
             reply = QMessageBox.question(
                 self, "Erase selection?",
-                "Ground truth image saved in :\n{path} \n \n Do you also want to save updates metadata of the cube ?",
+                f"Ground truth image saved in :\n {path} \n \n Do you also want to save updated metadata of the cube ?",
 
                 QMessageBox.Yes | QMessageBox.No
             )
@@ -964,6 +988,7 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
                 self.samples.setdefault(cls, []).append(self.data[y, x, :])
 
             # 3) rafraîchir l’affichage
+        self.update_counts()
         self.show_image()
         self.update_legend()
 
@@ -1028,6 +1053,8 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
             self.spec_ax.grid(color='black')
             self.spec_ax.set_ylim(0,maxR+0.05)
             self.spec_ax.set_xlim(x_graph[0],x_graph[-1])
+            self.spec_ax.set_xlabel("wavelength (nm)")
+            self.spec_ax.set_ylabel("Reflectance (a.u.)")
 
         for patch in self.selected_span_patch:
             # patch est un PolyCollection produit par axvspan()
@@ -1472,9 +1499,17 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         self.update_spectra()
 
     def update_counts(self):
-        labels, counts = np.unique(self.cls_map, return_counts=True)
+        self.class_ncount = {}
+
+        if self.cls_map is not None:
+            labels, counts = np.unique(self.cls_map, return_counts=True)
+        elif self.selection_mask_map is not None:
+            labels, counts = np.unique(self.selection_mask_map[self.selection_mask_map >= 0], return_counts=True)
+        else:
+            labels, counts = [], []
+
         for cls, cnt in zip(labels, counts):
-            self.class_ncount[cls]=cnt
+            self.class_ncount[cls] = cnt
 
     def _np2pixmap(self, img):
         from PyQt5.QtGui import QImage, QPixmap

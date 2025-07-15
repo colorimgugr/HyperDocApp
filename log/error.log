@@ -32,3 +32,19 @@ Traceback (most recent call last):
        ~~~~~~~^^^^
 TypeError: 'NoneType' object is not subscriptable
 
+2025-07-15 10:07:23,991 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\registration\register_tool.py", line 503, in load_fixed_btn
+    self.load_cube(0)
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\registration\register_tool.py", line 495, in load_cube
+    if not self.auto_load_lock and paired_path is not None:
+                                   ^^^^^^^^^^^
+UnboundLocalError: cannot access local variable 'paired_path' where it is not associated with a value
+
+2025-07-15 11:28:27,352 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\data_vizualisation\data_vizualisation_tool.py", line 396, in search_gt_in_files
+    filepath, _ = QFileDialog.getOpenFileName(self, "Open Ground Truth PNG image", path_VNIR,
+                                                                                   ^^^^^^^^^
+NameError: name 'path_VNIR' is not defined
+

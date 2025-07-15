@@ -327,7 +327,6 @@ class MainApp(QtWidgets.QMainWindow):
         self.centralWidget().hide()
         # self.showMaximized()
 
-
     def open_suggestion_box(self):
         self.suggestion_window = SuggestionWidget()
         self.suggestion_window.show()
@@ -600,6 +599,19 @@ class MainApp(QtWidgets.QMainWindow):
             sub.addAction(act_rm)
             # Ajouter sous-menu au menu principal
             self.cubeMenu.addMenu(sub)
+
+    def closeEvent(self, event):
+        reply = QMessageBox.question(
+            self,
+            "Confirm Exit",
+            "You may loose unsaved modifications. \nAre you sure you want to quit the application?",
+            QMessageBox.Ok | QMessageBox.Cancel
+        )
+
+        if reply == QMessageBox.Ok:
+            event.accept()  # Proceed with closing the app
+        else:
+            event.ignore()  # Cancel the close event
 
 # Configure error logging
 # Get absolute path of log folder (support PyInstaller frozen mode)
