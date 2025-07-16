@@ -220,7 +220,7 @@ class MainApp(QtWidgets.QMainWindow):
         }
 
         # make left docks with meta and file browser
-        # self.file_browser_dock = self._add_file_browser_dock() # left dock with file browser
+        self.file_browser_dock = self._add_file_browser_dock() # left dock with file browser
         self.meta_dock=self._add_dock("Metadata",   MetadataTool,     QtCore.Qt.LeftDockWidgetArea) # add meta to left dock
         # self.tabifyDockWidget(self.file_browser_dock, self.meta_dock)
         # self.meta_dock.raise_() # raise meta and "hide in tab" file browser
@@ -244,7 +244,7 @@ class MainApp(QtWidgets.QMainWindow):
         self.toolbar.setIconSize(QSize(48, 48))  # Taille des icônes
         self.toolbar.setToolButtonStyle(Qt.ToolButtonIconOnly)  #ToolButtonIconOnly ou TextUnderIcon)
 
-        # act_file = self.onToolButtonPress(self.file_browser_dock,icon_name="file_browser_icon.png",tooltip="File Browser")
+        act_file = self.onToolButtonPress(self.file_browser_dock,icon_name="file_browser_icon.png",tooltip="File Browser")
         act_met = self.onToolButtonPress(self.meta_dock, "metadata_icon.png", "Metadata")
         self.toolbar.addSeparator()
         act_data = self.onToolButtonPress(self.data_viz_dock, "icon_data_viz.svg", "Data Vizualisation")
@@ -266,8 +266,7 @@ class MainApp(QtWidgets.QMainWindow):
 
         # Hypercube Manager
         self.hypercube_manager = HypercubeManager()
-        reg_widget = self.reg_dock.widget()
-        reg_widget.alignedCubeReady.connect(self.hypercube_manager.addCube)  # get signal from register tool
+
 
         # Action Add File in list of cubes
         act_add = QAction("Open new cube(s)", self)
@@ -278,10 +277,9 @@ class MainApp(QtWidgets.QMainWindow):
         self.hypercube_manager.cubesChanged.connect(self._update_cube_menu)
         self._update_cube_menu(self.hypercube_manager.paths)
 
-        # act_save = QAction("Save Cube to Disc", self)
-        # act_save.setToolTip("Save cube from loaded cubes")
-        # act_save.triggered.connect(self.save_cube)
-        # self.toolbar.addAction(act_save)
+        # signal from register tool
+        reg_widget = self.reg_dock.widget()
+        reg_widget.alignedCubeReady.connect(self.hypercube_manager.addCube)  # get signal from register tool
 
         # Save with menu
         self.saveBtn = QtWidgets.QToolButton(self)
@@ -406,6 +404,7 @@ class MainApp(QtWidgets.QMainWindow):
         return dock
 
     def _add_file_browser_dock(self) -> QtWidgets.QDockWidget:
+
         """
         Initialise le File Browser avec un CubeInfoTemp vide,
         connecte son signal accepted, puis l'ajoute en dock.
@@ -513,8 +512,12 @@ class MainApp(QtWidgets.QMainWindow):
     def _send_to_data_viz(self,index):
         widget = self.data_viz_dock.widget()
         ci = self.hypercube_manager.getCubeInfo(index)
-        print(ci.filepath)
-        widget.open_hypercubes_and_GT(filepath=ci.filepath)
+        widget.open_hypercubes_and_GT(filepath=ci.filepath,cube_info=ci)
+
+    def _send_to_registration(self,index,imov):
+        widget = self.reg_dock.widget()
+        ci = self.hypercube_manager.getCubeInfo(index)
+        widget.load_cube(filepath=ci.filepath,cube_info=ci,i_mov=imov)
 
     def _send_to_all(self,index):
         self._send_to_data_viz(index)
@@ -553,20 +556,21 @@ class MainApp(QtWidgets.QMainWindow):
             menu_load_reg=QtWidgets.QMenu("Send to Register Tool", sub)
             act_fix = QtWidgets.QAction("Fixed Cube", self)
             act_fix.triggered.connect(
-                lambda _, i=idx: self.reg_dock.widget().load_cube(0,self.hypercube_manager.paths[i])
+                lambda _, i=idx: self._send_to_registration(i,0)
             )
             menu_load_reg.addAction(act_fix)
             # Action Moving
             act_mov = QtWidgets.QAction("Moving Cube", self)
             act_mov.triggered.connect(
-                lambda _, i=idx: self.reg_dock.widget().load_cube(1,self.hypercube_manager.paths[i])
+                lambda _, i=idx:  self._send_to_registration(i,1)
             )
             menu_load_reg.addAction(act_mov)
             sub.addMenu(menu_load_reg)
-            # Envoyer au dock file browser
-            # act_browser = QtWidgets.QAction("Send to File Browser", self)
-            # act_browser.triggered.connect(lambda checked, i=idx: self._open_file_browser_for_index(i))
-            # sub.addAction(act_browser)
+
+            # send to file browser
+            act_browser = QtWidgets.QAction("Send to File Browser", self)
+            act_browser.triggered.connect(lambda checked, i=idx: self._open_file_browser_for_index(i))
+            sub.addAction(act_browser)
 
             # Envoyer au dock metadata
             act_meta = QtWidgets.QAction("Send to Metadata", self)
@@ -745,7 +749,7 @@ def check_resolution_change():
 
 if __name__ == "__main__":
 
-    sys.excepthook = excepthook #set the exception handler
+    # sys.excepthook = excepthook #set the exception handler
 
     app = QtWidgets.QApplication(sys.argv)
 

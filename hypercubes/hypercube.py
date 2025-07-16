@@ -63,7 +63,7 @@ class Hypercube:
             cube_info = CubeInfoTemp()
         self.cube_info = cube_info
 
-        if self.cube_info.filepath is None:
+        if filepath is not None:
             self.cube_info.filepath=filepath
 
         if load_init:
@@ -71,15 +71,6 @@ class Hypercube:
                 self.open_hyp(default_path=filepath, open_dialog=False)
             else:
                 self.open_hyp(open_dialog=True)
-
-    @staticmethod
-    def _is_hdf5_file(path: str) -> bool:
-        """True if `path` can be opened by h5py (including .mat v7.3)."""
-        try:
-            with h5py.File(path, 'r'):
-                return True
-        except (OSError, IOError):
-            return False
 
     def reinit_cube(self):
         """Reset all attributes."""
@@ -94,10 +85,74 @@ class Hypercube:
             return None
         return self.data[:, :, indices]
 
-    def open_hyp(self, default_path="", open_dialog=True, show_exception=True):
+    def get_data_mat7p3_or_h5(self,filepath=None):
+        if filepath is None:
+            try :
+                filepath=self.cube_info.filepath
+            except:
+                pass
+
+        with h5py.File(filepath, "r") as f:
+            raw = f[self.cube_info.data_path][:]
+            self.data = np.transpose(raw, (2, 1, 0))
+
+            wl_sel = self.cube_info.wl_path
+            if wl_sel:
+                if '@' in wl_sel:
+                    grp, _, attr = wl_sel.rpartition('@')
+                    vals = (f.attrs[attr] if not grp or grp == '/'
+                            else f[grp].attrs[attr])
+                else:
+                    vals = f[wl_sel][:]
+                self.wl = np.array(vals).flatten()
+            else:
+                self.wl = None
+
+            self.metadata = {}
+            meta_sel = self.cube_info.metadata_path
+            if meta_sel == '/':
+                self.metadata = {k: f.attrs[k] for k in f.attrs}
+            elif '@' in meta_sel:
+                grp, _, attr = meta_sel.rpartition('@')
+                self.metadata[attr] = (
+                    f.attrs[attr] if not grp or grp == '/'
+                    else f[grp].attrs[attr]
+                )
+
+            elif meta_sel:
+                obj = f[meta_sel]
+                if isinstance(obj, h5py.Group):
+                    self.meta_from_gnl_v7p3(obj)
+
+                else:
+                    name = meta_sel.split('/')[-1]
+                    self.metadata[name] = obj[()]
+
+    def meta_from_gnl_v7p3(self,meta_grp):
+        for name, ds in meta_grp.items():
+            arr = ds[()]
+            mclass = ds.attrs.get("MATLAB_class", b"").decode()
+
+            if mclass == "char":
+                # convertir codes ASCII en str
+                bb = np.asarray(arr, np.uint8).flatten()
+                bb = bb[bb != 0]  # retirer les zéros
+                self.metadata[name] = bb.tobytes().decode("utf-8", errors="ignore")
+
+            elif mclass == "logical":
+                self.metadata[name] = np.asarray(arr, dtype=bool)
+
+            else:
+                # double, single, int, etc.
+                self.metadata[name] = arr
+
+    def open_hyp(self, default_path="", open_dialog=True, cube_info=None, show_exception=True):
         """
         Open a hyperspectral cube file: try with .h5 . mat with different methods and with .hdr for ENVI.
         """
+
+        if cube_info is not None:
+            self.cube_info=cube_info
 
         flag_loaded=False
 
@@ -129,6 +184,7 @@ class Hypercube:
             except:
                 pass
             print(f'.mat is v7.3 : {is_v7p3}')
+
             if is_v7p3 :  # new format
                try:#automatic hypercube_classic_save of CIL
                     with h5py.File(filepath, "r") as f:
@@ -139,23 +195,8 @@ class Hypercube:
                         # rebuild metadata if any
                         self.metadata = {}
                         if "Metadata" in f:
-                            meta_grp = f["Metadata"]
-                            for name, ds in meta_grp.items():
-                                arr = ds[()]
-                                mclass = ds.attrs.get("MATLAB_class", b"").decode()
-
-                                if mclass == "char":
-                                    # convertir codes ASCII en str
-                                    bb = np.asarray(arr, np.uint8).flatten()
-                                    bb = bb[bb != 0]  # retirer les zéros
-                                    self.metadata[name] = bb.tobytes().decode("utf-8", errors="ignore")
-
-                                elif mclass == "logical":
-                                    self.metadata[name] = np.asarray(arr, dtype=bool)
-
-                                else:
-                                    # double, single, int, etc.
-                                    self.metadata[name] = arr
+                            grp=f["Metadata"]
+                            self.meta_from_gnl_v7p3(grp)
 
                         self.cube_info.data_path = "#refs#/d"
                         self.cube_info.wl_path = "#refs#/c"
@@ -167,14 +208,23 @@ class Hypercube:
                    pass
 
                if not flag_loaded:
-                   # on essaye avec le browser
-                    if self.look_with_browser(filepath):
-                        try:
+                   try:
+                       if self.cube_info.data_path is None :
+                           print('try wih browser')
+                           ans=self.look_with_browser(filepath)
+                           print(ans)
+                           if not ans:
+                               return
 
+                       try:
+                            self.get_data_mat7p3_or_h5(filepath)
+                            self.cube_info.wl_trans = True
                             flag_loaded=True
-                            print('loaded .mat v7p3 with BROWSER')
-                        except:
-                            pass
+                            print('loaded .mat v7p3 fro known cube_info.pathS')
+                       except:
+                           pass
+                   except:
+                       pass
 
             else :
                 # with old format classic save
@@ -197,7 +247,6 @@ class Hypercube:
 
                 if not flag_loaded:
                     if self.look_with_browser(filepath=filepath):
-
 
                         try:
                             mat_dict = loadmat(filepath)
@@ -437,6 +486,12 @@ class Hypercube:
         return value
 
     def look_with_browser(self,filepath=None):
+        if filepath is None:
+            try:
+                filepath=self.cube_info.filepath
+            except:
+                pass
+
         widget = HDF5BrowserWidget(cube_info=self.cube_info,
                                    filepath=filepath, closable=True)
         loop = QEventLoop()
@@ -451,7 +506,6 @@ class Hypercube:
             # user cancelled
             self.reinit_cube()
             return False
-
 
         return True
 
@@ -753,6 +807,10 @@ class HDF5BrowserWidget(QWidget, Ui_HDF5BrowserWidget):
         if self.closable:
             self.close()
 
+    def closeEvent(self, event):
+        self._on_reject()
+        event.accept()
+
     def load_file(self, filepath):
         """
         Point the browser at a new file and rebuild the tree.
@@ -839,21 +897,35 @@ def save_images(dirpath: str,
     write('aligned', aligned_img)
 
 if __name__ == '__main__':
-    import matplotlib
 
-    # folder = r'C:\Users\Usuario\Documents\DOC_Yannick\HYPERDOC Database\Other'
+    # folder = r'C:\Users\Usuario\Documents\DOC_Yannick\HYPERDOC Database\Samples\minicubes/'
+    # fname = '00189-VNIR-mock-up.h5'
+
+    folder = r'C:\Users\Usuario\Documents\DOC_Yannick\Thin_film\CITIC\241216\PikaL'
+    fname = 'c1318_12.bil.hdr'
+
+    # folder = r'C:\Users\Usuario\Documents\DOC_Yannick\Hyperdoc_Test\Archivo chancilleria'
     # fname = 'MPD41a_VNIR.mat'
-    # fname='MPD41a_SWIR_test_save.mat'
-    folder = r'C:\Users\Usuario\Documents\DOC_Yannick\HYPERDOC Database\Samples\minicubes'
-    # fname = '00280-VNIR-mock-up.h5'
-    # fname='00280-VNIR-mock-up_test.h5'
-    fname='00280-VNIR-mock-up_test_02.hdr'
-    # fname = '00280-VNIR-mock-up.mat'
+    # fname = 'MPD41a_SWIR_cube_NOv7p3.mat'
+    # fname = 'MPD41a_SWIR_sruct_NOv7p3.mat'
+    # fname = 'MPD41a_SWIR_struct_YESv7p3.mat'
 
     import os
 
     filepath = os.path.join(folder, fname)
 
+    app = QApplication(sys.argv)
+
     cube = Hypercube(filepath=filepath, load_init=True)
     for key in cube.metadata:
         print(f' {key} (type: {type(cube.metadata[key]).__name__})-> {cube.metadata[key]}')
+
+    try:
+        import cv2
+        mid=int(cube.data.shape[2]/2)
+        image_np=cube.data[:,:,mid]
+        cv2.imshow("Image", image_np)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+    except:
+        print('imshow crashed')

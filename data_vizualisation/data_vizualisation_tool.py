@@ -143,7 +143,6 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
 
     def change_hyp_quick(self,prev_next):
 
-
         last_hyp_path = self.cubes_path
         init_dir_hyp = '/'.join(last_hyp_path.split('/')[:-1])
         file_init = last_hyp_path.split('/')[-1]
@@ -163,11 +162,12 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
         file_hyp = init_dir_hyp + '/' + file_new
 
         try:
+            cube_info=self.hyps[0].cube_info
             self.open_hypercubes_and_GT(filepath=file_hyp)
         except:
             pass
 
-    def open_hypercubes_and_GT(self,filepath=None):
+    def open_hypercubes_and_GT(self,filepath=None,cube_info=None):
         """ load cube and look for complemtal cube and also GT  """
 
         # set 3 filepath to 0
@@ -189,7 +189,7 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
 
         self.cubes_path=filepath # update default folder
 
-        cube=Hypercube(filepath,load_init=True) # load hypercube
+        cube=Hypercube(filepath,cube_info=cube_info,load_init=True) # load hypercube
 
         # Test if VNIR SWIR or UV range (other)
         if 'VNIR' in filepath or (cube.wl[-1] < 1100 and cube.wl[0] > 350):
@@ -228,9 +228,11 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
 
         # load hypercubes
         if path_VNIR is not None:
-
             try:
-                self.hyps[0].open_hyp(default_path=path_VNIR,open_dialog=False,show_exception=False)
+                if cube_info is not None:
+                    cube_info.filepath = path_VNIR
+                    self.hyps[0].cube_info = cube_info
+                self.hyps[0].open_hyp(default_path=path_VNIR,cube_info=cube_info,open_dialog=False,show_exception=False)
 
                 if self.hyps[0].data is None:
                     self.image_loaded[0] = False
@@ -243,7 +245,10 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
 
         elif path_UV is not None:
             try:
-                self.hyps[0].open_hyp(path_UV,open_dialog=False,show_exception=False)
+                if cube_info is not None:
+                    cube_info.filepath=path_UV
+                    self.hyps[0].cube_info = cube_info
+                self.hyps[0].open_hyp(path_UV,open_dialog=False,cube_info=cube_info,show_exception=False)
                 if self.hyps[0].data is None :
                     self.image_loaded[0] = False
                 else :
@@ -256,7 +261,10 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
         if path_SWIR is not None:
 
             try:
-                self.hyps[1].open_hyp(path_SWIR,open_dialog=False,show_exception=False)
+                if cube_info is not None:
+                    cube_info.filepath=path_SWIR
+                    self.hyps[1].cube_info = cube_info
+                self.hyps[1].open_hyp(path_SWIR,open_dialog=False,cube_info=cube_info,show_exception=False)
                 if self.hyps[1].data is None :
                     self.image_loaded[1] = False
                 else :
@@ -277,6 +285,7 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
 
         # load GT using previous folder_name saved with file_GT
         if self.folder_GT is not None :
+            print(self.folder_GT , file_GT)
             path_GT = self.folder_GT + '/' + file_GT
             try:
                 self.GT.load_image(path_GT)
@@ -284,9 +293,14 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
             except:
                 pass
 
+        if (not self.image_loaded[0]) and (not self.image_loaded[1]):
+            QMessageBox.critical(self,'LOADING PROBLEM','Problem loading cube.')
+            return
+
         # try using same folder as opened cube
         if not self.image_loaded[2]:
             self.folder_GT = os.path.dirname(filepath)
+            print(self.folder_GT,file_GT)
             path_GT =  os.path.join(self.folder_GT,file_GT)
             try :
                 self.GT.load_image(path_GT)

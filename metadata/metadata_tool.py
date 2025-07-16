@@ -115,7 +115,11 @@ class MetadataTool(QWidget, Ui_Metadata_tool):
     def update_combo_meta(self,init=False):
 
         last_key = self.comboBox_metadata.currentText()
-        if last_key=='': last_key='cubeinfo'
+        if last_key=='':
+            try:
+                last_key='cubeinfo'
+            except:
+                pass
 
         if init:
             self.comboBox_metadata.clear()
@@ -480,10 +484,17 @@ class MetadataTool(QWidget, Ui_Metadata_tool):
         if key=='':
             try:
                 key='cubeinfo'
+                raw = self.cube_info.metadata_temp[key]
+
             except:
                 pass
 
-        raw = self.cube_info.metadata_temp[key]
+        try:
+            raw = self.cube_info.metadata_temp[key]
+        except:
+            print('KEY NO EXIST')
+            return
+
         print(f'{key} ({type(raw)})-> {raw}')
 
         try :
@@ -503,6 +514,8 @@ class MetadataTool(QWidget, Ui_Metadata_tool):
                     txt=raw
                 if type(txt) is float:
                     txt=int(txt)
+                if type(raw) is str:
+                    txt=int(raw)
                 st=f"The camera have <b>{txt}</b> spectral bands."
 
             elif key == 'date':

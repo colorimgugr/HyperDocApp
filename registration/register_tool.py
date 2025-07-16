@@ -310,6 +310,8 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
         self.horizontalSlider_keyPacketToShow.valueChanged.connect(self.update_keypoints_display)
         self.features_slider.valueChanged.connect(self.update_slider_packet)
 
+        self.checkBox_auto_load_complental.setChecked(False)
+
     def update_sliders(self):
         if self.radioButton_whole_ref.isChecked():
             self.horizontalSlider_ref_channel.setEnabled(False)
@@ -362,7 +364,7 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
         else:
             print(f"[Warning] CubeInfo path does not match fixed or moving cube: {ci.filepath}")
 
-    def load_cube(self,i_mov=None,fname=None,switch=False):
+    def load_cube(self,i_mov=None,filepath=None,cube_info=None,switch=False):
 
         if switch:
             # 1) swap the cubes
@@ -417,40 +419,44 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
             return  # important : on sort de la méthode après le switch
 
         else :
-            if fname is None:
-                fname, _ = QFileDialog.getOpenFileName(self, ['Load Fixed Cube','Load Moving Cube'][i_mov])
+            if filepath is None:
+                try :
+                    filepath=cube_info.filepath
+                except:
+                    pass
+                filepath, _ = QFileDialog.getOpenFileName(self, ['Load Fixed Cube','Load Moving Cube'][i_mov])
 
-            if not fname:
+            if not filepath:
                 return
 
             which_cube=['FIXED','MOVING'][i_mov]
             message_progress=  "[Register Tool] Loading "+which_cube+" cube..."
-            loading = LoadingDialog(message_progress, filename=fname, parent=self)
+            loading = LoadingDialog(message_progress, filename=filepath, parent=self)
             loading.show()
             QApplication.processEvents()
 
-            if fname[-3:] in['mat', '.h5']:
+            if filepath[-3:] in['mat', '.h5']:
                 if i_mov:
-                    self.moving_cube.open_hyp(fname, open_dialog=False)
+                    self.moving_cube.open_hyp(filepath, cube_info=cube_info,open_dialog=False)
                     cube=self.moving_cube.data
                     wl=self.moving_cube.wl
-                    self.cubeLoaded.emit(fname)  # Notify the manager
+                    self.cubeLoaded.emit(filepath)  # Notify the manager
 
                 else:
-                    self.fixed_cube.open_hyp(fname, open_dialog=False)
+                    self.fixed_cube.open_hyp(filepath,cube_info=cube_info, open_dialog=False)
                     cube=self.fixed_cube.data
                     wl = self.fixed_cube.wl
-                    self.cubeLoaded.emit(fname)  # Notify the manager
+                    self.cubeLoaded.emit(filepath)  # Notify the manager
 
                 # Auto-load paired cube if not already loaded
                 paired_path=None
                 if not self.auto_load_lock:
-                    paired_path = find_paired_cube_path(fname)
+                    paired_path = find_paired_cube_path(filepath)
 
                     if paired_path:
                         load_fixe_auto = True
                     else:
-                        print(f"[Auto-load] Aucun cube équivalent trouvé pour : {fname}")
+                        print(f"[Auto-load] Aucun cube équivalent trouvé pour : {filepath}")
 
                 self.cube = [self.fixed_cube, self.moving_cube]
 
@@ -477,7 +483,7 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
                 img =(img * 256 / np.max(img)).astype('uint8')
             else :
                 # try :
-                #     img = cv2.imread(fname, cv2.IMREAD_GRAYSCALE)
+                #     img = cv2.imread(filepath, cv2.IMREAD_GRAYSCALE)
                 # except:
                 #     loading.close()
                 #     return
@@ -502,15 +508,15 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
 
         if not self.auto_load_lock and paired_path is not None and self.checkBox_auto_load_complental.isChecked():
             self.auto_load_lock = True
-            self.load_cube(i_mov=1 - i_mov, fname=paired_path)
+            self.load_cube(i_mov=1 - i_mov, filepath=paired_path)
             self.auto_load_lock = False
 
         self.pushButton_register.setEnabled(False)
 
-    def load_fixed_btn(self,fname=None):
+    def load_fixed_btn(self):
         self.load_cube(0)
 
-    def load_moving_btn(self,fname=None):
+    def load_moving_btn(self):
         self.load_cube(1)
 
     def cube_to_img(self,cube,mode,chan):
