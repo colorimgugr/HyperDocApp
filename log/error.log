@@ -55,3 +55,17 @@ Traceback (most recent call last):
           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^
 KeyError: 'cubeinfo'
 
+2025-07-16 07:23:25,816 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\data_vizualisation\data_vizualisation_tool.py", line 479, in update_metadata_label
+    st=f"The camera have <b>{raw[0]}</b> spectral bands."
+                             ~~~^^^
+TypeError: 'int' object is not subscriptable
+
+2025-07-16 07:23:43,775 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\data_vizualisation\data_vizualisation_tool.py", line 482, in update_metadata_label
+    if len(raw)>1:info=raw
+       ^^^^^^^^
+TypeError: object of type 'float' has no len()
+

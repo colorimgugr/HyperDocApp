@@ -22,7 +22,7 @@ class MetadataTool(QWidget, Ui_Metadata_tool):
         self.setupUi(self)
         self.cube_info = cube_info if cube_info is not None else CubeInfoTemp()
         self.meta_load = self.cube_info.metadata_temp.copy()
-        self.hidden_meta=['wl','GT_cmap','spectra_mean','spectra_std','RGB','gt_cmap',]
+        self.hidden_meta=['GT_index_map','wl','GT_cmap','spectra_mean','spectra_std','RGB','gt_cmap',]
         self.not_editable=['GTLabels','gtlabels','bands','height','pixels_averaged','position','width']
 
         # connect combobox
@@ -476,17 +476,18 @@ class MetadataTool(QWidget, Ui_Metadata_tool):
     def update_metadata_label(self):
         self.textEdit_metadata.setStyleSheet("QTextEdit  { color: black; }")
         key = self.comboBox_metadata.currentText()
+        print(key)
         if key=='':
             try:
                 key='cubeinfo'
-                raw = self.cube_info.metadata_temp[key]
             except:
                 pass
 
         raw = self.cube_info.metadata_temp[key]
+        print(f'{key} ({type(raw)})-> {raw}')
 
         try :
-            if key == 'GTLabels' | 'gtlabels':
+            if key in ['GTLabels','gtlabels']:
                 if len(raw.shape)==2:
                     st=f"GT indexes : <b>{(' , ').join(raw[0])}</b>  <br>  GT names : <b>{(' , ').join(raw[1])}</b>"
                 elif len(raw.shape)==1:
@@ -496,11 +497,26 @@ class MetadataTool(QWidget, Ui_Metadata_tool):
                 st=f"The sample has been aged ? <br> <b>{raw}</b>"
 
             elif key == 'bands':
-                st=f"The camera have <b>{raw[0]}</b> spectral bands."
+                try :
+                    txt=raw[0]
+                except:
+                    txt=raw
+                if type(txt) is float:
+                    txt=int(txt)
+                st=f"The camera have <b>{txt}</b> spectral bands."
 
             elif key == 'date':
-                if len(raw)>1:info=raw
-                else: info=raw[0]
+                if type(raw) is str :
+                    info=raw
+                elif type(raw) is float:
+                    info=int(raw)
+                else :
+                    if len(raw)>1:info=raw
+                    else:
+                        try :
+                            info=raw[0]
+                        except:
+                            info = raw
                 st=f"Date of the sample : <b>{info}</b>"
 
             elif key == 'device':
@@ -525,25 +541,38 @@ class MetadataTool(QWidget, Ui_Metadata_tool):
                 st = f"The reference white used for reflectance measurement is : <br> <b>{raw}</b>"
 
             elif key == 'restored':
-                    st = f"The sample has been restored ?  <br> <b> {['NO','YES'][raw[0]]}</b>"
+                try:
+                    txt = raw[0]
+                except:
+                    txt = raw
+                    st = f"The sample has been restored ?  <br> <b> {['NO','YES'][txt]}</b>"
 
             elif key == 'stage':
                 st = f"The capture was made with a  <b>{raw}</b> stage"
-
-            elif key == 'reference_white':
-                st = f"The reference white used for reflectance measurement is : <br> <b>{raw}</b>"
 
             elif key == 'substrate':
                 st = f"The substrate of the sample is : <br> <b>{raw}</b>"
 
             elif key == 'texp':
-                st = f"The exposure time set for the capture was <b>{raw[0]:.2f}</b> ms."
+                try :
+                    txt=raw[0]
+                except:
+                    txt=raw
+                st = f"The exposure time set for the capture was <b>{txt:.2f}</b> ms."
 
             elif key == 'height':
-                st = f"The height of the minicube <b>{raw[0]}</b> pixels."
+                try :
+                    txt=raw[0]
+                except:
+                    txt=raw
+                st = f"The height of the minicube <b>{txt}</b> pixels."
 
             elif key == 'width':
-                st = f"The width of the minicube <b>{raw[0]}</b> pixels."
+                try :
+                    txt=raw[0]
+                except:
+                    txt=raw
+                st = f"The width of the minicube <b>{txt}</b> pixels."
 
             elif key == 'position':
                 st = f"The (x,y) coordinate of the upper right pixel of the minicube in the parent cube is : <br> <b>({raw[0]},{raw[1]})</b>"
@@ -554,6 +583,7 @@ class MetadataTool(QWidget, Ui_Metadata_tool):
 
             else :
                 st=f"<b>{self.cube_info.metadata_temp[key]}</b>"
+
         except:
             st=f"<b> !!! PROBLEM WITH METADATUM FORMAT !!! <br> <br> Here the raw :  <br> <br> {raw} </b>"
 
@@ -664,11 +694,6 @@ class MetadataTool(QWidget, Ui_Metadata_tool):
     def show_all_metadata(self):
         """Open pop-up showing all metadata in scrollable form, with toggle to reveal hidden entries."""
 
-        from PyQt5.QtWidgets import (
-            QDialog, QVBoxLayout, QScrollArea, QWidget, QFormLayout,
-            QLabel, QPushButton, QCheckBox
-        )
-        from PyQt5.QtCore import Qt
 
         if self.cube_info.metadata_temp is None:
             QMessageBox.information(self, "No Metadata", "No metadata available.")

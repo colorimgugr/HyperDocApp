@@ -16,14 +16,13 @@ import pandas as pd
 
 # GUI
 from PyQt5.QtWidgets import (
-    QApplication, QMainWindow, QPushButton, QLabel, QVBoxLayout, QWidget, QScrollArea,QDialog,QFormLayout,
-    QSlider, QFileDialog, QHBoxLayout,QGraphicsView, QGraphicsScene, QGraphicsPixmapItem,QMessageBox
-)
+            QDialog, QVBoxLayout, QScrollArea, QWidget, QFormLayout,
+            QLabel, QPushButton, QCheckBox)
+
 from PyQt5.QtCore import Qt,QTimer,QEvent
 from PyQt5.QtGui import QPixmap,QPainter,QIcon,QFont
 
 # images
-import h5py
 from PIL import Image
 
 # graphs
@@ -50,6 +49,7 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
         self.spec_range=['VNIR','SWIR'] # ['UVIS','VNIR','SWIR']
         self.folder_app=os.path.dirname(__file__)
         self.cubes_path=os.path.dirname(__file__)
+        self.hidden_meta=['wl','GT_cmap','spectra_mean','spectra_std','RGB','gt_cmap','GT_index_map',]
 
         self.hyps_rgb_chan_DEFAULT={'UVIS':[550,450,350],'VNIR':[610, 540, 435],'SWIR':[1605, 1205, 1005]}   # defaults channels for hypercubes images
         self.hyps_rgb_chan=[self.hyps_rgb_chan_DEFAULT[self.spec_range[0]],self.hyps_rgb_chan_DEFAULT[self.spec_range[1]]]  # channels for hypercubes images, initialiser aux DEFAULT
@@ -442,7 +442,7 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
 
         if hyp.metadata is not None:
             for key in hyp.metadata.keys():
-                if key not in ['wl','GT_cmap','spectra_mean','spectra_std']:
+                if key not in self.hidden_meta:
                     if key in ['GTLabels','pixels_averaged']:
                         try:
                             len(hyp.metadata[key])
@@ -459,83 +459,141 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
 
     def update_metadata_label(self):
         key = self.comboBox_metadata.currentText()
-        if key=='':
-            key='cubeinfo'
+        if key == '':
+            try:
+                key = 'cubeinfo'
+            except:
+                pass
+
         hyp = self.hyps[self.radioButton_SWIR.isChecked()]
         raw = hyp.metadata[key]
 
-        if key == 'GTLabels':
-            if len(raw.shape)==2:
-                st=f"GT indexes : <b>{(' , ').join(raw[0])}</b>  <br>  GT names : <b>{(' , ').join(raw[1])}</b>"
-            elif len(raw.shape)==1:
-                st=f"GT indexes : <b>{(raw[0])}</b>  <br>  GT names : <b>{raw[1]}</b>"
+        try:
+            if key in ['GTLabels', 'gtlabels']:
+                if len(raw.shape) == 2:
+                    st = f"GT indexes : <b>{(' , ').join(raw[0])}</b>  <br>  GT names : <b>{(' , ').join(raw[1])}</b>"
+                elif len(raw.shape) == 1:
+                    st = f"GT indexes : <b>{(raw[0])}</b>  <br>  GT names : <b>{raw[1]}</b>"
 
-        elif key == 'aged':
-            st=f"The sample has been aged ? <br> <b>{raw}</b>"
+            elif key == 'aged':
+                st = f"The sample has been aged ? <br> <b>{raw}</b>"
 
-        elif key == 'bands':
-            st=f"The camera have <b>{raw[0]}</b> spectral bands."
 
-        elif key == 'date':
-            if len(raw)>1:info=raw
-            else: info=raw[0]
-            st=f"Date of the sample : <b>{info}</b>"
+            elif key == 'bands':
 
-        elif key == 'device':
-            st=f"Capture made with the device : <br> <b>{raw}</b>"
+                try:
 
-        elif key == 'illumination':
-            st=f"Lamp used for the capture : <br> <b>{raw}</b>"
+                    txt = raw[0]
 
-        elif key == 'name':
-            st=f"Name of the minicube : <br> <b>{raw}</b>"
+                except:
 
-        elif key == 'number':
-            st = f"Number of the minicube : <br> <b>{raw}</b>"
+                    txt = raw
 
-        elif key == 'parent_cube':
-            st = f"Parent cube of the minicube : <br> <b>{raw}</b>"
+                if type(txt) is float:
+                    txt = int(txt)
 
-        elif key == 'pixels_averaged':
-            st = f"The number of pixels used for the <b>{len(raw)}</b> mean spectra of the GT materials are : <br> <b>{(' , ').join([str(r) for r in raw])}</b> "
+                st = f"The camera have <b>{txt}</b> spectral bands."
 
-        elif key == 'reference_white':
-            st = f"The reference white used for reflectance measurement is : <br> <b>{raw}</b>"
 
-        elif key == 'restored':
-            st = f"The sample has been restored ?  <br> <b> {['NO','YES'][raw[0]]}</b>"
+            elif key == 'date':
 
-        elif key == 'stage':
-            st = f"The capture was made with a  <b>{raw}</b> stage"
+                if type(raw) is str:
 
-        elif key == 'reference_white':
-            st = f"The reference white used for reflectance measurement is : <br> <b>{raw}</b>"
+                    info = raw
 
-        elif key == 'substrate':
-            st = f"The substrate of the sample is : <br> <b>{raw}</b>"
+                elif type(raw) is float:
 
-        elif key == 'texp':
-            st = f"The exposure time set for the capture was <b>{raw[0]:.2f}</b> ms."
+                    info = int(raw)
 
-        elif key == 'height':
-            st = f"The height of the minicube <b>{raw[0]}</b> pixels."
+                else:
 
-        elif key == 'width':
-            st = f"The width of the minicube <b>{raw[0]}</b> pixels."
+                    if len(raw) > 1:
+                        info = raw
 
-        elif key == 'position':
-            st = f"The (x,y) coordinate of the upper right pixel of the minicube in the parent cube is : <br> <b>({raw[0]},{raw[1]})</b>"
+                    else:
 
-        elif key == 'range':
-            val=['UV','VNIR : 400 - 1000 nm','SWIR : 900 - 1700 nm'][list(raw).index(1)]
-            st = f"The range of the capture is : <br> <b>{val}</b>"
+                        try:
 
-        else :
-            st=f"<b>{hyp.metadata[key]}</b>"
+                            info = raw[0]
+
+                        except:
+
+                            info = raw
+
+                st = f"Date of the sample : <b>{info}</b>"
+
+            elif key == 'device':
+                st = f"Capture made with the device : <br> <b>{raw}</b>"
+
+            elif key == 'illumination':
+                st = f"Lamp used for the capture : <br> <b>{raw}</b>"
+
+            elif key == 'name':
+                st = f"Name of the minicube : <br> <b>{raw}</b>"
+
+            elif key == 'number':
+                st = f"Number of the minicube : <br> <b>{raw}</b>"
+
+            elif key == 'parent_cube':
+                st = f"Parent cube of the minicube : <br> <b>{raw}</b>"
+
+            elif key == 'pixels_averaged':
+                st = f"The number of pixels used for the <b>{len(raw)}</b> mean spectra of the GT materials are : <br> <b>{(' , ').join([str(r) for r in raw])}</b> "
+
+            elif key == 'reference_white':
+                st = f"The reference white used for reflectance measurement is : <br> <b>{raw}</b>"
+
+            elif key == 'restored':
+                try:
+                    txt = raw[0]
+                except:
+                    txt = raw
+                    st = f"The sample has been restored ?  <br> <b> {['NO', 'YES'][txt]}</b>"
+
+            elif key == 'stage':
+                st = f"The capture was made with a  <b>{raw}</b> stage"
+
+            elif key == 'substrate':
+                st = f"The substrate of the sample is : <br> <b>{raw}</b>"
+
+            elif key == 'texp':
+                try:
+                    txt = raw[0]
+                except:
+                    txt = raw
+                st = f"The exposure time set for the capture was <b>{txt:.2f}</b> ms."
+
+            elif key == 'height':
+                try:
+                    txt = raw[0]
+                except:
+                    txt = raw
+                st = f"The height of the minicube <b>{txt}</b> pixels."
+
+            elif key == 'width':
+                try:
+                    txt = raw[0]
+                except:
+                    txt = raw
+                st = f"The width of the minicube <b>{txt}</b> pixels."
+
+            elif key == 'position':
+                st = f"The (x,y) coordinate of the upper right pixel of the minicube in the parent cube is : <br> <b>({raw[0]},{raw[1]})</b>"
+
+            elif key == 'range':
+                val = ['UV', 'VNIR : 400 - 1000 nm', 'SWIR : 900 - 1700 nm'][list(raw).index(1)]
+                st = f"The range of the capture is : <br> <b>{val}</b>"
+
+            else:
+                st = f"<b>{raw}</b>"
+
+        except:
+            st = f"<b> !!! PROBLEM WITH METADATUM FORMAT !!! <br> <br> Here the raw :  <br> <br> {raw} </b>"
 
         self.label_metadata.setText(st)
 
     def show_all_metadata(self):
+        """Open pop-up showing all metadata in scrollable form, with toggle to reveal hidden entries."""
 
         hyp = self.hyps[self.radioButton_SWIR.isChecked()]
 
@@ -543,7 +601,6 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
             QMessageBox.information(self, "No Metadata", "No metadata available.")
             return
 
-            # Window of dialog kind
         dialog = QDialog(self)
         dialog.setWindowTitle("All Metadata")
         dialog.setModal(False)
@@ -553,15 +610,17 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
         scroll.setWidgetResizable(True)
         inner = QWidget()
         form_layout = QFormLayout(inner)
+        scroll.setWidget(inner)
+        layout.addWidget(scroll)
 
-        # add rows to the form_layout
+        check_hidden = QCheckBox("Show full values for large metadata")
+        layout.addWidget(check_hidden)
+
+        entries = {}  # key -> (full_str, QLabel)
+
         for key, val in hyp.metadata.items():
-            # Ignore entries too long
-            if key in ['spectra_mean', 'spectra_std', 'GT_cmap', 'wl']:
-                continue
-
             try:
-                if isinstance(val, list) or isinstance(val, np.ndarray):
+                if isinstance(val, (list, np.ndarray)):
                     val_str = ', '.join(str(v) for v in val)
                 elif isinstance(val, dict):
                     val_str = str(val)
@@ -570,19 +629,26 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
             except Exception as e:
                 val_str = f"<unable to display: {e}>"
 
-            form_layout.addRow(f"{key}:", QLabel(val_str))
+            label_val = QLabel("HIDDEN" if key in self.hidden_meta else val_str)
+            label_val.setWordWrap(True)
+            form_layout.addRow(f"{key}:", label_val)
 
-        #add scroll widget in dialog eindow layout
-        scroll.setWidget(inner)
-        layout.addWidget(scroll)
+            entries[key] = (val_str, label_val)
 
-        # Close push button
+        def toggle_visibility(state):
+            for key in self.hidden_meta:
+                if key in entries:
+                    full_str, label = entries[key]
+                    label.setText(full_str if state == Qt.Checked else "HIDDEN")
+
+        check_hidden.stateChanged.connect(toggle_visibility)
+
         btn_close = QPushButton("Close")
         btn_close.clicked.connect(dialog.accept)
         layout.addWidget(btn_close)
 
         dialog.setLayout(layout)
-        dialog.resize(500, 600)
+        dialog.resize(600, 600)
         dialog.exec()
 
     def modif_channels(self):
