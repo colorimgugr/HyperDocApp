@@ -69,3 +69,78 @@ Traceback (most recent call last):
        ^^^^^^^^
 TypeError: object of type 'float' has no len()
 
+2025-07-16 15:28:36,376 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\MainWindow.py", line 541, in <lambda>
+    act_all.triggered.connect(lambda checked, i=idx: self._send_to_all(i))
+                                                     ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\MainWindow.py", line 519, in _send_to_all
+    self._send_to_data_viz(index)
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\MainWindow.py", line 516, in _send_to_data_viz
+    widget.open_hypercubes_and_GT(filepath=ci.filepath)
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\data_vizualisation\data_vizualisation_tool.py", line 195, in open_hypercubes_and_GT
+    if 'VNIR' in filepath or (cube.wl[-1] < 1100 and cube.wl[0] > 350):
+                              ~~~~~~~^^^^
+TypeError: 'NoneType' object is not subscriptable
+
+2025-07-16 16:05:59,550 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\MainWindow.py", line 541, in <lambda>
+    act_all.triggered.connect(lambda checked, i=idx: self._send_to_all(i))
+                                                     ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\MainWindow.py", line 519, in _send_to_all
+    self._send_to_data_viz(index)
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\MainWindow.py", line 516, in _send_to_data_viz
+    widget.open_hypercubes_and_GT(filepath=ci.filepath,cube_info=ci)
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\data_vizualisation\data_vizualisation_tool.py", line 280, in open_hypercubes_and_GT
+    path_GT = self.folder_GT + '/' + file_GT
+              ~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~
+TypeError: can only concatenate str (not "NoneType") to str
+
+2025-07-16 16:06:16,428 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\MainWindow.py", line 549, in <lambda>
+    act_viz.triggered.connect(lambda checked, i=idx: self._send_to_data_viz(i))
+                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\MainWindow.py", line 516, in _send_to_data_viz
+    widget.open_hypercubes_and_GT(filepath=ci.filepath,cube_info=ci)
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\data_vizualisation\data_vizualisation_tool.py", line 280, in open_hypercubes_and_GT
+    path_GT = self.folder_GT + '/' + file_GT
+              ~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~
+TypeError: can only concatenate str (not "NoneType") to str
+
+2025-07-16 16:06:25,462 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\MainWindow.py", line 555, in <lambda>
+    lambda _, i=idx: self.reg_dock.widget().load_cube(0,self.hypercube_manager.paths[i])
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\registration\register_tool.py", line 446, in load_cube
+    self.fixed_cube.open_hyp(fname,cube_info=cube_info, open_dialog=False)
+TypeError: Hypercube.open_hyp() got an unexpected keyword argument 'cube_info'
+
+2025-07-16 16:08:09,393 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\MainWindow.py", line 549, in <lambda>
+    act_viz.triggered.connect(lambda checked, i=idx: self._send_to_data_viz(i))
+                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\MainWindow.py", line 516, in _send_to_data_viz
+    widget.open_hypercubes_and_GT(filepath=ci.filepath,cube_info=ci)
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\data_vizualisation\data_vizualisation_tool.py", line 280, in open_hypercubes_and_GT
+    path_GT = self.folder_GT + '/' + file_GT
+              ~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~
+TypeError: can only concatenate str (not "NoneType") to str
+
+2025-07-16 16:16:22,097 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\MainWindow.py", line 549, in <lambda>
+    act_viz.triggered.connect(lambda checked, i=idx: self._send_to_data_viz(i))
+                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\MainWindow.py", line 516, in _send_to_data_viz
+    widget.open_hypercubes_and_GT(filepath=ci.filepath,cube_info=ci)
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\data_vizualisation\data_vizualisation_tool.py", line 293, in open_hypercubes_and_GT
+    path_GT =  os.path.join(self.folder_GT,file_GT)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen ntpath>", line 149, in join
+  File "<frozen genericpath>", line 164, in _check_arg_types
+TypeError: join() argument must be str, bytes, or os.PathLike object, not 'NoneType'
+

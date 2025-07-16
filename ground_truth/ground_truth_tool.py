@@ -1105,7 +1105,7 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         QApplication.processEvents()
 
         try :
-            cube = Hypercube(filepath=path, load_init=True)
+            cube = Hypercube(filepath=path, cube_info= cube_info,load_init=True)
         except:
             QMessageBox.information(self,"Problem at loading","Impossible to load this cube. Please check format.")
             loading.close()
