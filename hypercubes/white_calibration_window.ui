@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>dialog_white_calibration</class>
+ <widget class="QDialog" name="dialog_white_calibration">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>907</width>
+    <height>530</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>White Calibration</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout_5">
+   <item>
+    <layout class="QVBoxLayout" name="verticalLayout_2">
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayout_choice" stretch="1,1,1,1">
+       <item>
+        <layout class="QVBoxLayout" name="verticalLayout">
+         <item>
+          <widget class="QLabel" name="label_mouse_instruction">
+           <property name="styleSheet">
+            <string notr="true">background-color: rgba(0, 0, 0, 30);
+</string>
+           </property>
+           <property name="text">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-weight:600; text-decoration: underline;&quot;&gt;Mouse Control for selection&lt;/span&gt;&lt;/p&gt;&lt;p align=&quot;center&quot;&gt;Left Click : Drag image&lt;/p&gt;&lt;p align=&quot;center&quot;&gt;Wheel : Zoom&lt;/p&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Right CLick : Select Rectangle&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+           <property name="margin">
+            <number>10</number>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="pushButton_load_white_capture">
+           <property name="text">
+            <string>Load white reference capture</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="groupBox_calibration_type_from_image">
+         <property name="title">
+          <string>Calibration type from image</string>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout_3">
+          <item>
+           <widget class="QRadioButton" name="radioButton_no_flat_field">
+            <property name="text">
+             <string>Single mean spectra of rectangle</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QRadioButton" name="radioButton_horizontal_flat_field">
+            <property name="text">
+             <string>Horizontal Flat Field</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QRadioButton" name="radioButton_vertical_flat_field">
+            <property name="text">
+             <string>Vertical Flat field</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QRadioButton" name="radioButton_full_flat_field">
+            <property name="text">
+             <string>Full image Flat Field</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="groupBox_white_ref">
+         <property name="title">
+          <string>White reference reflectance</string>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout_4">
+          <item>
+           <widget class="QLabel" name="label_white_ref_choice">
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
+              <height>20</height>
+             </size>
+            </property>
+            <property name="text">
+             <string>White reference used :</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QComboBox" name="comboBox_white_Reference_choice">
+            <item>
+             <property name="text">
+              <string>Constant value (from field)</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Sphere Optics Full White</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Sphere Optics Multi 90</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Sphere Optics Multi 50</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Sphere Optics Multi 20</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Sphere Optics Multi 5</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Teflon</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Personal (load file)</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayout" stretch="1,3">
+            <item>
+             <widget class="QLabel" name="label_R_manual">
+              <property name="text">
+               <string>R =</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QDoubleSpinBox" name="doubleSpinBox_R_manual">
+              <property name="maximum">
+               <double>1.000000000000000</double>
+              </property>
+              <property name="stepType">
+               <enum>QAbstractSpinBox::AdaptiveDecimalStepType</enum>
+              </property>
+              <property name="value">
+               <double>1.000000000000000</double>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <widget class="QPushButton" name="pushButton_load_personal_white_ref">
+            <property name="text">
+             <string>Load other file</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="label">
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
+              <height>20</height>
+             </size>
+            </property>
+            <property name="text">
+             <string>No file loaded</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="pushButton_valid_calibration">
+         <property name="text">
+          <string>Valid calibration</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <widget class="QFrame" name="frame_image">
+       <property name="minimumSize">
+        <size>
+         <width>50</width>
+         <height>50</height>
+        </size>
+       </property>
+       <property name="frameShape">
+        <enum>QFrame::StyledPanel</enum>
+       </property>
+       <property name="frameShadow">
+        <enum>QFrame::Raised</enum>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

@@ -49,7 +49,7 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
         self.spec_range=['VNIR','SWIR'] # ['UVIS','VNIR','SWIR']
         self.folder_app=os.path.dirname(__file__)
         self.cubes_path=os.path.dirname(__file__)
-        self.hidden_meta=['wl','GT_cmap','spectra_mean','spectra_std','RGB','gt_cmap','GT_index_map',]
+        self.hidden_meta=['wl','GT_cmap','spectra_mean','spectra_std','RGB','gt_cmap','GT_index_map','wavelength','calibration_reflectance_values']
 
         self.hyps_rgb_chan_DEFAULT={'UVIS':[550,450,350],'VNIR':[610, 540, 435],'SWIR':[1605, 1205, 1005]}   # defaults channels for hypercubes images
         self.hyps_rgb_chan=[self.hyps_rgb_chan_DEFAULT[self.spec_range[0]],self.hyps_rgb_chan_DEFAULT[self.spec_range[1]]]  # channels for hypercubes images, initialiser aux DEFAULT
@@ -167,7 +167,7 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
         except:
             pass
 
-    def open_hypercubes_and_GT(self,filepath=None,cube_info=None):
+    def open_hypercubes_and_GT(self,filepath=None,cube_info=None,cube=None):
         """ load cube and look for complemtal cube and also GT  """
 
         # set 3 filepath to 0
@@ -189,11 +189,19 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
 
         self.cubes_path=filepath # update default folder
 
-        cube=Hypercube(filepath,cube_info=cube_info,load_init=True) # load hypercube
+        if cube is None:
+            cube=Hypercube(filepath,cube_info=cube_info,load_init=True) # load hypercube
+        else:
+            print(cube.data.shape)
 
+        loaded=None
         # Test if VNIR SWIR or UV range (other)
         if 'VNIR' in filepath or (cube.wl[-1] < 1100 and cube.wl[0] > 350):
             path_VNIR = filepath
+            self.image_loaded[0] = True
+            self.hyps[0]=cube
+            self.spec_range[0] = 'VNIR'
+
             if 'VNIR' in filepath:
                 path_SWIR = filepath.replace("VNIR", "SWIR")
                 if not os.path.exists(path_SWIR):
@@ -210,6 +218,9 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
 
         elif 'SWIR' in filepath or cube.wl[-1] >= 1100:
             path_SWIR = filepath
+            self.image_loaded[1] = True
+            self.hyps[1] = cube
+            self.spec_range[1] = 'SWIR'
             if 'SWIR' in filepath:
                 path_VNIR = filepath.replace("SWIR", "VNIR")
                 if not os.path.exists(path_VNIR):
@@ -225,9 +236,12 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
                         path_VNIR = None
         else:
             path_UV=filepath
+            self.image_loaded[0] = True
+            self.hyps[0] = cube
+            self.spec_range[0] = 'UVIS'
 
         # load hypercubes
-        if path_VNIR is not None:
+        if path_VNIR is not None and not self.image_loaded[0]:
             try:
                 if cube_info is not None:
                     cube_info.filepath = path_VNIR
@@ -243,7 +257,7 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
             except:
                 self.image_loaded[0] = False
 
-        elif path_UV is not None:
+        elif path_UV is not None and not self.image_loaded[0]:
             try:
                 if cube_info is not None:
                     cube_info.filepath=path_UV
@@ -258,7 +272,7 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
                 self.image_loaded[0] = False
                 return
 
-        if path_SWIR is not None:
+        if path_SWIR is not None and not self.image_loaded[1]:
 
             try:
                 if cube_info is not None:
@@ -476,6 +490,7 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
         if key == '':
             try:
                 key = 'cubeinfo'
+                hyp.metadata[key]
             except:
                 pass
 
@@ -676,7 +691,7 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
             wl=self.hyps[hyp_active].wl
             if val not in wl:
                 index_good=np.abs(val-wl).argmin()
-                elem.setValue(wl[index_good])
+                elem.setValue(int(wl[index_good]))
 
         self.update_image(index=hyp_active)
 
@@ -757,10 +772,14 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
                     rgb_image= hyp.get_rgb_image(channels_index)
                     rgb_image/=np.max(rgb_image)
                     rgb_images.append(rgb_image)
-                    if type(hyp.metadata['number']) is str and type(hyp.metadata['parent_cube']) is str :
-                        title=f"{hyp.metadata['number']} - {hyp.metadata['parent_cube']}"
-                    else :
-                        title=hyp.cube_info.metadata_temp['name']
+                    try:
+                        if type(hyp.metadata['number']) is str and type(hyp.metadata['parent_cube']) is str:
+                            title=f"{hyp.metadata['number']} - {hyp.metadata['parent_cube']}"
+                    except :
+                        try :
+                            title=hyp.cube_info.metadata_temp['name']
+                        except:
+                            title=hyp.cube_info.filepath.split('/')[-1]
                 else:
                     rgb_images.append(None)
 
@@ -1300,7 +1319,7 @@ class Canvas_Spectra(FigureCanvas):
                     try:
                         self.live_line.remove()
                     except Exception as e:
-                        print(f"[update_live_spectra] Could not remove live_line: {e}")
+                        print(f"[DATA VIZ] update_live_spectra : Could not remove live_line: {e}")
                     self.live_line = None
                     self.draw()
             return
@@ -1421,7 +1440,7 @@ if __name__ == "__main__":
     timer.timeout.connect(check_resolution_change)
     timer.start(500)  # Vérifie toutes les 500 ms
 
-    folder = r'C:\Users\Usuario\Documents\DOC_Yannick\HYPERDOC Database\Samples\minicubes/'
+    folder = r'C:\Users\Usuario\Documents\DOC_Yannick\HYPERDOC Database_TEST\Samples\minicubes/'
     file_name = '00189-VNIR-mock-up.h5'
     filepath = folder + file_name
     window.open_hypercubes_and_GT(filepath=filepath)

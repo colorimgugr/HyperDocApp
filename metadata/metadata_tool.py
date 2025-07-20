@@ -22,7 +22,7 @@ class MetadataTool(QWidget, Ui_Metadata_tool):
         self.setupUi(self)
         self.cube_info = cube_info if cube_info is not None else CubeInfoTemp()
         self.meta_load = self.cube_info.metadata_temp.copy()
-        self.hidden_meta=['GT_index_map','wl','GT_cmap','spectra_mean','spectra_std','RGB','gt_cmap',]
+        self.hidden_meta=['GT_index_map','wl','GT_cmap','spectra_mean','spectra_std','RGB','gt_cmap','wavelength','calibration_reflectance_values']
         self.not_editable=['GTLabels','gtlabels','bands','height','pixels_averaged','position','width']
 
         # connect combobox
@@ -480,7 +480,6 @@ class MetadataTool(QWidget, Ui_Metadata_tool):
     def update_metadata_label(self):
         self.textEdit_metadata.setStyleSheet("QTextEdit  { color: black; }")
         key = self.comboBox_metadata.currentText()
-        print(key)
         if key=='':
             try:
                 key='cubeinfo'
@@ -492,10 +491,8 @@ class MetadataTool(QWidget, Ui_Metadata_tool):
         try:
             raw = self.cube_info.metadata_temp[key]
         except:
-            print('KEY NO EXIST')
             return
 
-        print(f'{key} ({type(raw)})-> {raw}')
 
         try :
             if key in ['GTLabels','gtlabels']:
@@ -678,7 +675,6 @@ class MetadataTool(QWidget, Ui_Metadata_tool):
             key = self.comboBox_metadata.currentText()
             self.cube_info.metadata_temp[key]
         except:
-            print(self.cube_info)
             if self.checkBox_edit.isChecked():
                 if self.cube_info.filepath is None :
                     QMessageBox.warning(self,'Problem with metadata','No metadata to edit.\nSend a cube to this tool first.')

@@ -7,11 +7,14 @@ from scipy.io import loadmat
 import cv2
 
 from PyQt5.QtWidgets import (QWidget,
-    QApplication, QFileDialog, QMessageBox, QDialog, QTreeWidgetItem
+    QApplication, QFileDialog, QMessageBox, QDialog, QTreeWidgetItem,QVBoxLayout,QHBoxLayout,
 )
-from PyQt5.QtCore    import pyqtSignal, QEventLoop
+
+from PyQt5.QtCore    import pyqtSignal, QEventLoop, QRectF
 from registration.save_window_register_tool import Ui_Save_Window
 from hypercubes.hdf5_browser_tool import Ui_HDF5BrowserWidget
+from hypercubes.white_calibration_window import Ui_dialog_white_calibration
+from interface.some_widget_for_interface import*
 
 import sys
 
@@ -59,6 +62,8 @@ class Hypercube:
         self.wl       = wl
         self.metadata = metadata or {}
 
+        self.save_calib=False # for hdr files
+
         if cube_info is None:
             cube_info = CubeInfoTemp()
         self.cube_info = cube_info
@@ -71,6 +76,7 @@ class Hypercube:
                 self.open_hyp(default_path=filepath, open_dialog=False)
             else:
                 self.open_hyp(open_dialog=True)
+
 
     def reinit_cube(self):
         """Reset all attributes."""
@@ -146,7 +152,7 @@ class Hypercube:
                 # double, single, int, etc.
                 self.metadata[name] = arr
 
-    def open_hyp(self, default_path="", open_dialog=True, cube_info=None, show_exception=True):
+    def open_hyp(self, default_path="", open_dialog=True, cube_info=None, show_exception=True,ask_calib=True):
         """
         Open a hyperspectral cube file: try with .h5 . mat with different methods and with .hdr for ENVI.
         """
@@ -183,7 +189,6 @@ class Hypercube:
                     is_v7p3 = True
             except:
                 pass
-            print(f'.mat is v7.3 : {is_v7p3}')
 
             if is_v7p3 :  # new format
                try:#automatic hypercube_classic_save of CIL
@@ -292,6 +297,10 @@ class Hypercube:
                             pass
 
             if not flag_loaded:
+
+                ans=QMessageBox.question(None,'Try with installed MATLAB','Hyperdoc Tool can try to open the cube using your Matlab installed remotely. \nBut it can take up to one minute.\nDo you want to test ?', QMessageBox.Yes|QMessageBox.No)
+                if ans!=QMessageBox.Yes:
+                    return
                 # try:
                 #     self.look_with_matlab_engine(filepath)
                 #     flag_loaded=True
@@ -417,6 +426,14 @@ class Hypercube:
                 else:
                     self.wl = np.array(wl, dtype=np.float32) if wl is not None else None
 
+                try:
+                    self.metadata['reflectance_data_from']
+                except:
+                    if ask_calib:
+                        ans=QMessageBox.question(None,'Calibration ','Do you want to calibrate from a white reference in image ?',QMessageBox.Yes | QMessageBox.No)
+                        if ans==QMessageBox.Yes:
+                            self.calibrating_from_image_extract()
+
                 flag_loaded=True
 
             except Exception as e:
@@ -449,6 +466,9 @@ class Hypercube:
 
             if 'name' not in self.cube_info.metadata_temp:
                 self.cube_info.metadata_temp['name']=self.filepath.split('/')[-1].split('.')[0]
+
+            if self.save_calib:
+                self.save(filepath=filepath,ask_newfilename=True)
 
     def look_with_matlab_engine(self,filepath=None):
         from hypercubes.matlab_engine_control import get_matlab_engine, load_mat_file_with_engine
@@ -509,7 +529,7 @@ class Hypercube:
 
         return True
 
-    def save(self,filepath=None,fmt=None,meta_from_cube_info=False):
+    def save(self,filepath=None,fmt=None,meta_from_cube_info=False,ask_newfilename=False):
         filters = (
             "HDF5 files (*.h5);;"
             "MATLAB files (*.mat);;"
@@ -517,11 +537,12 @@ class Hypercube:
         )
         default_filter = "HDF5 files (*.h5)"
 
-        if filepath is None:
+        if filepath is None or ask_newfilename:
             app = QApplication.instance() or QApplication([])
             filepath,selected_filter= QFileDialog.getSaveFileName(
                 parent=None,
                 caption="Save cube As…",
+                directory=filepath,
                 filter=filters,
                 initialFilter=default_filter
             )
@@ -651,7 +672,7 @@ class Hypercube:
         if self.metadata is not None:
            hdr_meta.update(self.metadata)
         print(filepath)
-        envi.save_image(filepath, self.data, dtype=np.float32, metadata=hdr_meta)
+        envi.save_image(filepath, self.data, dtype=np.float32, metadata=hdr_meta,force=True)
 
     def save_matlab_cube(self,filepath: str):
         from scipy.io import savemat
@@ -661,6 +682,223 @@ class Hypercube:
             'metadata': self.metadata or {}
         }
         savemat(filepath, tosave)
+
+    def calibrating_from_image_extract(self,type='mean'):
+        """
+            Opens an interactive white calibration dialog.
+            Allows manual region selection or loading an external white reference.
+            Calibration is applied according to chosen mode and reference.
+        """
+
+        class WhiteCalibrationDialog(QDialog):
+            def __init__(self, parent=None):
+                super().__init__(parent)
+                self.ui = Ui_dialog_white_calibration()
+                self.ui.setupUi(self)
+                self.cube_calib=None
+                self.other_white_capture=False # if other file loaded.
+
+                # Add ZoomableGraphicsView into frame_image
+                self.viewer = ZoomableGraphicsView()
+                layout = QVBoxLayout()
+                layout.setContentsMargins(0, 0, 0, 0)
+                layout.addWidget(self.viewer)
+                self.ui.frame_image.setLayout(layout)
+
+                self.ui.comboBox_white_Reference_choice.currentIndexChanged.connect(self.toggle_manual_value_fields)
+                self.toggle_manual_value_fields()
+
+                self.viewer.selectionChanged.connect(self.update_selection_overlay)
+
+                self.ui.pushButton_load_white_capture.clicked.connect(self.load_other_white)
+                self.ui.pushButton_valid_calibration.clicked.connect(self.accept)
+                self.ui.pushButton_load_personal_white_ref.clicked.connect(self.load_white_corection_file)
+
+                self.ui.radioButton_horizontal_flat_field.toggled.connect(self.update_selection_overlay)
+                self.ui.radioButton_vertical_flat_field.toggled.connect(self.update_selection_overlay)
+                self.ui.radioButton_full_flat_field.toggled.connect(self.update_selection_overlay)
+                self.ui.radioButton_no_flat_field.toggled.connect(self.update_selection_overlay)
+
+            def get_selected_rect(self):
+                return self.viewer.get_rect_coords()
+
+            def get_calibration_mode(self):
+                if self.ui.radioButton_horizontal_flat_field.isChecked():
+                    return "horizontal"
+                elif self.ui.radioButton_vertical_flat_field.isChecked():
+                    return "vertical"
+                elif self.ui.radioButton_full_flat_field.isChecked():
+                    return "full"
+                else:
+                    return "mean"
+
+            def get_white_ref_name(self):
+                return self.ui.comboBox_white_Reference_choice.currentText()
+
+            def load_other_white(self):
+                filename,_=QFileDialog.getOpenFileName(self,"Open White Reference Capture",os.path.dirname(self.cube_calib.cube_info.filepath))
+                if filename:
+                    self.cube_calib = Hypercube()
+                    self.cube_calib.open_hyp(default_path=filename, ask_calib=False)
+                    self.set_cube(self.cube_calib)
+                    self.other_white_capture = True
+
+            def toggle_manual_value_fields(self):
+                index = self.ui.comboBox_white_Reference_choice.currentIndex()
+                is_manual = (index == 0)  # "Constant value (from field)" is index 0
+
+                self.ui.label_R_manual.setEnabled(is_manual)
+                self.ui.doubleSpinBox_R_manual.setEnabled(is_manual)
+
+            def update_selection_overlay(self):
+                coords = self.get_selected_rect()
+                if not coords or self.cube_calib is None:
+                    self.viewer.clear_selection_overlay()
+                    return
+
+                x, y, dx, dy = coords
+                h, w, _ = self.cube_calib.data.shape
+
+                if self.ui.radioButton_horizontal_flat_field.isChecked():
+                    rect = QRectF(0, y, w, dy)
+                elif self.ui.radioButton_vertical_flat_field.isChecked():
+                    rect = QRectF(x, 0, dx, h)
+                elif self.ui.radioButton_full_flat_field.isChecked():
+                    rect = QRectF(0, 0, w, h)
+                else:  # mean (no extension)
+                    rect = QRectF(x, y, dx, dy)
+
+                self.viewer.add_selection_overlay(rect)
+
+            def set_cube(self,cube):
+                self.cube_calib=cube
+                # RGB image from data
+                channels = [0, len(self.cube_calib.wl) // 2, len(self.cube_calib.wl) - 1]
+                img_rgb = self.cube_calib.data[:, :, channels]
+                img_rgb = (img_rgb * 255 / img_rgb.max()).clip(0, 255).astype(np.uint8)
+                self.viewer.setImage(np_to_qpixmap(img_rgb))
+
+            def load_white_corection_file(self):
+                QMessageBox.information(self,"Ups","Not implemented yet. Wait for update")
+
+            def accept(self):
+                coords = self.get_selected_rect()
+                mode = self.get_calibration_mode()
+
+                # si pas de sélection et pas de mode full, refuser
+                if not coords and not self.other_white_capture and mode != "full":
+                    QMessageBox.warning(
+                        self,
+                        "Selection Required",
+                        "Please select a region before validating."
+                    )
+                    return  # n'appelle pas super().accept()
+
+                # sinon, fermeture acceptée
+                super().accept()
+
+        app = QApplication.instance() or QApplication(sys.argv)
+        dialog = WhiteCalibrationDialog()
+        dialog.set_cube(cube=self)
+
+        if dialog.exec_() == QDialog.Accepted:
+            white_ref_name = dialog.get_white_ref_name()
+            if white_ref_name == "Constant value (from field)":
+                white_ref_values = dialog.ui.doubleSpinBox_R_manual.value()
+            else:
+                white_ref_values = self.get_ref_white(white_ref_name)
+
+            calib_mode = dialog.get_calibration_mode()
+            coords = dialog.get_selected_rect()
+
+            if not coords:
+                if calib_mode!='full':
+                    QMessageBox.warning(None, "No Selection", "No region was selected.")
+            else :
+                x, y, dx, dy = coords
+
+            if calib_mode == "mean":
+                selected = dialog.cube_calib.data[y:y + dy, x:x + dx, :]
+                mean_white = np.mean(selected, axis=(0, 1))
+                mean_white[mean_white == 0] = 1e-6
+                self.data /= (mean_white*white_ref_values)
+                self.metadata['calibration_type'] = 'mean_rectangle'
+            elif calib_mode == "horizontal":
+                selected = dialog.cube_calib.data[:, x:x + dx, :]
+                mean_white = np.mean(selected, axis=1)
+                mean_white[mean_white == 0] = 1e-6
+                self.data /= (mean_white[ :,None, :]*white_ref_values)
+                self.metadata['calibration_type'] = 'horizontal_flat'
+            elif calib_mode == "vertical":
+                selected = dialog.cube_calib.data[y:y + dy, :, :]
+                mean_white = np.mean(selected, axis=0)
+                mean_white[mean_white == 0] = 1e-6
+                self.data /= (mean_white[None,:, :]*white_ref_values)
+                self.metadata['calibration_type'] = 'vertical_flat'
+            elif calib_mode == "full":
+                selected=dialog.cube_calib.data
+                selected[selected == 0] = 1e-6
+                self.data /= (selected*white_ref_values)
+                self.metadata['calibration_type'] = 'full_flat'
+
+            # self.metadata['calibration_reflectance_values'] = mean_white
+            self.metadata['white_reference'] = white_ref_name
+            self.metadata['reflectance_data_from'] = 'selected white in image ' + white_ref_name
+            print('Calibration done using selected region and chosen white reference.')
+
+            ans = QMessageBox.question(None, 'Save with calibration',
+                                       'Do you want to save the reflectance cube?',
+                                       QMessageBox.Yes | QMessageBox.No)
+
+            if ans == QMessageBox.Yes:
+                self.save_calib = True
+
+    def get_ref_white(self,white_name):
+        from scipy.io import loadmat
+        from scipy.interpolate import interp1d
+
+        multi_labels = ['Sphere Optics Multi 90', 'Sphere Optics Multi 50', 'Sphere Optics Multi 20', 'Sphere Optics Multi 5']
+
+        if getattr(sys, 'frozen', False):
+            # if from .exe de pyinstaler
+            BASE_DIR = sys._MEIPASS
+        else:
+            # from Python script
+            CURRENT_FILE_DIR = os.path.dirname(os.path.abspath(__file__))
+            BASE_DIR = os.path.abspath(os.path.join(CURRENT_FILE_DIR, ".."))
+
+        white_folder = os.path.join(BASE_DIR, "hypercubes", "white_ref_reflectance_data")
+
+        if white_name == 'Sphere Optics Full White':
+            white_path = os.path.join(white_folder, 'SphereOptics_standard_white.mat')
+            data = loadmat(white_path)['white_reflectance']
+            wl_white = data[:, 0].squeeze()
+            reflectance_white = data[:, 1].squeeze()
+
+
+        elif white_name in multi_labels:
+            white_path = os.path.join(white_folder, 'SO_multiwhite.mat')
+            data = loadmat(white_path)
+            wl_white = data['wl'].squeeze()
+            reflectance_dic = {multi_labels[i]: data['sphereoptics'][:, i] for i in range(len(multi_labels))}
+            reflectance_white = reflectance_dic[white_name].squeeze()
+
+
+        elif white_name == 'Teflon':
+            white_path = os.path.join(white_folder, 'Teflon_full_range.mat')
+            data = loadmat(white_path)
+            wl_white = data['wl'].squeeze()
+            reflectance_white = data['spectrum'].squeeze()
+
+        else:
+            print('Unknown white reference label')
+            return
+
+        interp_ref_func = interp1d(wl_white, reflectance_white, kind='cubic', bounds_error=False,
+                                   fill_value="extrapolate")
+        reflectance_interp = interp_ref_func(self.wl)
+        return reflectance_interp
+
 
 class HDF5BrowserWidget(QWidget, Ui_HDF5BrowserWidget):
     """
@@ -716,6 +954,9 @@ class HDF5BrowserWidget(QWidget, Ui_HDF5BrowserWidget):
         if path is not None:
             self.filepath=path
             self._load_file()
+
+    def _on_accept(self):
+        print("[DEBUG] on_accept called")
 
     def _load_file(self):
         """Fill the QTreeWidget with either legacy-MAT variables or HDF5 contents."""
@@ -808,7 +1049,8 @@ class HDF5BrowserWidget(QWidget, Ui_HDF5BrowserWidget):
             self.close()
 
     def closeEvent(self, event):
-        self._on_reject()
+        if not self._accepted:
+            self._on_reject()
         event.accept()
 
     def load_file(self, filepath):
@@ -896,16 +1138,26 @@ def save_images(dirpath: str,
     write('fixed', fixed_img)
     write('aligned', aligned_img)
 
+
 if __name__ == '__main__':
 
     # folder = r'C:\Users\Usuario\Documents\DOC_Yannick\HYPERDOC Database\Samples\minicubes/'
     # fname = '00189-VNIR-mock-up.h5'
+    #
+    # folder = r'C:\Users\Usuario\Documents\DOC_Yannick\Thin_film\CITIC\241216\PikaL'
+    # fname = 'c1318_12.bil.hdr' # test pikaL
 
-    folder = r'C:\Users\Usuario\Documents\DOC_Yannick\Thin_film\CITIC\241216\PikaL'
-    fname = 'c1318_12.bil.hdr'
+    folder = r'C:\Users\Usuario\Documents\DOC_Yannick\HYPERDOC Database_TEST\hypspex'
+    fname = 'P1A_SWIR_384_SN3189_2335us_2023-09-05T205402_raw_rad.hdr' # test pikaL
 
-    # folder = r'C:\Users\Usuario\Documents\DOC_Yannick\Hyperdoc_Test\Archivo chancilleria'
-    # fname = 'MPD41a_VNIR.mat'
+    # folder = r'C:\Users\Usuario\Documents\DOC_Yannick\HYPERDOC Database_TEST'
+    # fname = 'P1A_SWIR_384_SN3189_2335us_2023-09-05T205402_raw_rad.hdr' # test specim
+    # fname = 'P1A_SWIR_384_SN3189_2335us_2023-09-05T205402_raw_rad_calib.hdr' # test specim calib
+
+    # folder = r'G:\Mi unidad\CIMLab\Proyectos y OTRI\Hyperdoc\Datos\Muestras controladas 22-23\NTNU captures\UGS\VNIR'
+    # fname = 'P1A_VNIR_1800_SN00841_12004us_2023-09-05T220145_raw.hdr' # test specim
+
+    # fname = 'MPD41a_SWIR.mat'
     # fname = 'MPD41a_SWIR_cube_NOv7p3.mat'
     # fname = 'MPD41a_SWIR_sruct_NOv7p3.mat'
     # fname = 'MPD41a_SWIR_struct_YESv7p3.mat'
@@ -914,11 +1166,17 @@ if __name__ == '__main__':
 
     filepath = os.path.join(folder, fname)
 
-    app = QApplication(sys.argv)
+    # app = QApplication(sys.argv)
 
-    cube = Hypercube(filepath=filepath, load_init=True)
-    for key in cube.metadata:
-        print(f' {key} (type: {type(cube.metadata[key]).__name__})-> {cube.metadata[key]}')
+    # cube = Hypercube(filepath=filepath, load_init=True)
+    cube = Hypercube(filepath=filepath, cube_info=None, load_init=True)
+
+    # cube.calibrating_from_image_extract()
+
+    # path=cube.cube_info.filepath.replace('.','_calib.')
+
+    for key in cube.cube_info.metadata_temp:
+        print(f' {key} -> {cube.cube_info.metadata_temp[key]}')
 
     try:
         import cv2

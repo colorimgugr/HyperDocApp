@@ -1,7 +1,8 @@
 from PyQt5 import QtWidgets, QtCore
-from dataclasses import dataclass, field
-from typing import Optional, Dict, List,Union
+from typing import  List
 import numpy as np
+from collections import OrderedDict
+
 
 from hypercubes.hypercube import CubeInfoTemp,Hypercube
 
@@ -13,7 +14,9 @@ class HypercubeManager(QtCore.QObject):
     def __init__(self):
         super().__init__()
         # store CubeInfoTemp instances
-        self._cubes: List[CubeInfoTemp] = []
+        self._cubes_info_list: List[CubeInfoTemp] = []
+        self._cube_cache: OrderedDict[str, Hypercube] = OrderedDict()
+        self._max_cache_size = 5
 
     def addCube(self, ci):
         """
@@ -22,7 +25,6 @@ class HypercubeManager(QtCore.QObject):
 
         if not isinstance(ci,CubeInfoTemp):
             if isinstance(ci,Hypercube):
-                cube=ci
                 ci=ci.cube_info
             else:
                 print("Problem for loading cube info")
@@ -33,39 +35,56 @@ class HypercubeManager(QtCore.QObject):
             return
 
         # prevent duplicates
-        if any(ci.filepath == filepath for ci in self._cubes):
+        if any(ci.filepath == filepath for ci in self._cubes_info_list):
             return
 
         if len(ci.metadata_temp) ==0:
-            hc = Hypercube(filepath=filepath, load_init=True)
-            ci=hc.cube_info
+            print(f"[ !!! ] Warning: metadata_temp is empty for {filepath}. Will remain unloaded until accessed.")
 
-        self._cubes.append(ci)
+        self._cubes_info_list.append(ci)
         self.cubesChanged.emit(self.paths)
+
+    def get_loaded_cube(self, filepath: str,cube_info=None) -> Hypercube:
+        """
+        Return cached Hypercube if present. Otherwise, load it,
+        add to cache (with LRU policy), and return.
+        """
+        if filepath in self._cube_cache:
+            self._cube_cache.move_to_end(filepath)
+            return self._cube_cache[filepath]
+
+        # Load cube and update cache
+        hc = Hypercube(filepath=filepath, cube_info=cube_info, load_init=True)
+        self._cube_cache[filepath] = hc
+
+        # if full, quit last used
+        if len(self._cube_cache) > self._max_cache_size:
+            self._cube_cache.popitem(last=False)
+        return hc
 
     def removeCube(self, index: int):
         """
         Remove a cube by index. Emits updated list of filepaths.
         """
-        if 0 <= index < len(self._cubes):
-            self._cubes.pop(index)
+        if 0 <= index < len(self._cubes_info_list):
+            self._cubes_info_list.pop(index)
             self.cubesChanged.emit(self.paths)
 
     def clearCubes(self):
         """Clear all cubes and emit update."""
-        self._cubes.clear()
+        self._cubes_info_list.clear()
         self.cubesChanged.emit(self.paths)
 
     def getCubeInfo(self, index: int) -> CubeInfoTemp:
         """Return the CubeInfoTemp at the given index."""
-        return self._cubes[index]
+        return self._cubes_info_list[index]
 
     def getIndexFromPath(self, filepath: str) -> int:
         """
         Return the index of the cube with the given filepath.
         Returns -1 if not found.
         """
-        for i, ci in enumerate(self._cubes):
+        for i, ci in enumerate(self._cubes_info_list):
             if ci.filepath == filepath:
                 return i
         return -1
@@ -103,9 +122,9 @@ class HypercubeManager(QtCore.QObject):
             return
 
         # to check if modif in hypercube ok before emitting
-        test = not self.compare_metadata_dicts(self._cubes[index].metadata_temp, updated_ci.metadata_temp)
+        test = not self.compare_metadata_dicts(self._cubes_info_list[index].metadata_temp, updated_ci.metadata_temp)
         if test:
-            self._cubes[index] = updated_ci
+            self._cubes_info_list[index] = updated_ci
             updated_ci.modif = True
             self.metadataUpdated.emit(updated_ci)
 
@@ -118,7 +137,7 @@ class HypercubeManager(QtCore.QObject):
 
         if index == -1:
             # New cube
-            self._cubes.append(ci)
+            self._cubes_info_list.append(ci)
             self.cubesChanged.emit(self.paths)
         else:
             # Existing cube → update metadata
@@ -132,25 +151,25 @@ class HypercubeManager(QtCore.QObject):
         """
         index = self.getIndexFromPath(filepath)
         if index != -1:
-            return self._cubes[index]
+            return self._cubes_info_list[index]
 
         # Cube is not in the list → load and add it
         ci = CubeInfoTemp(filepath=filepath)
         hc = Hypercube(filepath=filepath, cube_info=ci, load_init=True)
         ci = hc.cube_info
-        self._cubes.append(ci)
+        self._cubes_info_list.append(ci)
         self.cubesChanged.emit(self.paths)
         return ci
 
     @property
     def paths(self) -> List[str]:
         """List of cube filepaths."""
-        return [ci.filepath for ci in self._cubes]
+        return [ci.filepath for ci in self._cubes_info_list]
 
     @property
     def cubes(self) -> List[CubeInfoTemp]:
         """List of all CubeInfoTemp objects."""
-        return list(self._cubes)
+        return list(self._cubes_info_list)
 
 
 if __name__ == "__main__":

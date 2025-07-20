@@ -289,7 +289,7 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         self.selected_span_patch=[]
 
         # Connect widget signals
-        self.load_btn.clicked.connect(self.load_cube)
+        self.load_btn.clicked.connect(lambda: self.load_cube())
         self.run_btn.clicked.connect(self.run)
         self.comboBox_ClassifMode.currentIndexChanged.connect(self.set_mode)
         self.pushButton_class_selection.toggled.connect(self.on_toggle_selection)
@@ -1024,6 +1024,9 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         x_graph = self.wl
         maxR=1
 
+        if self.data is None:
+            return
+
         if x is not None and y is not None:
             if 0 <= x < self.data.shape[1] and 0 <= y < self.data.shape[0]:
                 spectrum = self.data[y, x, :]
@@ -1068,7 +1071,9 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         self.alpha = val / 100.0
         self.show_image()
 
-    def load_cube(self,cube_info=None,path=None):
+    def load_cube(self,cube_info=None,filepath=None,cube=None):
+
+        # print(f'cube_info at start -> {cube_info}')
 
         if self.cls_map is not None : # if work done, stop to permit saving before continue.
             reply = QMessageBox.question(
@@ -1079,44 +1084,51 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
             if reply == QMessageBox.No:
                return
 
-        if cube_info is not None:
-            if path is None:
-                try:
-                    if cube_info.filepath is not None:
-                        path=cube_info.filepath
-                except:
-                    pass
-            else :
-                if path !=cube_info.filepath :
-                    QMessageBox.warning(self, "Warning", "Path  is different from the filepath of cubeInfo")
+        if cube is None :
+
+            if cube_info is not None:
+                if filepath is None:
+                    try:
+                        if cube_info.filepath is not None:
+                            filepath=cube_info.filepath
+                    except:
+                        pass
+                else :
+                    if filepath !=cube_info.filepath :
+                        QMessageBox.warning(self, "Warning", "Path  is different from the filepath of cubeInfo")
+                        return
+
+            if not filepath :
+                print('Ask path for cube')
+                filepath, _ = QFileDialog.getOpenFileName(
+                self, "Open Hypercube", "", "Hypercube files (*.mat *.h5 *.hdr)"
+                )
+                if not filepath:
                     return
 
-        if not path :
-            print('Ask path for cube')
-            path, _ = QFileDialog.getOpenFileName(
-            self, "Open Hypercube", "", "Hypercube files (*.mat *.h5 *.hdr)"
-            )
-            if not path:
+            message_progress = "[Ground Truth Tool] Loading cube..."
+            loading = LoadingDialog(message_progress, filename=filepath, parent=self)
+            loading.show()
+            QApplication.processEvents()
+
+            print(f'filepath -> {filepath}')
+            print(f'cube_info -> {cube_info}')
+
+            try :
+                cube = Hypercube(filepath=filepath, cube_info= cube_info,load_init=True)
+            except:
+                QMessageBox.information(self,"Problem at loading","Impossible to load this cube. Please check format.")
+                loading.close()
                 return
 
-        message_progress = "[Ground Truth Tool] Loading cube..."
-        loading = LoadingDialog(message_progress, filename=path, parent=self)
-        loading.show()
-        QApplication.processEvents()
-
-        try :
-            cube = Hypercube(filepath=path, cube_info= cube_info,load_init=True)
-        except:
-            QMessageBox.information(self,"Problem at loading","Impossible to load this cube. Please check format.")
             loading.close()
-            return
 
-        loading.close()
+            self.cubeLoaded.emit(filepath)  # Notify the manager
 
         # todo : check if GT already done in the file
 
-        if cube_info is None:
-            if "GTLabels" in cube.metadata.keys():
+        if "GTLabels" in cube.metadata.keys():
+            try:
                 if len(cube.metadata["GTLabels"][0]) != 0:
                     reply = QMessageBox.question(
                         self, "Erase previous Ground Truth ?",
@@ -1125,6 +1137,11 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
                     )
                     if reply == QMessageBox.No:
                         return
+            except:
+                try:
+                    print(cube.metadata["GTLabels"][0])
+                except:
+                    print(cube.metadata["GTLabels"])
 
         self.cube = cube
         self.data = self.cube.data
@@ -1140,7 +1157,7 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
 
         self.reset_state()
         self.modif_sliders()
-        self.show_image(path) # Notify the manager
+        self.show_image(self.cube.cube_info.filepath)
 
     def load_cube_info(self, ci: CubeInfoTemp):
         self.cube.cube_info = ci
@@ -1686,10 +1703,10 @@ if __name__=='__main__':
 
     app = QApplication(sys.argv)
     w = GroundTruthWidget()
-    folder=r'C:\Users\Usuario\Documents\DOC_Yannick\HYPERDOC Database\Samples\minicubes/'
+    folder=r'C:\Users\Usuario\Documents\DOC_Yannick\HYPERDOC Database_TEST\Samples\minicubes/'
     file_name='00278-SWIR-mock-up.h5'
     filepath=folder+file_name
-    w.load_cube(path=filepath)
+    w.load_cube(filepath=filepath)
     w.show()
     sys.exit(app.exec_())
 

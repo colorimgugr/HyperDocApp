@@ -21,7 +21,7 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 from registration.registration_window import *
 from hypercubes.hypercube import *
-from interface.some_widget_for_interface import LoadingDialog
+from interface.some_widget_for_interface import *
 
 # TODO : Manual outling features
 # TODO : Clean Cache to to well od close and save as.
@@ -32,19 +32,6 @@ from registration.registration_window import*
 from hypercubes.hypercube import*
 from interface.some_widget_for_interface import LoadingDialog
 
-def np_to_qpixmap(img):
-    if len(img.shape) == 2:
-        try:
-            qimg = QImage(img.data, img.shape[1], img.shape[0], img.strides[0], QImage.Format_Grayscale8)
-        except:
-            if img.dtype != np.uint8:
-                img = img.astype(np.uint8)
-            qimg = QImage(img.tobytes(), img.shape[1], img.shape[0],img.shape[1], QImage.Format_Grayscale8)
-
-    else:
-        rgb_image = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        qimg = QImage(rgb_image.data, rgb_image.shape[1], rgb_image.shape[0], rgb_image.strides[0], QImage.Format_RGB888)
-    return QPixmap.fromImage(qimg).copy()
 
 def overlay_color_blend(fixed, aligned):
     blended = cv2.merge([
@@ -83,145 +70,6 @@ def find_paired_cube_path(current_path):
 
     alt_path = os.path.join(dirname, alt_name)
     return alt_path if os.path.exists(alt_path) else None
-
-class ZoomableGraphicsView(QGraphicsView):
-    middleClicked = pyqtSignal(QPointF) # suppres features
-    moveFeatureStart = pyqtSignal(QPointF) # movefeatures
-    moveFeatureUpdate = pyqtSignal(QPointF)
-    moveFeatureEnd = pyqtSignal()
-
-    def __init__(self):
-        super().__init__()
-        self.setScene(QGraphicsScene())
-        self.setDragMode(QGraphicsView.ScrollHandDrag)
-        self.setCursor(Qt.OpenHandCursor)
-        self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
-        self.pixmap_item = None  # check if image loaded
-
-        # Rubber band selection
-        self.origin = QPoint()
-        self.rubber_band = QRubberBand(QRubberBand.Rectangle, self)
-        self._selecting = False
-        self.last_rect_item = None
-        self.rect_coords = None
-
-        # Moving point
-        self.editing_match = None  # (match_index, side: "left"/"right")
-        self.setMouseTracking(True)  # enable mouseMoveEvent without press
-
-    def setImage(self, pixmap):
-        self.clear_rectangle()
-        self.scene().clear()
-        self.pixmap_item = QGraphicsPixmapItem(pixmap)
-        self.scene().addItem(self.pixmap_item)
-        self.setSceneRect(QRectF(pixmap.rect()))
-
-    def wheelEvent(self, event):
-        zoom_in_factor = 1.25
-        zoom_out_factor = 1 / zoom_in_factor
-        zoom = zoom_in_factor if event.angleDelta().y() > 0 else zoom_out_factor
-        self.scale(zoom, zoom)
-
-    def mousePressEvent(self, event):
-        if event.button() == Qt.RightButton and self.pixmap_item: # rectangle selection
-            self.viewport().setCursor(Qt.CrossCursor)
-            self.origin = event.pos()
-            self.rubber_band.setGeometry(QRect(self.origin, QSize()))
-            self.rubber_band.show()
-            self._selecting = True
-
-        elif event.button() == Qt.MiddleButton and self.pixmap_item: # feature supress
-            scene_pos = self.mapToScene(event.pos())
-            self.middleClicked.emit(scene_pos)
-
-        elif event.button() == Qt.LeftButton and event.modifiers() == Qt.ControlModifier and self.pixmap_item: # feature supress
-            scene_pos = self.mapToScene(event.pos())
-            self.middleClicked.emit(scene_pos)
-            event.accept()
-            return
-
-        elif event.button() == Qt.LeftButton and event.modifiers() == Qt.AltModifier and self.pixmap_item:
-            scene_pos = self.mapToScene(event.pos())
-            self.moveFeatureStart.emit(scene_pos)
-            event.accept()
-            return
-
-        super().mousePressEvent(event)
-
-    def mouseMoveEvent(self, event):
-        if self._selecting:
-            max_w = self.viewport().width() - 1
-            max_h = self.viewport().height() - 1
-            x = min(max(event.pos().x(), 0), max_w)
-            y = min(max(event.pos().y(), 0), max_h)
-            rect = QRect(self.origin, QPoint(x, y)).normalized()
-            self.rubber_band.setGeometry(rect)
-
-        elif self.editing_match is not None:
-            scene_pos = self.mapToScene(event.pos())
-            self.moveFeatureUpdate.emit(scene_pos)
-
-        super().mouseMoveEvent(event)
-
-    def mouseReleaseEvent(self, event):
-        if event.button() == Qt.RightButton and self.pixmap_item and self._selecting:
-            self.rubber_band.hide()
-            self.viewport().setCursor(Qt.OpenHandCursor)
-            self._selecting = False
-
-            # Convert view coords to scene coords
-            start_scene = self.mapToScene(self.origin)
-            end_scene = self.mapToScene(event.pos())
-
-            # Convert scene coords to pixmap (image) coords
-            p1 = self.pixmap_item.mapFromScene(start_scene)
-            p2 = self.pixmap_item.mapFromScene(end_scene)
-
-            x1, y1 = int(p1.x()), int(p1.y())
-            x2, y2 = int(p2.x()), int(p2.y())
-
-            # Clamp aux bords de l'image
-            w, h = self.pixmap_item.pixmap().width(), self.pixmap_item.pixmap().height()
-            x1 = max(0, min(x1, w - 1))
-            x2 = max(0, min(x2, w - 1))
-            y1 = max(0, min(y1, h - 1))
-            y2 = max(0, min(y2, h - 1))
-
-            # Erase previous rectangle
-            self.clear_rectangle()
-
-            # Création du rectangle avec coins clampés
-            x_min, x_max = sorted([x1, x2])
-            y_min, y_max = sorted([y1, y2])
-            width, height = x_max - x_min, y_max - y_min
-
-            if width < 2 or height < 2:
-                self.rect_coords = None
-                self.last_rect_item = None
-                return
-
-            self.rect_coords = [x_min, y_min, width, height]
-            self.last_rect_item = self.scene().addRect(
-                x_min, y_min, width, height, QPen(QColor("red"))
-            )
-
-        if self.editing_match is not None:
-            self.moveFeatureEnd.emit()
-            self.editing_match = None
-
-        super().mouseReleaseEvent(event)
-
-    def get_rect_coords(self):
-        return self.rect_coords
-
-    def clear_rectangle(self):
-        if self.last_rect_item:
-            try:
-                self.scene().removeItem(self.last_rect_item)
-            except:
-                None
-        self.last_rect_item = None
-        self.rect_coords=None
 
 class RegistrationApp(QMainWindow, Ui_MainWindow):
 
@@ -364,7 +212,11 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
         else:
             print(f"[Warning] CubeInfo path does not match fixed or moving cube: {ci.filepath}")
 
-    def load_cube(self,i_mov=None,filepath=None,cube_info=None,switch=False):
+    def load_cube(self,i_mov=None,filepath=None,cube_info=None,switch=False,cube=None):
+        if cube is None :
+            print('[Regisration : cube in argument is None]')
+        else :
+            print('[Regisration : cube received ]')
 
         if switch:
             # 1) swap the cubes
@@ -416,15 +268,19 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
                 suffixe_label=[" (fixed)"," (moving)"][idx]
                 self.viewer_label[idx].setText(self.cube[idx].filepath.split('/')[-1]+suffixe_label)
 
-            return  # important : on sort de la méthode après le switch
+            return
 
         else :
+
             if filepath is None:
                 try :
                     filepath=cube_info.filepath
                 except:
                     pass
-                filepath, _ = QFileDialog.getOpenFileName(self, ['Load Fixed Cube','Load Moving Cube'][i_mov])
+                    try :
+                        filepath = cube.cube_info.filepath
+                    except:
+                        filepath, _ = QFileDialog.getOpenFileName(self, ['Load Fixed Cube','Load Moving Cube'][i_mov])
 
             if not filepath:
                 return
@@ -435,16 +291,26 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
             loading.show()
             QApplication.processEvents()
 
-            if filepath[-3:] in['mat', '.h5']:
+            if filepath[-3:] in['mat', '.h5','hdr']:
                 if i_mov:
-                    self.moving_cube.open_hyp(filepath, cube_info=cube_info,open_dialog=False)
-                    cube=self.moving_cube.data
+                    if cube is None:
+                        print('[Regisration : Moving cube is none]')
+                        self.moving_cube.open_hyp(filepath, cube_info=cube_info,open_dialog=False)
+                    else:
+                        self.moving_cube = cube
+
+                    data=self.moving_cube.data
                     wl=self.moving_cube.wl
                     self.cubeLoaded.emit(filepath)  # Notify the manager
 
                 else:
-                    self.fixed_cube.open_hyp(filepath,cube_info=cube_info, open_dialog=False)
-                    cube=self.fixed_cube.data
+                    if cube is None:
+                        print('[Regisration : Moving cube is none]')
+                        self.fixed_cube.open_hyp(filepath,cube_info=cube_info, open_dialog=False)
+                    else:
+                        self.fixed_cube=cube
+
+                    data=self.fixed_cube.data
                     wl = self.fixed_cube.wl
                     self.cubeLoaded.emit(filepath)  # Notify the manager
 
@@ -456,7 +322,7 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
                     if paired_path:
                         load_fixe_auto = True
                     else:
-                        print(f"[Auto-load] Aucun cube équivalent trouvé pour : {filepath}")
+                        print(f"[REG] Aucun cube équivalent trouvé pour : {filepath}")
 
                 self.cube = [self.fixed_cube, self.moving_cube]
 
@@ -470,16 +336,16 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
                 self.spinBox_channel[i_mov].setMinimum(int(np.min(wl)))
                 self.spinBox_channel[i_mov].setSingleStep(int(wl[1] - wl[0]))
 
-                if cube.shape[2]==121:
+                if data.shape[2]==121:
                     self.slider_channel[i_mov].setValue(750)
                     self.spinBox_channel[i_mov].setValue(750)
-                elif cube.shape[2]==161:
+                elif data.shape[2]==161:
                     self.slider_channel[i_mov].setValue(1300)
                     self.spinBox_channel[i_mov].setValue(1300)
 
                 mode = ['one', 'whole'][self.radioButton_whole[i_mov].isChecked()]
                 chan = np.argmin(np.abs(self.slider_channel[i_mov].value()-wl))
-                img = self.cube_to_img(cube, mode, chan)
+                img = self.cube_to_img(data, mode, chan)
                 img =(img * 256 / np.max(img)).astype('uint8')
             else :
                 # try :
@@ -505,6 +371,8 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
             self.viewer_label[i_mov].setText(self.cube[i_mov].filepath.split('/')[-1] + suffixe_label)
 
             loading.close()
+
+#todo [Auto-load] Aucun cube équivalent trouvé pour : C:/Users/Usuario/Documents/DOC_Yannick/HYPERDOC Database_TEST/hypspex/P1A_SWIR_384_SN3189_2335us_2023-09-05T205402_raw_rad.hdr
 
         if not self.auto_load_lock and paired_path is not None and self.checkBox_auto_load_complental.isChecked():
             self.auto_load_lock = True
@@ -1328,10 +1196,15 @@ if __name__ == '__main__':
     window.show()
     app.setStyle('Fusion')
 
-    # folder_cube=r'C:\Users\Usuario\Documents\DOC_Yannick\Hyperdoc_Test\Archivo chancilleria/'
-    # path_fixed_cube=folder_cube+'MPD41a_SWIR.mat'
-    # path_moving_cube=folder_cube+'MPD41a_VNIR.mat'
-    # window.load_cube(0,path_fixed_cube)
-    # window.load_cube(1,path_moving_cube)
+    folder_cube=r'C:\Users\Usuario\Documents\DOC_Yannick\Hyperdoc_Test\Archivo chancilleria/'
+    path_fixed_cube=folder_cube+'MPD41a_SWIR.mat'
+    path_moving_cube=folder_cube+'MPD41a_VNIR.mat'
+
+    hc_fix=Hypercube(path_fixed_cube,load_init=True)
+    hc_mov=Hypercube(path_moving_cube,load_init=True)
+
+
+    window.load_cube(0,cube=hc_fix)
+    window.load_cube(1,cube=hc_mov)
 
     sys.exit(app.exec_())

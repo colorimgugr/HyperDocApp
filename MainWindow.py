@@ -4,14 +4,15 @@
 # pyinstaller  --noconfirm --noconsole --exclude-module tensorflow --exclude-module torch --exclude-module matlab --icon="interface/icons/hyperdoc_logo_transparente.ico" --add-data "interface/icons:Hypertool/interface/icons" --add-data "ground_truth/Materials labels and palette assignation - Materials_labels_palette.csv:ground_truth"  --add-data "data_vizualisation/Spatially registered minicubes equivalence.csv:data_vizualisation"  MainWindow.py
 # C:\Envs\py37test\Scripts\activate
 
+
 # GUI Qt
 from PyQt5 import QtWidgets, QtCore
-from PyQt5.QtCore import QTimer,QSize, Qt
-from PyQt5.QtGui import QFont,QIcon, QPalette, QColor
-from PyQt5.QtWidgets import (QStyleFactory, QAction, QPushButton, QSizePolicy,
-                             QLabel, QVBoxLayout, QTextEdit,QMessageBox)
+from PyQt5.QtCore import QTimer
+from PyQt5.QtGui import QFont,QIcon, QPalette
+from PyQt5.QtWidgets import (QStyleFactory, QAction, QSizePolicy,
+                             QTextEdit)
 
-## exception gestion
+## Python import
 import traceback
 import logging
 
@@ -19,7 +20,7 @@ import logging
 from hypercubes.hypercube import *
 from data_vizualisation.data_vizualisation_tool import Data_Viz_Window
 from registration.register_tool        import RegistrationApp
-from hypercubes.hypercube_manager import HypercubeManager
+from interface.hypercube_manager import HypercubeManager
 from metadata.metadata_tool import MetadataTool
 from ground_truth.ground_truth_tool import GroundTruthWidget
 
@@ -192,21 +193,18 @@ class MainApp(QtWidgets.QMainWindow):
         self.resize(1200, 800)
         self.setCentralWidget(QtWidgets.QWidget())
 
-        # if getattr(sys, 'frozen', False): # pynstaller case
-        #     self.BASE_DIR = sys._MEIPASS
-        # else :
-        #     self.BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
         if getattr(sys, 'frozen', False):
-            # Exécution depuis l’exécutable PyInstaller
+            # if from .exe de pyinstaler
             self.BASE_DIR = sys._MEIPASS
         else:
-            # Exécution en tant que script Python
+            # from Python script
             CURRENT_FILE_DIR = os.path.dirname(os.path.abspath(__file__))
             self.BASE_DIR = os.path.abspath(os.path.join(CURRENT_FILE_DIR, ".."))
 
+        self.active_cube=Hypercube() # solo cube que esta cargado con sus datos en la app gnl.
+
         self.ICONS_DIR = os.path.join(self.BASE_DIR,"Hypertool","interface", "icons")
-        # self.ICONS_DIR = os.path.join(self.BASE_DIR, "Hypertool/interface/icons")
         icon_main= "Hyperdoc_logo_transparente_CIMLab.png"
         self.setWindowIcon(QIcon(os.path.join(self.ICONS_DIR,icon_main)))
 
@@ -221,6 +219,7 @@ class MainApp(QtWidgets.QMainWindow):
 
         # make left docks with meta and file browser
         self.file_browser_dock = self._add_file_browser_dock() # left dock with file browser
+        self.file_browser_dock.setVisible(False) # raise meta and "hide in tab" file browser
         self.meta_dock=self._add_dock("Metadata",   MetadataTool,     QtCore.Qt.LeftDockWidgetArea) # add meta to left dock
         # self.tabifyDockWidget(self.file_browser_dock, self.meta_dock)
         # self.meta_dock.raise_() # raise meta and "hide in tab" file browser
@@ -337,13 +336,13 @@ class MainApp(QtWidgets.QMainWindow):
         """
         index = self.getIndexFromPath(filepath)
         if index != -1:
-            return self._cubes[index]
+            return self._cubes_info_list[index]
 
         # Cube is not in the list → load and add it
         ci = CubeInfoTemp(filepath=filepath)
         hc = Hypercube(filepath=filepath, cube_info=ci, load_init=True)
         ci = hc.cube_info
-        self._cubes.append(ci)
+        self._cubes_info_list.append(ci)
         self.cubesChanged.emit(self.paths)
         return ci
 
@@ -445,8 +444,15 @@ class MainApp(QtWidgets.QMainWindow):
         if ans==QMessageBox.Cancel:
             return
 
-        cube=Hypercube(filepath=ci.filepath,metadata=ci.metadata_temp)
-        cube.save(filepath=ci.filepath)
+        filters = (
+            "HDF5 files (*.h5);;"
+            "MATLAB files (*.mat);;"
+            "ENVI header (*.hdr)"
+        )
+
+        filepath_new,_ = QFileDialog.getSaveFileName(parent=self,caption="Save cube As…",filter=filters)
+
+        Hypercube(filepath=ci.filepath,cube_info=ci,load_init=True).save(filepath=filepath_new)
         print(f"cube saves as {ci.filepath}")
 
     def _on_add_cube(self,paths=None):
@@ -466,6 +472,10 @@ class MainApp(QtWidgets.QMainWindow):
             self.hypercube_manager.addCube(ci)
 
         if len(paths)==1:
+
+            self.hypercube_manager.get_loaded_cube(paths[0]) #send to cache
+            print(f"Cube '{paths[0]}' loaded in cache for use.")
+
             qm = QMessageBox()
             ans = qm.question(self, 'Cube loaded',
                               "Do you want to send the loaded cube to the tools ?",
@@ -481,7 +491,7 @@ class MainApp(QtWidgets.QMainWindow):
 
     def _on_get_cube_info(self, insert_index):
         # 1) Récupère le CubeInfoTemp déjà présent
-        ci = self.hypercube_manager._cubes[insert_index]
+        ci = self.hypercube_manager._cubes_info_list[insert_index]
         filepath = ci.filepath
         if not filepath:
             return
@@ -507,23 +517,47 @@ class MainApp(QtWidgets.QMainWindow):
     def _send_to_gt(self,index):
         widget = self.gt_dock.widget()
         ci = self.hypercube_manager.getCubeInfo(index)
-        widget.load_cube(cube_info=ci)
+        hc = self.hypercube_manager.get_loaded_cube(ci.filepath,cube_info=ci)
+        print(f'[send GT] ci.filepath : {ci.filepath}')
+        print(f'[send GT] hc.ci.filepath : {ci.filepath}')
+
+        if hc.data is None:
+            widget.load_cube(cube_info=ci)
+        else:
+            hc.cube_info = ci
+            widget.load_cube(cube_info=ci,cube=hc)
 
     def _send_to_data_viz(self,index):
         widget = self.data_viz_dock.widget()
         ci = self.hypercube_manager.getCubeInfo(index)
-        widget.open_hypercubes_and_GT(filepath=ci.filepath,cube_info=ci)
+        hc = self.hypercube_manager.get_loaded_cube(ci.filepath,cube_info=ci)
+        print(f'[send VIZ] ci.filepath : {ci.filepath}')
+        print(f'[send VIZ] hc.ci.filepath : {ci.filepath}')
+        if hc.data is None:
+            widget.open_hypercubes_and_GT(filepath=ci.filepath, cube_info=ci)
+        else:
+            hc.cube_info = ci
+            widget.open_hypercubes_and_GT(filepath=ci.filepath, cube_info=ci, cube=hc)
 
     def _send_to_registration(self,index,imov):
         widget = self.reg_dock.widget()
         ci = self.hypercube_manager.getCubeInfo(index)
-        widget.load_cube(filepath=ci.filepath,cube_info=ci,i_mov=imov)
+        hc = self.hypercube_manager.get_loaded_cube(ci.filepath,cube_info=ci)
+        print(f'[send REG] ci.filepath : {ci.filepath}')
+        print(f'[send REG] hc.ci.filepath : {ci.filepath}')
+        if hc.data is None:
+            widget.load_cube(filepath=ci.filepath,cube_info=ci,i_mov=imov)
+        else:
+            print('Try registered with cube sended')
+            hc.cube_info = ci
+            widget.load_cube(filepath=ci.filepath,cube_info=ci,i_mov=imov,cube=hc)
 
     def _send_to_all(self,index):
+
         self._send_to_data_viz(index)
         self._send_to_gt(index)
         self._send_to_metadata(index)
-        self.reg_dock.widget().load_cube(1, self.hypercube_manager.paths[index])
+        self._send_to_registration(index,1)
 
     def _on_tool_loaded_cube(self, filepath, widget):
         index = self.hypercube_manager.getIndexFromPath(filepath)
