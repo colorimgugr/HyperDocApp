@@ -17,6 +17,7 @@ class HypercubeManager(QtCore.QObject):
         self._cubes_info_list: List[CubeInfoTemp] = []
         self._cube_cache: OrderedDict[str, Hypercube] = OrderedDict()
         self._max_cache_size = 5
+        self._updating_metadata = False # flag
 
     def addCube(self, ci):
         """
@@ -55,12 +56,24 @@ class HypercubeManager(QtCore.QObject):
 
         # Load cube and update cache
         hc = Hypercube(filepath=filepath, cube_info=cube_info, load_init=True)
-        self._cube_cache[filepath] = hc
 
-        # if full, quit last used
-        if len(self._cube_cache) > self._max_cache_size:
-            self._cube_cache.popitem(last=False)
+        self.add_to_cache(hc)
+
         return hc
+
+    def add_to_cache(self, hc: Hypercube):
+        """
+        Add a Hypercube to the cache, respecting the LRU policy.
+
+        If the cache exceeds the maximum size, removes the least recently used cube.
+        """
+        ci = hc.cube_info
+        self._cube_cache[ci.filepath] = hc
+        self._cube_cache.move_to_end(ci.filepath)  # Mark as recently used
+
+        if len(self._cube_cache) > self._max_cache_size:
+            removed_fp, removed_hc = self._cube_cache.popitem(last=False)
+            print(f"[LRU] Cache full. Removed oldest cube: {removed_fp}")
 
     def removeCube(self, index: int):
         """
@@ -116,6 +129,9 @@ class HypercubeManager(QtCore.QObject):
         return True
 
     def updateMetadata(self, updated_ci: CubeInfoTemp):
+        if self._updating_metadata:
+            return
+
         index = self.getIndexFromPath(updated_ci.filepath)
         if index == -1:
             print(f"[Warning] Cube not found: {updated_ci.filepath}")
@@ -124,9 +140,11 @@ class HypercubeManager(QtCore.QObject):
         # to check if modif in hypercube ok before emitting
         test = not self.compare_metadata_dicts(self._cubes_info_list[index].metadata_temp, updated_ci.metadata_temp)
         if test:
+            self._updating_metadata = True
             self._cubes_info_list[index] = updated_ci
             updated_ci.modif = True
             self.metadataUpdated.emit(updated_ci)
+            self._updating_metadata = True
 
     def add_or_update_cube(self, ci: CubeInfoTemp):
         """

@@ -4,17 +4,15 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="Cube_info.pathS homogene pour tous les outils -&gt; mise en memoire choix browser&#10;Envi files ok for reading">
-      <change afterPath="$PROJECT_DIR$/hypercubes/cube_selection.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/hypercubes/white_calibration_window.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/hypercubes/white_calibration_window.ui" afterDir="false" />
+    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="[Hypercube] -&gt; Calibration window OK.&#10;Add : white from norway and load file .txt">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/MainWindow.py" beforeDir="false" afterPath="$PROJECT_DIR$/MainWindow.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/data_vizualisation/data_vizualisation_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/data_vizualisation/data_vizualisation_tool.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ground_truth/ground_truth_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/ground_truth/ground_truth_tool.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/hypercubes/hypercube.py" beforeDir="false" afterPath="$PROJECT_DIR$/hypercubes/hypercube.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hypercubes/hypercube_manager.py" beforeDir="false" afterPath="$PROJECT_DIR$/interface/hypercube_manager.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/interface/some_widget_for_interface.py" beforeDir="false" afterPath="$PROJECT_DIR$/interface/some_widget_for_interface.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hypercubes/white_calibration_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/hypercubes/white_calibration_window.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hypercubes/white_calibration_window.ui" beforeDir="false" afterPath="$PROJECT_DIR$/hypercubes/white_calibration_window.ui" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/interface/hypercube_manager.py" beforeDir="false" afterPath="$PROJECT_DIR$/interface/hypercube_manager.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/metadata/metadata_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/metadata/metadata_tool.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/registration/register_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/registration/register_tool.py" afterDir="false" />
     </list>
@@ -143,14 +141,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1744020944801</updated>
-    </task>
-    <task id="LOCAL-00020" summary="Manager with filepath OK&#10;Get path of Registered cube in Main OK&#10;send to Register and File Browser OK">
-      <option name="closed" value="true" />
-      <created>1747145526456</created>
-      <option name="number" value="00020" />
-      <option name="presentableId" value="LOCAL-00020" />
-      <option name="project" value="LOCAL" />
-      <updated>1747145526456</updated>
     </task>
     <task id="LOCAL-00021" summary="Added size column in FileBrowser">
       <option name="closed" value="true" />
@@ -536,7 +526,15 @@
       <option name="project" value="LOCAL" />
       <updated>1752679512169</updated>
     </task>
-    <option name="localTasksCounter" value="69" />
+    <task id="LOCAL-00069" summary="[Hypercube] -&gt; Calibration window OK.&#10;Add : white from norway and load file .txt">
+      <option name="closed" value="true" />
+      <created>1752984886939</created>
+      <option name="number" value="00069" />
+      <option name="presentableId" value="LOCAL-00069" />
+      <option name="project" value="LOCAL" />
+      <updated>1752984886940</updated>
+    </task>
+    <option name="localTasksCounter" value="70" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -588,7 +586,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Added normalizarion for Unsupervised" />
     <MESSAGE value="pixel_averaged added + saving GT started" />
     <MESSAGE value="Bugg of metadata loading finally fixed :-p" />
     <MESSAGE value="Loading GT_tool with cubeInfo&#10;GT tool inserted in main" />
@@ -613,6 +610,7 @@
     <MESSAGE value="[Hypercube] matlab files with browser OK for v7.3 and v old without hypercube.&#10;Load and save envie." />
     <MESSAGE value="[METADATA]+[DATAVIZ] : update of metadada simflification display" />
     <MESSAGE value="Cube_info.pathS homogene pour tous les outils -&gt; mise en memoire choix browser&#10;Envi files ok for reading" />
-    <option name="LAST_COMMIT_MESSAGE" value="Cube_info.pathS homogene pour tous les outils -&gt; mise en memoire choix browser&#10;Envi files ok for reading" />
+    <MESSAGE value="[Hypercube] -&gt; Calibration window OK.&#10;Add : white from norway and load file .txt" />
+    <option name="LAST_COMMIT_MESSAGE" value="[Hypercube] -&gt; Calibration window OK.&#10;Add : white from norway and load file .txt" />
   </component>
 </project>

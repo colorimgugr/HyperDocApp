@@ -235,7 +235,7 @@ class ZoomableGraphicsView(QGraphicsView):
             self.viewport().setCursor(Qt.CrossCursor)
 
 class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
-    cubeLoaded = QtCore.pyqtSignal(str)
+    cubeLoaded = QtCore.pyqtSignal(Hypercube)
     cube_saved = QtCore.pyqtSignal(CubeInfoTemp)
 
     def __init__(self, parent=None,cubeInfo=None):
@@ -1123,7 +1123,7 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
 
             loading.close()
 
-            self.cubeLoaded.emit(filepath)  # Notify the manager
+            self.cubeLoaded.emit(cube)  # Notify the manager
 
         # todo : check if GT already done in the file
 

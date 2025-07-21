@@ -20,6 +20,7 @@ from PyQt5 import QtCore
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 from registration.registration_window import *
+from registration.save_window_register_tool import *
 from hypercubes.hypercube import *
 from interface.some_widget_for_interface import *
 
@@ -74,7 +75,7 @@ def find_paired_cube_path(current_path):
 class RegistrationApp(QMainWindow, Ui_MainWindow):
 
     alignedCubeReady = pyqtSignal(CubeInfoTemp) # send signal to main
-    cubeLoaded = QtCore.pyqtSignal(str)
+    cubeLoaded = QtCore.pyqtSignal(Hypercube)
     cube_saved = pyqtSignal(CubeInfoTemp)
 
     def __init__(self,parent=None):
@@ -301,7 +302,7 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
 
                     data=self.moving_cube.data
                     wl=self.moving_cube.wl
-                    self.cubeLoaded.emit(filepath)  # Notify the manager
+                    self.cubeLoaded.emit(self.moving_cube)  # Notify the manager
 
                 else:
                     if cube is None:
@@ -312,7 +313,7 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
 
                     data=self.fixed_cube.data
                     wl = self.fixed_cube.wl
-                    self.cubeLoaded.emit(filepath)  # Notify the manager
+                    self.cubeLoaded.emit(self.fixed_cube)  # Notify the manager
 
                 # Auto-load paired cube if not already loaded
                 paired_path=None
@@ -1188,6 +1189,34 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
         # checkbox to intial state
         self.checkBox_crop.setChecked(False)
         self.checkBox_autorize_modify.setChecked(True)
+
+class SaveWindow(QDialog, Ui_Save_Window):
+    """Dialog to configure saving options."""
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setupUi(self)
+        self.pushButton_save_cube_final.clicked.connect(self.accept)
+        self.pushButton_Cancel.clicked.connect(self.reject)
+
+    def closeEvent(self, event):
+        self.reject()
+        super().closeEvent(event)
+
+    def get_options(self):
+        opts = {
+            'cube_format':   self.comboBox_cube_format.currentText(),
+            'save_both':     self.radioButton_both_cube_save.isChecked(),
+            'crop_cube':     self.checkBox_minicube_save.isChecked(),
+            'export_images': self.checkBox_export_images.isChecked(),
+        }
+        if opts['export_images']:
+            opts['image_format']   = self.comboBox_image_format.currentText()
+            opts['image_mode_rgb'] = self.radioButton_RGB_save_image.isChecked()
+        else:
+            opts['image_format']   = None
+            opts['image_mode_rgb'] = False
+        return opts
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

@@ -15,7 +15,7 @@ from PyQt5.QtWidgets import (
 class MetadataTool(QWidget, Ui_Metadata_tool):
 
     metadataChanged = pyqtSignal(object)
-    cubeLoaded = QtCore.pyqtSignal(str)
+    cubeLoaded = QtCore.pyqtSignal(Hypercube)
 
     def __init__(self,cube_info:CubeInfoTemp=CubeInfoTemp(), parent=None):
         super().__init__(parent)
@@ -787,7 +787,7 @@ class MetadataTool(QWidget, Ui_Metadata_tool):
         cube = Hypercube(filepath=path, load_init=True)
         self.set_cube_info(cube.cube_info)
         self.update_combo_meta(init=True)
-        self.cubeLoaded.emit(path)  # Notify the manager
+        self.cubeLoaded.emit(cube)  # Notify the manager
 
     def load_cube_info(self, ci: CubeInfoTemp):
         # Called by the manager to inject the latest version of the cube info
