@@ -243,10 +243,7 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
         # load hypercubes
         if path_VNIR is not None and not self.image_loaded[0]:
             try:
-                if cube_info is not None:
-                    cube_info.filepath = path_VNIR
-                    self.hyps[0].cube_info = cube_info
-                self.hyps[0].open_hyp(default_path=path_VNIR,cube_info=cube_info,open_dialog=False,show_exception=False)
+                self.hyps[0].open_hyp(default_path=path_VNIR,open_dialog=False,show_exception=False)
 
                 if self.hyps[0].data is None:
                     self.image_loaded[0] = False
@@ -259,10 +256,7 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
 
         elif path_UV is not None and not self.image_loaded[0]:
             try:
-                if cube_info is not None:
-                    cube_info.filepath=path_UV
-                    self.hyps[0].cube_info = cube_info
-                self.hyps[0].open_hyp(path_UV,open_dialog=False,cube_info=cube_info,show_exception=False)
+                self.hyps[0].open_hyp(path_UV,open_dialog=Fals,show_exception=False)
                 if self.hyps[0].data is None :
                     self.image_loaded[0] = False
                 else :
@@ -275,10 +269,7 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
         if path_SWIR is not None and not self.image_loaded[1]:
 
             try:
-                if cube_info is not None:
-                    cube_info.filepath=path_SWIR
-                    self.hyps[1].cube_info = cube_info
-                self.hyps[1].open_hyp(path_SWIR,open_dialog=False,cube_info=cube_info,show_exception=False)
+                self.hyps[1].open_hyp(path_SWIR,open_dialog=False,show_exception=False)
                 if self.hyps[1].data is None :
                     self.image_loaded[1] = False
                 else :
@@ -763,6 +754,9 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
             self.canvas_image.create_axis(self.image_loaded)
             rgb_images = []
             title=''
+            number=[]
+            parent_cube=[]
+            name=[]
             for i, hyp in enumerate(self.hyps):
                 if self.image_loaded[i]:
                     if self.radioButton_grayscale.isChecked():
@@ -774,14 +768,30 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
                     rgb_images.append(rgb_image)
                     try:
                         if type(hyp.metadata['number']) is str and type(hyp.metadata['parent_cube']) is str:
-                            title=f"{hyp.metadata['number']} - {hyp.metadata['parent_cube']}"
+                            number.append(hyp.metadata['number'])
+                            parent_cube.append(hyp.metadata['parent_cube'])
                     except :
                         try :
-                            title=hyp.cube_info.metadata_temp['name']
+                            name.append(hyp.cube_info.metadata_temp['name'])
                         except:
-                            title=hyp.cube_info.filepath.split('/')[-1]
+                            name.append(hyp.cube_info.filepath.split('/')[-1])
                 else:
                     rgb_images.append(None)
+
+            if len(number)==2:
+                number_str=number[0]+' & '+number[1]
+                if len(parent_cube)==2:
+                    parent_cube_str=parent_cube[0]
+                    title = f"{number_str} - {parent_cube_str}"
+
+            if title=='':
+                if len(name)==2:
+                    title=f"{name[0]} - {name[1]}"
+                elif len(name)==1:
+                    title=name[0]
+                else:
+                    title='Problem to load title'
+
 
             if self.image_loaded[2]:
                 rgb_images.append(self.GT.image)

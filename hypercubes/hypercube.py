@@ -1,42 +1,50 @@
 import os
-from copy import deepcopy
-
-import h5py
-from spectral.io import envi
-from scipy.io import loadmat
-import cv2
-
-from PyQt5.QtWidgets import (QWidget,
-    QApplication, QFileDialog, QMessageBox, QDialog, QTreeWidgetItem,QVBoxLayout,QHBoxLayout,
-)
-
-from PyQt5.QtCore    import pyqtSignal, QEventLoop, QRectF
-from registration.save_window_register_tool import Ui_Save_Window
-from hypercubes.hdf5_browser_tool import Ui_HDF5BrowserWidget
-from hypercubes.white_calibration_window import Ui_dialog_white_calibration
-from interface.some_widget_for_interface import*
-
+import copy
 import sys
 
 from dataclasses import dataclass, field
 from typing import Optional, List, Union
-import numpy as np
-import copy
-
 from pathlib import Path
+
+import h5py
+import numpy as np
+from spectral.io import envi
+from scipy.io import loadmat
+
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.figure import Figure
+
+from PyQt5.QtWidgets import (QWidget,QSizePolicy,
+    QApplication, QFileDialog, QMessageBox, QDialog, QTreeWidgetItem,QVBoxLayout,QHBoxLayout,
+)
+from PyQt5.QtCore   import pyqtSignal, QEventLoop, QRectF,QTimer
+
+from hypercubes.hdf5_browser_tool import Ui_HDF5BrowserWidget
+from hypercubes.white_calibration_window import Ui_dialog_white_calibration
+from interface.some_widget_for_interface import*
 
 @dataclass
 class CubeInfoTemp:
     """
     Container for per-cube working data.
     """
-    filepath: str = None    #filepath of cube
+    _filepath: str = None    #filepath of cube
     data_path: Optional[str] = None # data location in the file
     metadata_path: Optional[str] = None # metadata location in the path
     wl_path: Optional[str] = None #wl location in the path
     metadata_temp: dict = field(default_factory=dict) # all metadatas modified in the app before saving
     data_shape: Optional[Union[List[float], np.ndarray]] = None # cube shape [width, height, bands]
     wl_trans:Optional[str]= None # if need to transpose wl dim from dim 1 to dim 3
+
+    @property
+    def filepath(self):
+        return self._filepath
+
+    # protect filepath modification
+    @filepath.setter
+    def filepath(self, val):
+        print(f"[DEBUG] Changing filepath from {self._filepath} to {val}")
+        self._filepath = val
 
     # because only one filepath for one cube...and one cube for one filepath, let's define the cubeInfo equality
     def __eq__(self, other):
@@ -47,6 +55,21 @@ class CubeInfoTemp:
     def __hash__(self):
         # if in dic or set
         return hash(Path(self.filepath).resolve())
+
+class MatplotlibCanvas(FigureCanvas):
+    def __init__(self, parent=None, width=5, height=3, dpi=100):
+        self.fig = Figure(figsize=(width, height), dpi=dpi)
+        self.ax = self.fig.add_subplot(111)
+        super().__init__(self.fig)
+        self.setParent(parent)
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.updateGeometry()
+        self.fig.tight_layout()
+
+    def resizeEvent(self, event):
+        self.fig.tight_layout()
+        self.draw()
+        super().resizeEvent(event)
 
 class Hypercube:
 
@@ -76,7 +99,6 @@ class Hypercube:
                 self.open_hyp(default_path=filepath, open_dialog=False)
             else:
                 self.open_hyp(open_dialog=True)
-
 
     def reinit_cube(self):
         """Reset all attributes."""
@@ -430,7 +452,7 @@ class Hypercube:
                     self.metadata['reflectance_data_from']
                 except:
                     if ask_calib:
-                        ans=QMessageBox.question(None,'Calibration ','Do you want to calibrate from a white reference in image ?',QMessageBox.Yes | QMessageBox.No)
+                        ans=QMessageBox.question(None,'Calibration ','Do you need to process the white calibration ?',QMessageBox.Yes | QMessageBox.No)
                         if ans==QMessageBox.Yes:
                             self.calibrating_from_image_extract()
 
@@ -531,11 +553,12 @@ class Hypercube:
 
     def save(self,filepath=None,fmt=None,meta_from_cube_info=False,ask_newfilename=False):
         filters = (
+            "Supported files (*.h5 *.mat *.hdr);;"
             "HDF5 files (*.h5);;"
             "MATLAB files (*.mat);;"
             "ENVI header (*.hdr)"
         )
-        default_filter = "HDF5 files (*.h5)"
+        default_filter = "Supported files (*.h5 *.mat *.hdr);;"
 
         if filepath is None or ask_newfilename:
             app = QApplication.instance() or QApplication([])
@@ -683,13 +706,12 @@ class Hypercube:
         }
         savemat(filepath, tosave)
 
-    def calibrating_from_image_extract(self,type='mean'):
+    def calibrating_from_image_extract(self):
         """
             Opens an interactive white calibration dialog.
             Allows manual region selection or loading an external white reference.
             Calibration is applied according to chosen mode and reference.
         """
-
         class WhiteCalibrationDialog(QDialog):
             def __init__(self, parent=None):
                 super().__init__(parent)
@@ -705,6 +727,14 @@ class Hypercube:
                 layout.addWidget(self.viewer)
                 self.ui.frame_image.setLayout(layout)
 
+                # Add matplotlib for quick white spectrum visualisation
+                self.canvas_white = MatplotlibCanvas(parent=self.ui.frame_spectra_white)
+                layout = QVBoxLayout()
+                layout.setContentsMargins(0, 0, 0, 0)
+                layout.addWidget(self.canvas_white)
+                # self.canvas_white.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+                self.ui.frame_spectra_white.setLayout(layout)
+
                 self.ui.comboBox_white_Reference_choice.currentIndexChanged.connect(self.toggle_manual_value_fields)
                 self.toggle_manual_value_fields()
 
@@ -713,11 +743,14 @@ class Hypercube:
                 self.ui.pushButton_load_white_capture.clicked.connect(self.load_other_white)
                 self.ui.pushButton_valid_calibration.clicked.connect(self.accept)
                 self.ui.pushButton_load_personal_white_ref.clicked.connect(self.load_white_corection_file)
+                self.ui.doubleSpinBox_R_manual.valueChanged.connect(self.update_white_spectrum)
 
                 self.ui.radioButton_horizontal_flat_field.toggled.connect(self.update_selection_overlay)
                 self.ui.radioButton_vertical_flat_field.toggled.connect(self.update_selection_overlay)
                 self.ui.radioButton_full_flat_field.toggled.connect(self.update_selection_overlay)
                 self.ui.radioButton_no_flat_field.toggled.connect(self.update_selection_overlay)
+
+                QTimer.singleShot(0, self.update_white_spectrum) # to force spectra draw after layout processed
 
             def get_selected_rect(self):
                 return self.viewer.get_rect_coords()
@@ -750,6 +783,8 @@ class Hypercube:
                 self.ui.label_R_manual.setEnabled(is_manual)
                 self.ui.doubleSpinBox_R_manual.setEnabled(is_manual)
 
+                self.update_white_spectrum()
+
             def update_selection_overlay(self):
                 coords = self.get_selected_rect()
                 if not coords or self.cube_calib is None:
@@ -777,9 +812,48 @@ class Hypercube:
                 img_rgb = self.cube_calib.data[:, :, channels]
                 img_rgb = (img_rgb * 255 / img_rgb.max()).clip(0, 255).astype(np.uint8)
                 self.viewer.setImage(np_to_qpixmap(img_rgb))
+                self.toggle_manual_value_fields()
 
             def load_white_corection_file(self):
                 QMessageBox.information(self,"Ups","Not implemented yet. Wait for update")
+
+            def plot_white_reflectance(self, wavelengths, reflectance,name='white_ref'):
+                self.canvas_white.ax.clear()
+                self.canvas_white.ax.plot(wavelengths, reflectance)
+                self.canvas_white.ax.tick_params(axis='both', labelsize=6)
+                self.canvas_white.ax.set_ylabel(name,fontsize=6)
+                self.canvas_white.ax.grid(True)
+                self.canvas_white.ax.set_ylim(0, 1.1)
+                self.canvas_white.fig.tight_layout()
+                self.canvas_white.draw()
+
+            def update_white_spectrum(self):
+                try :
+                    self.cube_calib.wl
+                except:
+                    return
+
+                name = self.get_white_ref_name()
+                if name == "Constant value (from field)":
+                    R_val=int(self.ui.doubleSpinBox_R_manual.value()*100)/100
+                    reflectance=R_val*np.ones(len(self.cube_calib.wl))
+                    label=f'Constant R = {R_val}'
+                    name=label
+                    self.plot_white_reflectance(self.cube_calib.wl, reflectance, name)
+                    return
+
+                elif name == "Personal (load file)":
+                    self.canvas_white.ax.clear()
+                    self.canvas_white.ax.grid(True)
+                    self.canvas_white.ax.set_ylim(0, 1.1)
+                    self.canvas_white.ax.set_xlim(self.cube_calib.wl[0], self.cube_calib.wl[-1])
+                    self.canvas_white.draw()
+                    return
+
+                reflectance = self.cube_calib.get_ref_white(name)
+                if 'Sphere Optics' in name:
+                    name=name.replace('Sphere Optics','SphOpt')
+                self.plot_white_reflectance(self.cube_calib.wl, reflectance,name)
 
             def accept(self):
                 coords = self.get_selected_rect()
@@ -808,6 +882,8 @@ class Hypercube:
             else:
                 white_ref_values = self.get_ref_white(white_ref_name)
 
+            print(f'[Hypercube_calib] white_ref_name : {white_ref_name}')
+
             calib_mode = dialog.get_calibration_mode()
             coords = dialog.get_selected_rect()
 
@@ -821,27 +897,34 @@ class Hypercube:
                 selected = dialog.cube_calib.data[y:y + dy, x:x + dx, :]
                 mean_white = np.mean(selected, axis=(0, 1))
                 mean_white[mean_white == 0] = 1e-6
-                self.data /= (mean_white*white_ref_values)
+                self.data /= (mean_white / white_ref_values)
                 self.metadata['calibration_type'] = 'mean_rectangle'
             elif calib_mode == "horizontal":
-                selected = dialog.cube_calib.data[:, x:x + dx, :]
-                mean_white = np.mean(selected, axis=1)
-                mean_white[mean_white == 0] = 1e-6
-                self.data /= (mean_white[ :,None, :]*white_ref_values)
-                self.metadata['calibration_type'] = 'horizontal_flat'
-            elif calib_mode == "vertical":
                 selected = dialog.cube_calib.data[y:y + dy, :, :]
                 mean_white = np.mean(selected, axis=0)
                 mean_white[mean_white == 0] = 1e-6
-                self.data /= (mean_white[None,:, :]*white_ref_values)
+                self.data /= (mean_white[ None,:, :] / white_ref_values)
+                self.metadata['calibration_type'] = 'horizontal_flat'
+            elif calib_mode == "vertical":
+                selected = dialog.cube_calib.data[:, x:x + dx, :]
+                mean_white = np.mean(selected, axis=1)
+                mean_white[mean_white == 0] = 1e-6
+                self.data /= (mean_white[:,None, :] / white_ref_values)
                 self.metadata['calibration_type'] = 'vertical_flat'
             elif calib_mode == "full":
                 selected=dialog.cube_calib.data
                 selected[selected == 0] = 1e-6
-                self.data /= (selected*white_ref_values)
+                mean_white=selected
+                self.data /= (self / white_ref_values)
                 self.metadata['calibration_type'] = 'full_flat'
 
-            # self.metadata['calibration_reflectance_values'] = mean_white
+            try :
+                print(f'[Hypercube_calib] mean_white shape: {mean_white.shape}')
+                print(f'[Hypercube_calib] cube shape: {self.data.shape}')
+            except:
+                pass
+
+            self.metadata['calibration_reflectance_values'] = white_ref_values
             self.metadata['white_reference'] = white_ref_name
             self.metadata['reflectance_data_from'] = 'selected white in image ' + white_ref_name
             print('Calibration done using selected region and chosen white reference.')
@@ -857,7 +940,7 @@ class Hypercube:
         from scipy.io import loadmat
         from scipy.interpolate import interp1d
 
-        multi_labels = ['Sphere Optics Multi 90', 'Sphere Optics Multi 50', 'Sphere Optics Multi 20', 'Sphere Optics Multi 5']
+        multi_labels = ['Sphere Optics Multi 90 (CIL)', 'Sphere Optics Multi 50 (CIL)', 'Sphere Optics Multi 20 (CIL)', 'Sphere Optics Multi 5 (CIL)']
 
         if getattr(sys, 'frozen', False):
             # if from .exe de pyinstaler
@@ -869,12 +952,11 @@ class Hypercube:
 
         white_folder = os.path.join(BASE_DIR, "hypercubes", "white_ref_reflectance_data")
 
-        if white_name == 'Sphere Optics Full White':
+        if white_name == 'Sphere Optics Full White (CIL)':
             white_path = os.path.join(white_folder, 'SphereOptics_standard_white.mat')
             data = loadmat(white_path)['white_reflectance']
             wl_white = data[:, 0].squeeze()
             reflectance_white = data[:, 1].squeeze()
-
 
         elif white_name in multi_labels:
             white_path = os.path.join(white_folder, 'SO_multiwhite.mat')
@@ -883,22 +965,28 @@ class Hypercube:
             reflectance_dic = {multi_labels[i]: data['sphereoptics'][:, i] for i in range(len(multi_labels))}
             reflectance_white = reflectance_dic[white_name].squeeze()
 
-
         elif white_name == 'Teflon':
             white_path = os.path.join(white_folder, 'Teflon_full_range.mat')
             data = loadmat(white_path)
             wl_white = data['wl'].squeeze()
             reflectance_white = data['spectrum'].squeeze()
 
+        elif white_name == 'White Hyspex (Finland)':
+            white_path = os.path.join(white_folder, 'multi90_finland.mat')
+            data = loadmat(white_path)
+            wl_white = data['wl_multi_90white'].squeeze()
+            reflectance_white = data['Multi_90white'].squeeze()
+
         else:
             print('Unknown white reference label')
             return
 
-        interp_ref_func = interp1d(wl_white, reflectance_white, kind='cubic', bounds_error=False,
-                                   fill_value="extrapolate")
+        interp_ref_func = interp1d(wl_white, reflectance_white, kind='cubic',
+                                   bounds_error=False,
+                                   fill_value=(reflectance_white[0], reflectance_white[-1]))
+
         reflectance_interp = interp_ref_func(self.wl)
         return reflectance_interp
-
 
 class HDF5BrowserWidget(QWidget, Ui_HDF5BrowserWidget):
     """
@@ -1091,32 +1179,6 @@ class HDF5BrowserWidget(QWidget, Ui_HDF5BrowserWidget):
         except Exception:
             return 0
 
-class SaveWindow(QDialog, Ui_Save_Window):
-    """Dialog to configure saving options."""
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setupUi(self)
-        self.pushButton_save_cube_final.clicked.connect(self.accept)
-        self.pushButton_Cancel.clicked.connect(self.reject)
-
-    def closeEvent(self, event):
-        self.reject()
-        super().closeEvent(event)
-
-    def get_options(self):
-        opts = {
-            'cube_format':   self.comboBox_cube_format.currentText(),
-            'save_both':     self.radioButton_both_cube_save.isChecked(),
-            'crop_cube':     self.checkBox_minicube_save.isChecked(),
-            'export_images': self.checkBox_export_images.isChecked(),
-        }
-        if opts['export_images']:
-            opts['image_format']   = self.comboBox_image_format.currentText()
-            opts['image_mode_rgb'] = self.radioButton_RGB_save_image.isChecked()
-        else:
-            opts['image_format']   = None
-            opts['image_mode_rgb'] = False
-        return opts
 
 def save_images(dirpath: str,
                 fixed_img: np.ndarray,
@@ -1138,8 +1200,11 @@ def save_images(dirpath: str,
     write('fixed', fixed_img)
     write('aligned', aligned_img)
 
-
 if __name__ == '__main__':
+
+    import matplotlib
+    matplotlib.use('Qt5Agg')  # 'TkAgg' or 'Qt5Agg'
+    import matplotlib.pyplot as plt
 
     # folder = r'C:\Users\Usuario\Documents\DOC_Yannick\HYPERDOC Database\Samples\minicubes/'
     # fname = '00189-VNIR-mock-up.h5'
@@ -1175,15 +1240,15 @@ if __name__ == '__main__':
 
     # path=cube.cube_info.filepath.replace('.','_calib.')
 
-    for key in cube.cube_info.metadata_temp:
-        print(f' {key} -> {cube.cube_info.metadata_temp[key]}')
+    # for key in cube.cube_info.metadata_temp:
+    #     print(f' {key} -> {cube.cube_info.metadata_temp[key]}')
 
-    try:
-        import cv2
-        mid=int(cube.data.shape[2]/2)
-        image_np=cube.data[:,:,mid]
-        cv2.imshow("Image", image_np)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
-    except:
-        print('imshow crashed')
+    mid=int(cube.data.shape[2]/2)
+    chan=[0,mid,cube.data.shape[2]-1]
+    image_np=cube.data[:,:,chan]
+    print(f'max data : {np.max(cube.data)}')
+
+
+    fig,ax=plt.subplots()
+    ax.imshow(image_np)
+    plt.show()

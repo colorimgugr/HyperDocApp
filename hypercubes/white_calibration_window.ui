@@ -111,27 +111,32 @@
             </item>
             <item>
              <property name="text">
-              <string>Sphere Optics Full White</string>
+              <string>Sphere Optics Full White (CIL)</string>
              </property>
             </item>
             <item>
              <property name="text">
-              <string>Sphere Optics Multi 90</string>
+              <string>Sphere Optics Multi 90 (CIL)</string>
              </property>
             </item>
             <item>
              <property name="text">
-              <string>Sphere Optics Multi 50</string>
+              <string>Sphere Optics Multi 50 (CIL)</string>
              </property>
             </item>
             <item>
              <property name="text">
-              <string>Sphere Optics Multi 20</string>
+              <string>Sphere Optics Multi 20 (CIL)</string>
              </property>
             </item>
             <item>
              <property name="text">
-              <string>Sphere Optics Multi 5</string>
+              <string>Sphere Optics Multi 5 (CIL)</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>White Hyspex (Finland)</string>
              </property>
             </item>
             <item>
@@ -200,11 +205,25 @@
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="pushButton_valid_calibration">
-         <property name="text">
-          <string>Valid calibration</string>
-         </property>
-        </widget>
+        <layout class="QVBoxLayout" name="verticalLayout_6">
+         <item>
+          <widget class="QFrame" name="frame_spectra_white">
+           <property name="frameShape">
+            <enum>QFrame::StyledPanel</enum>
+           </property>
+           <property name="frameShadow">
+            <enum>QFrame::Raised</enum>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="pushButton_valid_calibration">
+           <property name="text">
+            <string>Valid calibration</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </item>
       </layout>
      </item>
