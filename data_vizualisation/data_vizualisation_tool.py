@@ -70,11 +70,20 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
         # Connect to window Metadata
         self.pushButton_see_all_metadata.clicked.connect(self.show_all_metadata)
 
+        # rotate / flip
+        self.pushButton_rotate.clicked.connect(self.rotate)
+        self.pushButton_flip_h.clicked.connect(self.flip_h)
+        self.pushButton_flip_v.clicked.connect(self.flip_v)
+
         # group active hyp radiobuttons :
         self.radioButtons_ActiveHyp= [self.radioButton_VNIR, self.radioButton_SWIR, self.radioButton_UVIS]
         # Connect elements du canvas GT image
         self.sliders_rgb=[self.horizontalSlider_red_channel,self.horizontalSlider_green_channel,self.horizontalSlider_blue_channel]
         self.spinBox_rgb=[self.spinBox_red_channel,self.spinBox_green_channel,self.spinBox_blue_channel]
+
+        # group image to see
+        self.radioButton_visible_active_hyp.toggled.connect(self.update_visible_canvas)
+        self.radioButton_visible_all.toggled.connect(self.update_visible_canvas)
 
         # Timer pour débouncer les changements de slider
         self.debounce_timer = QTimer()
@@ -95,10 +104,10 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
         self.radioButton_rgb_user.toggled.connect(self.modif_sliders)
         self.radioButton_rgb_default.toggled.connect(self.modif_sliders)
         self.radioButton_grayscale.toggled.connect(self.modif_sliders)
-        self.radioButton_SWIR.clicked.connect(self.modif_sliders)
-        self.radioButton_VNIR.clicked.connect(self.modif_sliders)
-        self.radioButton_SWIR.clicked.connect(self.update_metadata_label)
-        self.radioButton_VNIR.clicked.connect(self.update_metadata_label)
+
+        self.radioButton_SWIR.clicked.connect(self.on_cube_active_radiobutton_toggled)
+        self.radioButton_VNIR.clicked.connect(self.on_cube_active_radiobutton_toggled)
+
         self.horizontalSlider_transparency_GT.valueChanged.connect(self.start_debounce_timer)
         self.pushButton_save_spectra.clicked.connect(self.save_spectra)
         self.checkBox_std.clicked.connect(lambda:self.update_spectra (load=False))
@@ -121,6 +130,11 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
                                          "data_vizualisation/Spatially registered minicubes equivalence.csv")
 
         self.minicube_association_table = pd.read_csv(table_path)
+
+    def on_cube_active_radiobutton_toggled(self):
+        self.modif_sliders()
+        self.update_metadata_label()
+        self.update_visible_canvas()
 
     def start_debounce_timer(self):
         """Déclenche le timer pour mettre à jour l'image après un délai."""
@@ -423,6 +437,84 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
         else : message+='GT NOT FOUND'
 
         self.label_general_message.setText(message)
+        self.update_visible_canvas()
+
+    def rotate(self):
+        for hyp in self.hyps:
+            hyp.data=np.rot90(hyp.data)
+
+        self.GT.image=np.rot90(self.GT.image)
+
+        self.update_visible_canvas()
+
+
+    def flip_v(self):
+        for hyp in self.hyps:
+            hyp.data=np.flipud(hyp.data)
+
+        self.GT.image=np.flipud(self.GT.image)
+
+        self.update_visible_canvas()
+
+    def flip_h(self):
+        for hyp in self.hyps:
+            hyp.data = np.fliplr(hyp.data)
+
+        self.GT.image = np.fliplr(self.GT.image)
+
+        self.update_visible_canvas()
+
+
+    def update_visible_canvas(self):
+        """Update Canvas_Image from visible image radiobuttons"""
+        active_index = 1 if self.radioButton_SWIR.isChecked() else 0
+        show_active = self.radioButton_visible_active_hyp.isChecked()
+        show_all = self.radioButton_visible_all.isChecked()
+
+        images_loaded = self.image_loaded.copy()
+
+        if show_all:
+            selected = images_loaded
+
+        else : # selected
+            selected = [False, False, False]
+            selected[active_index] = images_loaded[active_index]
+
+
+        self.canvas_image.create_axis(selected)
+
+        # reconstruire le tableau d'images comme dans `update_image(load=True)`
+        rgb_images = []
+        for i in range(2):
+            if selected[i]:
+                hyp = self.hyps[i]
+                if self.radioButton_grayscale.isChecked():
+                    channels_index = [np.argmin(np.abs(self.hyps_rgb_chan[i][2] - hyp.wl))] * 3
+                else:
+                    channels_index = [np.argmin(np.abs(self.hyps_rgb_chan[i][j] - hyp.wl)) for j in range(3)]
+                img = hyp.get_rgb_image(channels_index)
+                img = img / np.max(img)
+                rgb_images.append(img)
+            else:
+                rgb_images.append(None)
+
+        # GT
+        if selected[2]:
+            rgb_images.append(self.GT.image)
+        else:
+            rgb_images.append(None)
+
+        UV = self.spec_range[0] == 'UVIS'
+        GT_solo_overlay=None
+        if not selected[2] and images_loaded[2]:
+            GT_solo_overlay=self.GT.image
+
+        self.canvas_image.load_image(rgb_images, UV=UV,GT_solo_overlay=GT_solo_overlay)
+
+        # transparence GT si activée
+        if images_loaded[2]:
+            transparency = self.horizontalSlider_transparency_GT.value() / 100.0
+            self.canvas_image.set_gt_transparency(transparency)
 
     def search_gt_in_files(self):
         path_def=""
@@ -793,12 +885,15 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
                     title='Problem to load title'
 
 
+            self.canvas_image.title_text=title
+
+
             if self.image_loaded[2]:
                 rgb_images.append(self.GT.image)
             else:
                 rgb_images.append(None)
 
-            self.canvas_image.load_image(rgb_images,title=title,UV=UV)
+            self.canvas_image.load_image(rgb_images,UV=UV)
 
         else:
             if index==1 or index ==0:
@@ -899,6 +994,7 @@ class Canvas_Image(FigureCanvas):
         self.fig=Figure(facecolor=(1, 1, 1, 0.1))
         super().__init__(self.fig)
         self.logic = parent_logic # to make a reference to Data_Viz class
+        self.title_text="" # title of the figure
         self.gs = GridSpec(2, 2, figure=self.fig)
         self.ax0 = self.fig.add_subplot(self.gs[0, 0])  # VNIR
         self.ax1 = self.fig.add_subplot(self.gs[1, 0])  # SWIR
@@ -1092,7 +1188,6 @@ class Canvas_Image(FigureCanvas):
             self.ax0 = self.fig.add_subplot(self.gs[0, :])  # VNIR
             self.ax1 = self.fig.add_subplot(self.gs[1, :])  # SWIR
 
-
         elif images==[True, False, True]:
             self.ax1 = self.fig.add_subplot(self.gs[0, 0])
             self.ax0 = self.fig.add_subplot(self.gs[:, 0])  # VNIR
@@ -1111,7 +1206,7 @@ class Canvas_Image(FigureCanvas):
         self.axs = [self.ax0, self.ax1, self.ax2]
         for ax in self.axs: ax.set_axis_off()
 
-    def load_image(self,rgb_images,title=None,UV=False):
+    def load_image(self,rgb_images,UV=False,GT_solo_overlay=None):
 
         self.images=[]
 
@@ -1135,10 +1230,15 @@ class Canvas_Image(FigureCanvas):
                     gt_overlay = self.axs[i].imshow(rgb_images[2], alpha=0)
                     self.gt_overlays.append(gt_overlay)
 
+                if i < 2 and GT_solo_overlay is not None:
+                    gt_overlay = self.axs[i].imshow(GT_solo_overlay, alpha=0)
+                    self.gt_overlays.append(gt_overlay)
+
+
             else:
                 self.images.append(None)
 
-        self.fig.suptitle(title)
+        self.fig.suptitle(self.title_text)
         self.fig.tight_layout()
 
         ## same size and centered for GT if two hypercubes images
@@ -1385,7 +1485,6 @@ class Canvas_Spectra(FigureCanvas):
 class GroundTruth:
     def __init__(self, filepath=None):
         self.filepath = filepath
-        self.data=None
         self.image=None
         self.metadata=None
         self.cmap=None
