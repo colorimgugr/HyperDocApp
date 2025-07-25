@@ -270,13 +270,9 @@ class MainApp(QtWidgets.QMainWindow):
         act_add.triggered.connect(self._on_add_cube)
         self.toolbar.addAction(act_add)
 
-        # Mise à jour du menu à chaque modification
-        self.hypercube_manager.cubesChanged.connect(self._update_cube_menu)
-        self._update_cube_menu(self.hypercube_manager.paths)
-
         # signal from register tool
         reg_widget = self.reg_dock.widget()
-        reg_widget.alignedCubeReady.connect(self.hypercube_manager.addCube)  # get signal from register tool
+        # todo : signal if registered cube save -> check if working
 
         # Save with menu
         self.saveBtn = QtWidgets.QToolButton(self)
@@ -289,7 +285,7 @@ class MainApp(QtWidgets.QMainWindow):
         self.toolbar.addWidget(self.saveBtn)
 
         # update if list modified
-        self.hypercube_manager.cubesChanged.connect(self._update_save_menu)
+        self.hypercube_manager.cubes_changed.connect(self._update_save_menu)
         self._update_save_menu(self.hypercube_manager.paths)
 
         spacer = QWidget()
@@ -302,14 +298,18 @@ class MainApp(QtWidgets.QMainWindow):
         self.toolbar.addAction(act_suggestion)
 
         #### connect tools with hypercube manager for managing changes in cubeInfoTemp
-        self.meta_dock.widget().metadataChanged.connect(self.hypercube_manager.updateMetadata)
+        self.meta_dock.widget().metadataChanged.connect(self.hypercube_manager.update_metadata)
 
-        self.reg_dock.widget().cube_saved.connect(self.hypercube_manager.add_or_update_cube)
-        self.gt_dock.widget().cube_saved.connect(self.hypercube_manager.add_or_update_cube)
+        self.reg_dock.widget().cube_saved.connect(
+            lambda ci: self.hypercube_manager.add_or_sync_cube(ci.filepath)
+        )
+        self.gt_dock.widget().cube_saved.connect(
+            lambda ci: self.hypercube_manager.add_or_sync_cube(ci.filepath)
+        )
 
-        self.hypercube_manager.metadataUpdated.connect(self.meta_dock.widget().on_metadata_updated)
-        self.hypercube_manager.metadataUpdated.connect(self.reg_dock.widget().load_cube_info)
-        self.hypercube_manager.metadataUpdated.connect(self.gt_dock.widget().load_cube_info)
+        self.hypercube_manager.metadata_updated.connect(self.meta_dock.widget().on_metadata_updated)
+        self.hypercube_manager.metadata_updated.connect(self.reg_dock.widget().load_cube_info)
+        self.hypercube_manager.metadata_updated.connect(self.gt_dock.widget().load_cube_info)
 
         self.reg_dock.widget().cubeLoaded.connect(lambda hc: self._on_tool_loaded_cube(hc, self.reg_dock.widget()))
         self.meta_dock.widget().cubeLoaded.connect(lambda hc: self._on_tool_loaded_cube(hc, self.meta_dock.widget()))
@@ -323,24 +323,6 @@ class MainApp(QtWidgets.QMainWindow):
     def open_suggestion_box(self):
         self.suggestion_window = SuggestionWidget()
         self.suggestion_window.show()
-
-    def addOrSyncCube(self, filepath: str) -> CubeInfoTemp:
-        """
-        Check if the cube is already in the manager.
-        If so, return the existing CubeInfoTemp.
-        Otherwise, load it from disk, add it to the list, and return it.
-        """
-        index = self.getIndexFromPath(filepath)
-        if index != -1:
-            return self._cubes_info_list[index]
-
-        # Cube is not in the list → load and add it
-        ci = CubeInfoTemp(filepath=filepath)
-        hc = Hypercube(filepath=filepath, cube_info=ci, load_init=True)
-        ci = hc.cube_info
-        self._cubes_info_list.append(ci)
-        self.cubesChanged.emit(self.paths)
-        return ci
 
     def onToolButtonPress(self, dock, icon_name, tooltip):
         # act = dock.toggleViewAction()
@@ -362,9 +344,7 @@ class MainApp(QtWidgets.QMainWindow):
         Called when HDF5BrowserWidget OK is pressed.
         """
 
-        self.hypercube_manager.add_or_update_cube(updated_ci)
-        self.hypercube_manager.metadataUpdated.emit(updated_ci)
-        self.hypercube_manager.cubesChanged.emit(self.hypercube_manager.paths)
+        self.hypercube_manager.metadata_updated.emit(updated_ci)
 
     def _add_dock(self, title, WidgetClass, area):
         widget = WidgetClass(parent=self)
@@ -394,10 +374,7 @@ class MainApp(QtWidgets.QMainWindow):
 
         # 3) connecte le signal accepted
         widget.accepted.connect(self._on_file_browser_accepted)
-        self.hypercube_manager.metadataUpdated.connect(widget.load_from_cubeinfo)
-        self.hypercube_manager.cubesChanged.connect(
-            lambda _: widget.load_from_cubeinfo(widget.cube_info)
-        )
+        self.hypercube_manager.metadata_updated.connect(widget.load_from_cubeinfo)
         widget.rejected.connect(lambda: None)  # si tu veux réagir à l'annulation
 
         # 4) création du dock
@@ -412,11 +389,22 @@ class MainApp(QtWidgets.QMainWindow):
         self.saveMenu.clear()
         for idx, path in enumerate(paths):
             action = QtWidgets.QAction(os.path.basename(path), self)
-            action.triggered.connect(lambda checked, i=idx: self.save_cube(i))
+            action.triggered.connect(lambda checked, p=path: self.save_cube(p))
             self.saveMenu.addAction(action)
 
-    def save_cube(self,index=None):
-        ci     = self.hypercube_manager.getCubeInfo(index)
+    def _on_cubes_changed(self, paths: list):
+        self.cubeMenu.clear()
+
+        for path in paths:
+            action = QtWidgets.QAction(Path(path).name, self)  # n’afficher que le nom de fichier
+            # stocke le chemin complet dans les data de l’action
+            action.setData(path)
+            self.cubeMenu.addAction(action)
+
+
+    def save_cube(self,filepath):
+        ci = self.hypercube_manager.add_or_sync_cube(filepath)
+        hc = self.hypercube_manager.get_loaded_cube(filepath, cube_info=ci)
 
         ans=QMessageBox.question(self,'Save modification',f"Sure to save modification on disc for the cube :\n{ci.filepath}", QMessageBox.Yes | QMessageBox.Cancel)
         if ans==QMessageBox.Cancel:
@@ -429,9 +417,14 @@ class MainApp(QtWidgets.QMainWindow):
             "ENVI header (*.hdr)"
         )
 
-        filepath_new,_ = QFileDialog.getSaveFileName(parent=self,caption="Save cube As…",filter=filters)
+        filepath_new,_ = QFileDialog.getSaveFileName(parent=self,caption="Save cube As…",directory=filepath,filter=filters)
+        hc.save(filepath=filepath_new,meta_from_cube_info=True)
 
-        Hypercube(filepath=ci.filepath,cube_info=ci,load_init=True).save(filepath=filepath_new)
+        if filepath_new!=filepath:
+            self.hypercube_manager.rename_cube(filepath, filepath_new)
+            self._update_cube_menu(self.hypercube_manager.paths)
+            ci = self.hypercube_manager.add_or_sync_cube(filepath_new)
+
         print(f"cube saves as {ci.filepath}")
 
     def _on_add_cube(self,paths=None):
@@ -454,14 +447,14 @@ class MainApp(QtWidgets.QMainWindow):
             return
 
         for path in paths:
-            ci=CubeInfoTemp(_filepath=path)
-            self.hypercube_manager.addCube(ci)
+            ci = self.hypercube_manager.add_or_sync_cube(path)
+
+        self._update_cube_menu(self.hypercube_manager.paths)
 
         if len(paths)==1:
-
-            ci = self.hypercube_manager.addOrSyncCube(paths[0])
-            index = self.hypercube_manager.getIndexFromPath(paths[0])
-            self._send_to_all(index)
+            filepath=paths[0]
+            ci = self.hypercube_manager.add_or_sync_cube(filepath)
+            hc = self.hypercube_manager.get_loaded_cube(filepath, cube_info=ci)
 
             print(f"Cube '{paths[0]}' loaded in cache for use.")
 
@@ -471,47 +464,29 @@ class MainApp(QtWidgets.QMainWindow):
                               qm.Yes | qm.No)
             if ans==qm.Yes:
                 try:
-                    index = self.hypercube_manager.getIndexFromPath(paths[0])
-                    if index != -1:
-                        self._send_to_all(index)
+                    self._send_to_all(filepath)
                 except:
                     QMessageBox.warning(self,'Cube not loaded',
-                              "Cube not loaded. Check format.")
+                              "Cube not loaded to all tools. Check format.")
 
-    def _on_get_cube_info(self, insert_index):
-        # 1) Récupère le CubeInfoTemp déjà présent
-        ci = self.hypercube_manager._cubes_info_list[insert_index]
-        filepath = ci.filepath
-        if not filepath:
-            return
-
-        # 2) Recharge les infos via Hypercube en mode init
-        hc = Hypercube(filepath=filepath, cube_info=ci, load_init=True)
-        # Optionnel : mettre à jour la forme des données pour affichage
-        ci.data_shape = getattr(hc.data, 'shape', None)
-
-        # 3) Nettoie l’objet lourd pour ne pas garder de data en mémoire
-        hc.reinit_cube()
-        del hc
-
-        # 4) Notifie la mise à jour du manager/UI
-        self.hypercube_manager.cubesChanged.emit(self.hypercube_manager.paths)
-
-    def calib_cube(self,index):
-        ci     = self.hypercube_manager.getCubeInfo(index)
-        hc = self.hypercube_manager.get_loaded_cube(ci.filepath,cube_info=ci)
+    def calib_cube(self,filepath):
+        ci = self.hypercube_manager.add_or_sync_cube(filepath)
+        hc = self.hypercube_manager.get_loaded_cube(filepath, cube_info=ci)
         hc.calibrating_from_image_extract()
 
-    def _send_to_metadata(self,index):
+    def _send_to_metadata(self,filepath):
         widget = self.meta_dock.widget()
-        ci     = self.hypercube_manager.getCubeInfo(index)
+        ci = self.hypercube_manager.add_or_sync_cube(filepath)
+        hc = self.hypercube_manager.get_loaded_cube(filepath, cube_info=ci)
+
         widget.set_cube_info(ci)
         widget.update_combo_meta(init=True)
 
-    def _send_to_gt(self,index):
+    def _send_to_gt(self,filepath):
         widget = self.gt_dock.widget()
-        ci = self.hypercube_manager.getCubeInfo(index)
-        hc = self.hypercube_manager.get_loaded_cube(ci.filepath,cube_info=ci)
+        ci = self.hypercube_manager.add_or_sync_cube(filepath)
+        hc = self.hypercube_manager.get_loaded_cube(filepath, cube_info=ci)
+
         print(f'[send GT] ci.filepath : {ci.filepath}')
         print(f'[send GT] hc.ci.filepath : {ci.filepath}')
 
@@ -521,10 +496,10 @@ class MainApp(QtWidgets.QMainWindow):
             hc.cube_info = ci
             widget.load_cube(cube_info=ci,cube=hc)
 
-    def _send_to_data_viz(self,index):
+    def _send_to_data_viz(self,filepath):
         widget = self.data_viz_dock.widget()
-        ci = self.hypercube_manager.getCubeInfo(index)
-        hc = self.hypercube_manager.get_loaded_cube(ci.filepath,cube_info=ci)
+        ci = self.hypercube_manager.add_or_sync_cube(filepath)
+        hc = self.hypercube_manager.get_loaded_cube(filepath, cube_info=ci)
         print(f'[send VIZ] ci.filepath : {ci.filepath}')
         print(f'[send VIZ] hc.ci.filepath : {ci.filepath}')
         if hc.data is None:
@@ -533,10 +508,11 @@ class MainApp(QtWidgets.QMainWindow):
             hc.cube_info = ci
             widget.open_hypercubes_and_GT(filepath=ci.filepath, cube_info=ci, cube=hc)
 
-    def _send_to_registration(self,index,imov):
+    def _send_to_registration(self,filepath,imov):
         widget = self.reg_dock.widget()
-        ci = self.hypercube_manager.getCubeInfo(index)
-        hc = self.hypercube_manager.get_loaded_cube(ci.filepath,cube_info=ci)
+        ci = self.hypercube_manager.add_or_sync_cube(filepath)
+        hc = self.hypercube_manager.get_loaded_cube(filepath, cube_info=ci)
+
         print(f'[send REG] ci.filepath : {ci.filepath}')
         print(f'[send REG] hc.ci.filepath : {ci.filepath}')
         if hc.data is None:
@@ -546,11 +522,9 @@ class MainApp(QtWidgets.QMainWindow):
             hc.cube_info = ci
             widget.load_cube(filepath=ci.filepath,cube_info=ci,i_mov=imov,cube=hc)
 
-    def _send_to_browser(self, index):
-
-        ci     = self.hypercube_manager.getCubeInfo(index)
-        ci = self.hypercube_manager.ensureLoadedCubeInfo(ci)
-
+    def _send_to_browser(self, filepath):
+        ci = self.hypercube_manager.add_or_sync_cube(filepath)
+        hc = self.hypercube_manager.get_loaded_cube(filepath, cube_info=ci)
         widget = self.file_browser_dock.widget()
 
          # 1) Ré-associe l'objet métier et le filepath
@@ -572,31 +546,39 @@ class MainApp(QtWidgets.QMainWindow):
         self.file_browser_dock.show()
         widget.show()
 
-    def _send_to_all(self,index):
+    def _send_to_all(self,filepath):
 
-        ci = self.hypercube_manager.getCubeInfo(index)
-        ci = self.hypercube_manager.ensureLoadedCubeInfo(ci)
+        ci = self.hypercube_manager.add_or_sync_cube(filepath)
+        hc = self.hypercube_manager.get_loaded_cube(filepath, cube_info=ci)
 
-        self._send_to_data_viz(index)
-        self._send_to_gt(index)
-        self._send_to_metadata(index)
-        self._send_to_registration(index,1)
-        self._send_to_browser(index)
+        self._send_to_data_viz(filepath)
+        self._send_to_gt(filepath)
+        self._send_to_metadata(filepath)
+        self._send_to_registration(filepath,1)
+        self._send_to_browser(filepath)
 
     @QtCore.pyqtSlot(object, object)
-    def _on_tool_loaded_cube(self, hc, tool_widget):
+    def _on_tool_loaded_cube(self, hc: Hypercube, tool_widget):
+        # Chemin résolu du cube
+        path = hc.filepath
 
-        ci = hc.cube_info
-        added = self.hypercube_manager.addCube(ci)
+        # Détecte si le cube existait déjà
+        already_registered = path in self.hypercube_manager.paths
 
-        self.hypercube_manager._cube_cache[ci.filepath] = hc
-        self.hypercube_manager._cube_cache.move_to_end(ci.filepath)
-        self.hypercube_manager.add_to_cache(hc)
+        # 1) Récupère ou crée le CubeInfoTemp « officiel »
+        ci = self.hypercube_manager.add_or_sync_cube(path)
 
-        print(f"[MainWindow] Cube loaded from {tool_widget.__class__.__name__}: {ci.filepath}")
+        # 2) Fait pointer l'objet Hypercube sur ce ci
+        hc.cube_info = ci
 
-        if not added:
-            print(f"[MainWindow] Cube already present in list: {ci.filepath}")
+        # 3) Enregistre le Hypercube dans le cache LRU du manager
+        #    (get_loaded_cube va le charger s'il n'y est pas déjà)
+        self.hypercube_manager.get_loaded_cube(path, cube_info=ci)
+
+        # 4) Notification utilisateur / log
+        print(f"[MainWindow] Cube loaded from {tool_widget.__class__.__name__}: {path}")
+        if already_registered:
+            print(f"[MainWindow] Cube already present in list: {path}")
 
     def _update_cube_menu(self, paths):
         """Met à jour le menu de cubes avec sous-menus et actions fonctionnelles."""
@@ -605,7 +587,7 @@ class MainApp(QtWidgets.QMainWindow):
             sub = QtWidgets.QMenu(path, self)
             # send to tools
             act_all = QtWidgets.QAction("Send to All tools", self)
-            act_all.triggered.connect(lambda checked, i=idx: self._send_to_all(i))
+            act_all.triggered.connect(lambda checked, p=path: self._send_to_all(p))
             sub.addAction(act_all)
 
             # Séparateur
@@ -613,57 +595,61 @@ class MainApp(QtWidgets.QMainWindow):
 
             # Envoyer au dock viz
             act_viz = QtWidgets.QAction("Send to Vizualisation tool", self)
-            act_viz.triggered.connect(lambda checked, i=idx: self._send_to_data_viz(i))
+            act_viz.triggered.connect(lambda checked, p=path: self._send_to_data_viz(p))
             sub.addAction(act_viz)
             # Envoyer au dock reg
             menu_load_reg=QtWidgets.QMenu("Send to Register Tool", sub)
             act_fix = QtWidgets.QAction("Fixed Cube", self)
             act_fix.triggered.connect(
-                lambda _, i=idx: self._send_to_registration(i,0)
+                lambda _, p=path: self._send_to_registration(p,0)
             )
             menu_load_reg.addAction(act_fix)
             # Action Moving
             act_mov = QtWidgets.QAction("Moving Cube", self)
             act_mov.triggered.connect(
-                lambda _, i=idx:  self._send_to_registration(i,1)
+                lambda _, p=path:  self._send_to_registration(p,1)
             )
             menu_load_reg.addAction(act_mov)
             sub.addMenu(menu_load_reg)
 
             # send to file browser
             act_browser = QtWidgets.QAction("Send to File Browser", self)
-            act_browser.triggered.connect(lambda checked, i=idx: self._send_to_browser(i))
+            act_browser.triggered.connect(lambda checked, p=path: self._send_to_browser(p))
             sub.addAction(act_browser)
 
             # Envoyer au dock metadata
             act_meta = QtWidgets.QAction("Send to Metadata", self)
-            act_meta.triggered.connect(lambda checked, i=idx: self._send_to_metadata(i))
+            act_meta.triggered.connect(lambda checked, p=path: self._send_to_metadata(p))
             sub.addAction(act_meta)
 
             # Envoyer au dock gt
             act_gt = QtWidgets.QAction("Send to GT", self)
-            act_gt.triggered.connect(lambda checked, i=idx: self._send_to_gt(i))
+            act_gt.triggered.connect(lambda checked, p=path: self._send_to_gt(p))
             sub.addAction(act_gt)
 
             # White calibration
             sub.addSeparator()
             act_calib = QtWidgets.QAction("Process white calibration", self)
-            act_calib.triggered.connect(lambda checked, i=idx: self.calib_cube(i))
+            act_calib.triggered.connect(lambda checked, p=path: self.calib_cube(p))
             sub.addAction(act_calib)
 
             # Save Cube
             sub.addSeparator()
             act_save = QtWidgets.QAction("Save modification to disc", self)
-            act_save.triggered.connect(lambda checked, i=idx: self.save_cube(i))
+            act_save.triggered.connect(lambda checked, p=path: self.save_cube(p))
             sub.addAction(act_save)
 
             sub.addSeparator()
             # Quit from list
             act_rm = QtWidgets.QAction("Remove from list", self)
-            act_rm.triggered.connect(lambda checked, i=idx: self.hypercube_manager.removeCube(i))
+            act_rm.triggered.connect(lambda checked, p=path: self.remove_cube(p))
             sub.addAction(act_rm)
             # Ajouter sous-menu au menu principal
             self.cubeMenu.addMenu(sub)
+
+    def remove_cube(self,filepath):
+        self.hypercube_manager.remove_cube(filepath)
+        self._update_cube_menu(self.hypercube_manager.paths)
 
     def closeEvent(self, event):
         reply = QMessageBox.question(

@@ -74,7 +74,6 @@ def find_paired_cube_path(current_path):
 
 class RegistrationApp(QMainWindow, Ui_MainWindow):
 
-    alignedCubeReady = pyqtSignal(CubeInfoTemp) # send signal to main
     cubeLoaded = QtCore.pyqtSignal(Hypercube)
     cube_saved = pyqtSignal(CubeInfoTemp)
 
