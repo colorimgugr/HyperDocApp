@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>522</width>
-    <height>362</height>
+    <width>494</width>
+    <height>556</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -92,7 +92,7 @@
      <item>
       <widget class="QLabel" name="labelMeta">
        <property name="text">
-        <string>Metadata Path :</string>
+        <string>Metadata path :</string>
        </property>
       </widget>
      </item>
@@ -107,6 +107,31 @@
       <widget class="QPushButton" name="btn_select_meta">
        <property name="text">
         <string>→ Metadata</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="layoutMeta_2">
+     <item>
+      <widget class="QLabel" name="labelgtmap">
+       <property name="text">
+        <string>GT map path :</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLineEdit" name="le_gtmap">
+       <property name="readOnly">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="btn_select_gtmap">
+       <property name="text">
+        <string>→ GT map</string>
        </property>
       </widget>
      </item>

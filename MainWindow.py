@@ -216,6 +216,9 @@ class MainApp(QtWidgets.QMainWindow):
             "padding_left": 4
         }
 
+        # Hypercube Manager
+        self.hypercube_manager = HypercubeManager()
+
         # make left docks with meta and file browser
         self.file_browser_dock = self._add_file_browser_dock() # left dock with file browser
         self.file_browser_dock.setVisible(False) # raise meta and "hide in tab" file browser
@@ -261,10 +264,6 @@ class MainApp(QtWidgets.QMainWindow):
         # Création du menu hiérarchique
         self.cubeMenu = QtWidgets.QMenu(self)
         self.cubeBtn.setMenu(self.cubeMenu)
-
-        # Hypercube Manager
-        self.hypercube_manager = HypercubeManager()
-
 
         # Action Add File in list of cubes
         act_add = QAction("Open new cube(s)", self)
@@ -357,37 +356,15 @@ class MainApp(QtWidgets.QMainWindow):
         self.toolbar.addAction(act)
         return act
 
+    @QtCore.pyqtSlot(CubeInfoTemp)
     def _on_file_browser_accepted(self, updated_ci: CubeInfoTemp):
-        '''
-        get OK pressed button of browser with
-        '''
+        """
+        Called when HDF5BrowserWidget OK is pressed.
+        """
+
+        self.hypercube_manager.add_or_update_cube(updated_ci)
+        self.hypercube_manager.metadataUpdated.emit(updated_ci)
         self.hypercube_manager.cubesChanged.emit(self.hypercube_manager.paths)
-
-    def _open_file_browser_for_index(self, index: int):
-        """
-        Injecte le CubeInfoTemp existant dans le widget,
-        pré-remplit les champs, recharge l'arbre et l'affiche.
-        """
-        ci     = self.hypercube_manager.getCubeInfo(index)
-        widget = self.file_browser_dock.widget()
-
-        # 1) Ré-associe l'objet métier et le filepath
-        widget.cube_info = ci
-        widget.filepath  = ci.filepath
-
-        # 2) Pré-remplissage des QLineEdit
-        widget.le_cube.setText       (ci.data_path       or "")
-        widget.le_wl.setText         (ci.wl_path         or "")
-        widget.le_meta.setText       (ci.metadata_path   or "")
-        # comboBox_channel_wl : 0 = First, 1 = Other (à ajuster)
-        widget.comboBox_channel_wl.setCurrentIndex(0 if ci.wl_trans else 1)
-
-        # 3) Rebuild de l'arbre HDF5/MAT
-        widget._load_file()
-
-        # 4) Affichage du dock
-        self.file_browser_dock.show()
-        widget.show()
 
     def _add_dock(self, title, WidgetClass, area):
         widget = WidgetClass(parent=self)
@@ -412,10 +389,15 @@ class MainApp(QtWidgets.QMainWindow):
             cube_info=ci,
             filepath=None,
             parent=self,
-            closable=True
+            closable=False
         )
+
         # 3) connecte le signal accepted
         widget.accepted.connect(self._on_file_browser_accepted)
+        self.hypercube_manager.metadataUpdated.connect(widget.load_from_cubeinfo)
+        self.hypercube_manager.cubesChanged.connect(
+            lambda _: widget.load_from_cubeinfo(widget.cube_info)
+        )
         widget.rejected.connect(lambda: None)  # si tu veux réagir à l'annulation
 
         # 4) création du dock
@@ -477,7 +459,10 @@ class MainApp(QtWidgets.QMainWindow):
 
         if len(paths)==1:
 
-            self.hypercube_manager.get_loaded_cube(paths[0]) #send to cache
+            ci = self.hypercube_manager.addOrSyncCube(paths[0])
+            index = self.hypercube_manager.getIndexFromPath(paths[0])
+            self._send_to_all(index)
+
             print(f"Cube '{paths[0]}' loaded in cache for use.")
 
             qm = QMessageBox()
@@ -561,12 +546,42 @@ class MainApp(QtWidgets.QMainWindow):
             hc.cube_info = ci
             widget.load_cube(filepath=ci.filepath,cube_info=ci,i_mov=imov,cube=hc)
 
+    def _send_to_browser(self, index):
+
+        ci     = self.hypercube_manager.getCubeInfo(index)
+        ci = self.hypercube_manager.ensureLoadedCubeInfo(ci)
+
+        widget = self.file_browser_dock.widget()
+
+         # 1) Ré-associe l'objet métier et le filepath
+        widget.cube_info = ci
+        widget.filepath  = ci.filepath
+
+        # 2) Pré-remplissage des QLineEdit
+        widget.le_cube.setText(ci.data_path       or "")
+        widget.le_wl.setText(ci.wl_path         or "")
+        widget.le_meta.setText(ci.metadata_path   or "")
+        widget.le_gtmap.setText (ci.gtmap_path or "")
+        # comboBox_channel_wl : 0 = First, 1 = Other (à ajuster)
+        widget.comboBox_channel_wl.setCurrentIndex(0 if ci.wl_trans else 1)
+
+        # 3) Rebuild de l'arbre HDF5/MAT
+        widget._load_file()
+
+        # 4) Affichage du dock
+        self.file_browser_dock.show()
+        widget.show()
+
     def _send_to_all(self,index):
+
+        ci = self.hypercube_manager.getCubeInfo(index)
+        ci = self.hypercube_manager.ensureLoadedCubeInfo(ci)
 
         self._send_to_data_viz(index)
         self._send_to_gt(index)
         self._send_to_metadata(index)
         self._send_to_registration(index,1)
+        self._send_to_browser(index)
 
     @QtCore.pyqtSlot(object, object)
     def _on_tool_loaded_cube(self, hc, tool_widget):
@@ -587,9 +602,8 @@ class MainApp(QtWidgets.QMainWindow):
         """Met à jour le menu de cubes avec sous-menus et actions fonctionnelles."""
         self.cubeMenu.clear()
         for idx, path in enumerate(paths):
-            # Sous-menu pour chaque cube
             sub = QtWidgets.QMenu(path, self)
-            # Envoyer dant tous les docs
+            # send to tools
             act_all = QtWidgets.QAction("Send to All tools", self)
             act_all.triggered.connect(lambda checked, i=idx: self._send_to_all(i))
             sub.addAction(act_all)
@@ -618,7 +632,7 @@ class MainApp(QtWidgets.QMainWindow):
 
             # send to file browser
             act_browser = QtWidgets.QAction("Send to File Browser", self)
-            act_browser.triggered.connect(lambda checked, i=idx: self._open_file_browser_for_index(i))
+            act_browser.triggered.connect(lambda checked, i=idx: self._send_to_browser(i))
             sub.addAction(act_browser)
 
             # Envoyer au dock metadata
@@ -663,6 +677,8 @@ class MainApp(QtWidgets.QMainWindow):
             event.accept()  # Proceed with closing the app
         else:
             event.ignore()  # Cancel the close event
+
+#todo : ask if cube associated when saving GT
 
 # Configure error logging
 # Get absolute path of log folder (support PyInstaller frozen mode)
@@ -791,8 +807,6 @@ def check_resolution_change():
         if current_width != last_width:
             update_font(app, current_width)
             last_width = current_width
-    else:
-        print("[⚠️] Fenêtre en dehors de tout écran détecté. Résolution inchangée.")
 
 if __name__ == "__main__":
 
@@ -808,8 +822,8 @@ if __name__ == "__main__":
 
     try:
         import matlab.engine
-
         print(" [ :-) ] matlab.engine loaded with success")
+
     except Exception as e:
         print(f" [ !!! ] Failed to load matlab.engine: {e}")
 

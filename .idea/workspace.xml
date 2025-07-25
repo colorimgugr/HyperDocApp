@@ -4,11 +4,21 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="[Main]+[Hypercube]&#10;Gestion du cache a priori sans nouveau bugg - cubeLoaded.emit(Hyeprcube)&#10;Calibration white OK with graph to vizualize.">
+    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="[Data Viz] : one or three iamges + transorm">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/MainWindow.py" beforeDir="false" afterPath="$PROJECT_DIR$/MainWindow.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/data_vizualisation/data_vizualisation_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/data_vizualisation/data_vizualisation_tool.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/data_vizualisation/data_vizualisation_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/data_vizualisation/data_vizualisation_window.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/data_vizualisation/data_vizualisation_window.ui" beforeDir="false" afterPath="$PROJECT_DIR$/data_vizualisation/data_vizualisation_window.ui" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ground_truth/ground_truth_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/ground_truth/ground_truth_tool.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ground_truth/ground_truth_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/ground_truth/ground_truth_window.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ground_truth/ground_truth_window.ui" beforeDir="false" afterPath="$PROJECT_DIR$/ground_truth/ground_truth_window.ui" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hypercubes/HDF5BrowserWidget.ui" beforeDir="false" afterPath="$PROJECT_DIR$/hypercubes/hdf5_browser_window.ui" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hypercubes/hdf5_browser_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/hypercubes/hdf5_browser_tool.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hypercubes/hypercube.py" beforeDir="false" afterPath="$PROJECT_DIR$/hypercubes/hypercube.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/interface/hypercube_manager.py" beforeDir="false" afterPath="$PROJECT_DIR$/interface/hypercube_manager.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/metadata/metadata_dock.py" beforeDir="false" afterPath="$PROJECT_DIR$/metadata/metadata_dock.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/metadata/metadata_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/metadata/metadata_tool.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -135,14 +145,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1744020944801</updated>
-    </task>
-    <task id="LOCAL-00022" summary="Gestion par CubeInfoTemp des infos des cubes pseudo chargés">
-      <option name="closed" value="true" />
-      <created>1747225537795</created>
-      <option name="number" value="00022" />
-      <option name="presentableId" value="LOCAL-00022" />
-      <option name="project" value="LOCAL" />
-      <updated>1747225537795</updated>
     </task>
     <task id="LOCAL-00023" summary="Gestion par CubeInfoTemp des infos des cubes pseudo chargés - extension au MainWindow">
       <option name="closed" value="true" />
@@ -528,7 +530,15 @@
       <option name="project" value="LOCAL" />
       <updated>1753105422412</updated>
     </task>
-    <option name="localTasksCounter" value="71" />
+    <task id="LOCAL-00071" summary="[Data Viz] : one or three iamges + transorm">
+      <option name="closed" value="true" />
+      <created>1753362586592</created>
+      <option name="number" value="00071" />
+      <option name="presentableId" value="LOCAL-00071" />
+      <option name="project" value="LOCAL" />
+      <updated>1753362586593</updated>
+    </task>
+    <option name="localTasksCounter" value="72" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -580,7 +590,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Bugg of metadata loading finally fixed :-p" />
     <MESSAGE value="Loading GT_tool with cubeInfo&#10;GT tool inserted in main" />
     <MESSAGE value="Back to main organisation&#10;Ground Truth tool operationnel" />
     <MESSAGE value="added" />
@@ -605,6 +614,7 @@
     <MESSAGE value="Cube_info.pathS homogene pour tous les outils -&gt; mise en memoire choix browser&#10;Envi files ok for reading" />
     <MESSAGE value="[Hypercube] -&gt; Calibration window OK.&#10;Add : white from norway and load file .txt" />
     <MESSAGE value="[Main]+[Hypercube]&#10;Gestion du cache a priori sans nouveau bugg - cubeLoaded.emit(Hyeprcube)&#10;Calibration white OK with graph to vizualize." />
-    <option name="LAST_COMMIT_MESSAGE" value="[Main]+[Hypercube]&#10;Gestion du cache a priori sans nouveau bugg - cubeLoaded.emit(Hyeprcube)&#10;Calibration white OK with graph to vizualize." />
+    <MESSAGE value="[Data Viz] : one or three iamges + transorm" />
+    <option name="LAST_COMMIT_MESSAGE" value="[Data Viz] : one or three iamges + transorm" />
   </component>
 </project>

@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1023</width>
-    <height>796</height>
+    <width>1027</width>
+    <height>805</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -157,7 +157,7 @@
         <property name="frameShadow">
          <enum>QFrame::Raised</enum>
         </property>
-        <layout class="QHBoxLayout" name="horizontalLayout_3" stretch="0,1,3">
+        <layout class="QHBoxLayout" name="horizontalLayout_3" stretch="3,1,2">
          <property name="spacing">
           <number>0</number>
          </property>
@@ -188,114 +188,24 @@
             <property name="sizeConstraint">
              <enum>QLayout::SetDefaultConstraint</enum>
             </property>
-            <item row="0" column="0">
-             <layout class="QGridLayout" name="gridLayout_RGBchannels">
-              <item row="0" column="1">
-               <widget class="QSpinBox" name="spinBox_red_channel">
-                <property name="maximum">
-                 <number>149</number>
-                </property>
-                <property name="singleStep">
-                 <number>1</number>
-                </property>
-                <property name="value">
-                 <number>0</number>
-                </property>
-               </widget>
-              </item>
-              <item row="0" column="2">
-               <widget class="QSlider" name="horizontalSlider_red_channel">
-                <property name="maximum">
-                 <number>149</number>
-                </property>
-                <property name="value">
-                 <number>0</number>
-                </property>
-                <property name="orientation">
-                 <enum>Qt::Horizontal</enum>
-                </property>
-               </widget>
-              </item>
-              <item row="2" column="2">
-               <widget class="QSlider" name="horizontalSlider_blue_channel">
-                <property name="maximum">
-                 <number>149</number>
-                </property>
-                <property name="value">
-                 <number>0</number>
-                </property>
-                <property name="orientation">
-                 <enum>Qt::Horizontal</enum>
-                </property>
-               </widget>
-              </item>
-              <item row="0" column="0">
-               <widget class="QLabel" name="label_red_channel">
-                <property name="text">
-                 <string>Red</string>
-                </property>
-                <property name="alignment">
-                 <set>Qt::AlignCenter</set>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="1">
-               <widget class="QSpinBox" name="spinBox_green_channel">
-                <property name="maximum">
-                 <number>149</number>
-                </property>
-                <property name="value">
-                 <number>0</number>
-                </property>
-               </widget>
-              </item>
-              <item row="2" column="1">
-               <widget class="QSpinBox" name="spinBox_blue_channel">
-                <property name="maximum">
-                 <number>149</number>
-                </property>
-                <property name="value">
-                 <number>0</number>
-                </property>
-               </widget>
-              </item>
-              <item row="2" column="0">
-               <widget class="QLabel" name="label_blue_channel">
-                <property name="text">
-                 <string>Blue</string>
-                </property>
-                <property name="alignment">
-                 <set>Qt::AlignCenter</set>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="0">
-               <widget class="QLabel" name="label_green_channel">
-                <property name="text">
-                 <string>Green</string>
-                </property>
-                <property name="alignment">
-                 <set>Qt::AlignCenter</set>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="2">
-               <widget class="QSlider" name="horizontalSlider_green_channel">
-                <property name="maximum">
-                 <number>149</number>
-                </property>
-                <property name="value">
-                 <number>0</number>
-                </property>
-                <property name="orientation">
-                 <enum>Qt::Horizontal</enum>
-                </property>
-               </widget>
-              </item>
-             </layout>
+            <item row="1" column="2">
+             <spacer name="verticalSpacer_3">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>40</height>
+               </size>
+              </property>
+             </spacer>
             </item>
-            <item row="0" column="1">
+            <item row="0" column="3">
              <widget class="QGroupBox" name="groupBox_image_visible">
+              <property name="toolTip">
+               <string>Choose to visualize onf image of all.</string>
+              </property>
               <property name="title">
                <string>Image visible</string>
               </property>
@@ -320,188 +230,208 @@
               </layout>
              </widget>
             </item>
-            <item row="1" column="1">
-             <spacer name="verticalSpacer_3">
-              <property name="orientation">
-               <enum>Qt::Vertical</enum>
+            <item row="0" column="0" colspan="3">
+             <widget class="QGroupBox" name="groupBox_image_type">
+              <property name="toolTip">
+               <string>Color mode for cube representation</string>
               </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>20</width>
-                <height>40</height>
-               </size>
-              </property>
-             </spacer>
-            </item>
-            <item row="4" column="0">
-             <layout class="QHBoxLayout" name="horizontalLayout_4" stretch="3,1,0,1">
-              <item>
-               <widget class="QGroupBox" name="groupBox_image_type">
-                <property name="title">
-                 <string>Image Choice</string>
-                </property>
-                <layout class="QVBoxLayout" name="verticalLayout_3" stretch="0,0,0">
-                 <item>
-                  <widget class="QRadioButton" name="radioButton_rgb_default">
-                   <property name="text">
-                    <string>RGB default</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QRadioButton" name="radioButton_rgb_user">
-                   <property name="enabled">
-                    <bool>true</bool>
-                   </property>
-                   <property name="text">
-                    <string>RGB user</string>
-                   </property>
-                   <property name="checked">
-                    <bool>true</bool>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QRadioButton" name="radioButton_grayscale">
-                   <property name="text">
-                    <string>Grayscale</string>
-                   </property>
-                  </widget>
-                 </item>
-                </layout>
-               </widget>
-              </item>
-              <item>
-               <spacer name="horizontalSpacer_2">
-                <property name="orientation">
-                 <enum>Qt::Horizontal</enum>
-                </property>
-                <property name="sizeHint" stdset="0">
-                 <size>
-                  <width>40</width>
-                  <height>20</height>
-                 </size>
-                </property>
-               </spacer>
-              </item>
-              <item>
-               <layout class="QGridLayout" name="gridLayout_2" columnstretch="1,0,0,0">
-                <item row="1" column="3">
-                 <widget class="QLabel" name="label">
-                  <property name="text">
-                   <string>%</string>
-                  </property>
-                 </widget>
-                </item>
-                <item row="1" column="1">
-                 <widget class="QLabel" name="label_transparency">
-                  <property name="text">
-                   <string>GT Transparency =</string>
-                  </property>
-                  <property name="alignment">
-                   <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-                  </property>
-                 </widget>
-                </item>
-                <item row="2" column="1" colspan="3">
-                 <widget class="QSlider" name="horizontalSlider_transparency_GT">
-                  <property name="maximum">
-                   <number>100</number>
-                  </property>
-                  <property name="value">
-                   <number>0</number>
-                  </property>
-                  <property name="sliderPosition">
-                   <number>0</number>
-                  </property>
-                  <property name="orientation">
-                   <enum>Qt::Horizontal</enum>
-                  </property>
-                 </widget>
-                </item>
-                <item row="1" column="2">
-                 <widget class="QLabel" name="label_transparency_value">
-                  <property name="text">
-                   <string>0</string>
-                  </property>
-                  <property name="alignment">
-                   <set>Qt::AlignCenter</set>
-                  </property>
-                 </widget>
-                </item>
-                <item row="3" column="1" colspan="3">
-                 <widget class="QPushButton" name="pushButton_search_GT_files">
-                  <property name="text">
-                   <string>Search GT in files</string>
-                  </property>
-                 </widget>
-                </item>
-                <item row="0" column="1">
-                 <spacer name="verticalSpacer">
-                  <property name="orientation">
-                   <enum>Qt::Vertical</enum>
-                  </property>
-                  <property name="sizeHint" stdset="0">
-                   <size>
-                    <width>20</width>
-                    <height>40</height>
-                   </size>
-                  </property>
-                 </spacer>
-                </item>
-                <item row="4" column="1">
-                 <spacer name="verticalSpacer_2">
-                  <property name="orientation">
-                   <enum>Qt::Vertical</enum>
-                  </property>
-                  <property name="sizeHint" stdset="0">
-                   <size>
-                    <width>20</width>
-                    <height>40</height>
-                   </size>
-                  </property>
-                 </spacer>
-                </item>
-               </layout>
-              </item>
-              <item>
-               <spacer name="horizontalSpacer_3">
-                <property name="orientation">
-                 <enum>Qt::Horizontal</enum>
-                </property>
-                <property name="sizeHint" stdset="0">
-                 <size>
-                  <width>40</width>
-                  <height>20</height>
-                 </size>
-                </property>
-               </spacer>
-              </item>
-             </layout>
-            </item>
-            <item row="4" column="1">
-             <widget class="QGroupBox" name="groupBox_3">
               <property name="title">
-               <string>Transform</string>
+               <string>Image Color Mode</string>
               </property>
-              <layout class="QVBoxLayout" name="verticalLayout_8">
-               <item>
-                <widget class="QPushButton" name="pushButton_rotate">
-                 <property name="autoFillBackground">
-                  <bool>false</bool>
+              <layout class="QGridLayout" name="gridLayout_4">
+               <item row="1" column="3">
+                <widget class="QSpinBox" name="spinBox_green_channel">
+                 <property name="maximum">
+                  <number>149</number>
                  </property>
-                 <property name="styleSheet">
-                  <string notr="true">font: 14pt &quot;Trebuchet MS&quot;;</string>
+                 <property name="value">
+                  <number>0</number>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="0">
+                <widget class="QRadioButton" name="radioButton_rgb_default">
+                 <property name="toolTip">
+                  <string/>
                  </property>
                  <property name="text">
-                  <string notr="true">⟳</string>
+                  <string>RGB default</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="2">
+                <widget class="QLabel" name="label_green_channel">
+                 <property name="text">
+                  <string>Green</string>
+                 </property>
+                 <property name="alignment">
+                  <set>Qt::AlignCenter</set>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="3">
+                <widget class="QSpinBox" name="spinBox_blue_channel">
+                 <property name="maximum">
+                  <number>149</number>
+                 </property>
+                 <property name="value">
+                  <number>0</number>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="4">
+                <widget class="QSlider" name="horizontalSlider_green_channel">
+                 <property name="maximum">
+                  <number>149</number>
+                 </property>
+                 <property name="value">
+                  <number>0</number>
+                 </property>
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="2">
+                <widget class="QLabel" name="label_blue_channel">
+                 <property name="text">
+                  <string>Blue</string>
+                 </property>
+                 <property name="alignment">
+                  <set>Qt::AlignCenter</set>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="1">
+                <spacer name="horizontalSpacer">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+               <item row="0" column="3">
+                <widget class="QSpinBox" name="spinBox_red_channel">
+                 <property name="maximum">
+                  <number>149</number>
+                 </property>
+                 <property name="singleStep">
+                  <number>1</number>
+                 </property>
+                 <property name="value">
+                  <number>0</number>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="4">
+                <widget class="QSlider" name="horizontalSlider_red_channel">
+                 <property name="maximum">
+                  <number>149</number>
+                 </property>
+                 <property name="value">
+                  <number>0</number>
+                 </property>
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="0">
+                <widget class="QRadioButton" name="radioButton_rgb_user">
+                 <property name="enabled">
+                  <bool>true</bool>
+                 </property>
+                 <property name="text">
+                  <string>RGB user</string>
+                 </property>
+                 <property name="checked">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="0">
+                <widget class="QRadioButton" name="radioButton_grayscale">
+                 <property name="text">
+                  <string>Grayscale</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="4">
+                <widget class="QSlider" name="horizontalSlider_blue_channel">
+                 <property name="maximum">
+                  <number>149</number>
+                 </property>
+                 <property name="value">
+                  <number>0</number>
+                 </property>
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="2">
+                <widget class="QLabel" name="label_red_channel">
+                 <property name="text">
+                  <string>Red</string>
+                 </property>
+                 <property name="alignment">
+                  <set>Qt::AlignCenter</set>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="5">
+                <spacer name="horizontalSpacer_2">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item row="2" column="3">
+             <widget class="QGroupBox" name="groupBox_3">
+              <property name="title">
+               <string>Transform images</string>
+              </property>
+              <layout class="QHBoxLayout" name="horizontalLayout_8">
+               <item>
+                <widget class="QPushButton" name="pushButton_flip_h">
+                 <property name="baseSize">
+                  <size>
+                   <width>16</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                 <property name="toolTip">
+                  <string>Flip cube hoizontaly</string>
+                 </property>
+                 <property name="styleSheet">
+                  <string notr="true">font: 12pt &quot;Trebuchet MS&quot;;</string>
+                 </property>
+                 <property name="text">
+                  <string>↔</string>
                  </property>
                 </widget>
                </item>
                <item>
                 <widget class="QPushButton" name="pushButton_flip_v">
+                 <property name="toolTip">
+                  <string>Flip cube verticaly</string>
+                 </property>
                  <property name="styleSheet">
-                  <string notr="true">font: 14pt &quot;Trebuchet MS&quot;;</string>
+                  <string notr="true">font: 12pt &quot;Trebuchet MS&quot;;</string>
                  </property>
                  <property name="text">
                   <string>↕</string>
@@ -509,20 +439,157 @@
                 </widget>
                </item>
                <item>
-                <widget class="QPushButton" name="pushButton_flip_h">
-                 <property name="baseSize">
-                  <size>
-                   <width>16</width>
-                   <height>16</height>
-                  </size>
+                <widget class="QPushButton" name="pushButton_rotate">
+                 <property name="toolTip">
+                  <string>Rotate cube</string>
+                 </property>
+                 <property name="autoFillBackground">
+                  <bool>false</bool>
                  </property>
                  <property name="styleSheet">
-                  <string notr="true">font: 14pt &quot;Trebuchet MS&quot;;</string>
+                  <string notr="true">font: 12pt &quot;Trebuchet MS&quot;;</string>
                  </property>
                  <property name="text">
-                  <string>↔</string>
+                  <string notr="true">⟲</string>
                  </property>
                 </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item row="2" column="0" colspan="3">
+             <widget class="QGroupBox" name="groupBox_4">
+              <property name="title">
+               <string>Ground Truth</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+              </property>
+              <layout class="QHBoxLayout" name="horizontalLayout_9">
+               <item>
+                <spacer name="horizontalSpacer_5">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+               <item>
+                <layout class="QGridLayout" name="gridLayout_2" columnstretch="1,0,0,0">
+                 <item row="1" column="3">
+                  <widget class="QLabel" name="label">
+                   <property name="text">
+                    <string>%</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="1" column="1">
+                  <widget class="QLabel" name="label_transparency">
+                   <property name="text">
+                    <string>GT Transparency =</string>
+                   </property>
+                   <property name="alignment">
+                    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="2" column="1" colspan="3">
+                  <widget class="QSlider" name="horizontalSlider_transparency_GT">
+                   <property name="toolTip">
+                    <string>Choose transparancy of GT overlay on cube image</string>
+                   </property>
+                   <property name="maximum">
+                    <number>100</number>
+                   </property>
+                   <property name="value">
+                    <number>0</number>
+                   </property>
+                   <property name="sliderPosition">
+                    <number>0</number>
+                   </property>
+                   <property name="orientation">
+                    <enum>Qt::Horizontal</enum>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="1" column="2">
+                  <widget class="QLabel" name="label_transparency_value">
+                   <property name="text">
+                    <string>0</string>
+                   </property>
+                   <property name="alignment">
+                    <set>Qt::AlignCenter</set>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="0" column="1">
+                  <spacer name="verticalSpacer">
+                   <property name="orientation">
+                    <enum>Qt::Vertical</enum>
+                   </property>
+                   <property name="sizeHint" stdset="0">
+                    <size>
+                     <width>20</width>
+                     <height>40</height>
+                    </size>
+                   </property>
+                  </spacer>
+                 </item>
+                 <item row="4" column="1">
+                  <spacer name="verticalSpacer_2">
+                   <property name="orientation">
+                    <enum>Qt::Vertical</enum>
+                   </property>
+                   <property name="sizeHint" stdset="0">
+                    <size>
+                     <width>20</width>
+                     <height>40</height>
+                    </size>
+                   </property>
+                  </spacer>
+                 </item>
+                </layout>
+               </item>
+               <item>
+                <spacer name="horizontalSpacer_4">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+               <item>
+                <widget class="QPushButton" name="pushButton_search_GT_files">
+                 <property name="toolTip">
+                  <string>Load GT image from file</string>
+                 </property>
+                 <property name="text">
+                  <string>Search GT in files</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <spacer name="horizontalSpacer_3">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
                </item>
               </layout>
              </widget>
@@ -542,27 +609,54 @@
             <enum>QFrame::Raised</enum>
            </property>
            <layout class="QGridLayout" name="gridLayout">
-            <item row="4" column="0" colspan="3">
-             <widget class="QLabel" name="label_general_message">
+            <item row="3" column="2" colspan="2">
+             <widget class="QPushButton" name="pushButton_save_image">
+              <property name="toolTip">
+               <string>Save actual figure of the cube(s)</string>
+              </property>
               <property name="styleSheet">
                <string notr="true"/>
               </property>
-              <property name="frameShape">
-               <enum>QFrame::StyledPanel</enum>
-              </property>
               <property name="text">
-               <string/>
+               <string>Save Image</string>
               </property>
-              <property name="alignment">
-               <set>Qt::AlignCenter</set>
-              </property>
-              <property name="wordWrap">
-               <bool>true</bool>
+              <property name="autoExclusive">
+               <bool>false</bool>
               </property>
              </widget>
             </item>
-            <item row="1" column="0" rowspan="3">
+            <item row="2" column="3">
+             <widget class="QPushButton" name="pushButton_next_cube">
+              <property name="text">
+               <string>&gt;</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="2">
+             <widget class="QPushButton" name="pushButton_prev_cube">
+              <property name="text">
+               <string>&lt;</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="2" colspan="2">
+             <widget class="QPushButton" name="pushButton_open_hypercube">
+              <property name="styleSheet">
+               <string notr="true"/>
+              </property>
+              <property name="text">
+               <string>Open Cubes</string>
+              </property>
+              <property name="autoExclusive">
+               <bool>false</bool>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1" rowspan="3">
              <widget class="QGroupBox" name="groupBox_ActiceHyp">
+              <property name="toolTip">
+               <string>Choose which cube will be active for color choice and metadata visualisation.</string>
+              </property>
               <property name="title">
                <string>Active Hyp</string>
               </property>
@@ -597,43 +691,22 @@
               </layout>
              </widget>
             </item>
-            <item row="1" column="1" colspan="2">
-             <widget class="QPushButton" name="pushButton_open_hypercube">
+            <item row="4" column="1" colspan="3">
+             <widget class="QLabel" name="label_general_message">
               <property name="styleSheet">
                <string notr="true"/>
               </property>
-              <property name="text">
-               <string>Open Cubes</string>
-              </property>
-              <property name="autoExclusive">
-               <bool>false</bool>
-              </property>
-             </widget>
-            </item>
-            <item row="2" column="2">
-             <widget class="QPushButton" name="pushButton_next_cube">
-              <property name="text">
-               <string>&gt;</string>
-              </property>
-             </widget>
-            </item>
-            <item row="2" column="1">
-             <widget class="QPushButton" name="pushButton_prev_cube">
-              <property name="text">
-               <string>&lt;</string>
-              </property>
-             </widget>
-            </item>
-            <item row="3" column="1" colspan="2">
-             <widget class="QPushButton" name="pushButton_save_image">
-              <property name="styleSheet">
-               <string notr="true"/>
+              <property name="frameShape">
+               <enum>QFrame::StyledPanel</enum>
               </property>
               <property name="text">
-               <string>Save Image</string>
+               <string/>
               </property>
-              <property name="autoExclusive">
-               <bool>false</bool>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+              <property name="wordWrap">
+               <bool>true</bool>
               </property>
              </widget>
             </item>
@@ -677,6 +750,9 @@
                </item>
                <item>
                 <widget class="QPushButton" name="pushButton_save_spectra">
+                 <property name="toolTip">
+                  <string>Save acutla figure of spectra</string>
+                 </property>
                  <property name="text">
                   <string>Save Spectra</string>
                  </property>
@@ -743,6 +819,54 @@
  <resources/>
  <connections>
   <connection>
+   <sender>spinBox_blue_channel</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>horizontalSlider_blue_channel</receiver>
+   <slot>setValue(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>73</x>
+     <y>645</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>246</x>
+     <y>652</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>spinBox_green_channel</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>horizontalSlider_green_channel</receiver>
+   <slot>setValue(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>74</x>
+     <y>617</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>187</x>
+     <y>626</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>horizontalSlider_blue_channel</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>spinBox_blue_channel</receiver>
+   <slot>setValue(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>179</x>
+     <y>649</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>89</x>
+     <y>649</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
    <sender>horizontalSlider_red_channel</sender>
    <signal>valueChanged(int)</signal>
    <receiver>spinBox_red_channel</receiver>
@@ -775,22 +899,6 @@
    </hints>
   </connection>
   <connection>
-   <sender>horizontalSlider_blue_channel</sender>
-   <signal>valueChanged(int)</signal>
-   <receiver>spinBox_blue_channel</receiver>
-   <slot>setValue(int)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>179</x>
-     <y>649</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>89</x>
-     <y>649</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
    <sender>spinBox_red_channel</sender>
    <signal>valueChanged(int)</signal>
    <receiver>horizontalSlider_red_channel</receiver>
@@ -803,38 +911,6 @@
     <hint type="destinationlabel">
      <x>137</x>
      <y>596</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>spinBox_green_channel</sender>
-   <signal>valueChanged(int)</signal>
-   <receiver>horizontalSlider_green_channel</receiver>
-   <slot>setValue(int)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>74</x>
-     <y>617</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>187</x>
-     <y>626</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>spinBox_blue_channel</sender>
-   <signal>valueChanged(int)</signal>
-   <receiver>horizontalSlider_blue_channel</receiver>
-   <slot>setValue(int)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>73</x>
-     <y>645</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>246</x>
-     <y>652</y>
     </hint>
    </hints>
   </connection>

@@ -22,7 +22,7 @@ class MetadataTool(QWidget, Ui_Metadata_tool):
         self.setupUi(self)
         self.cube_info = cube_info if cube_info is not None else CubeInfoTemp()
         self.meta_load = self.cube_info.metadata_temp.copy()
-        self.hidden_meta=['GT_index_map','wl','GT_cmap','spectra_mean','spectra_std','RGB','gt_cmap','wavelength','calibration_reflectance_values']
+        self.hidden_meta=['GT_index_map','gt_index_map','wl','GT_cmap','spectra_mean','spectra_std','RGB','gt_cmap','wavelength','calibration_reflectance_values']
         self.not_editable=['GTLabels','gtlabels','bands','height','pixels_averaged','position','width']
 
         # connect combobox
@@ -796,13 +796,14 @@ class MetadataTool(QWidget, Ui_Metadata_tool):
 if __name__ == '__main__':
     filepath = None
 
-    # folder = r'C:\Users\Usuario\Documents\DOC_Yannick\HYPERDOC Database\Samples\minicubes/'
-    # sample = '00189-VNIR-mock-up.h5'
-    folder=r'C:\Users\Usuario\Documents\DOC_Yannick\HYPERDOC Database\Other/'
+    folder = r'C:\Users\Usuario\Documents\DOC_Yannick\HYPERDOC Database_TEST\Samples\minicubes'
+    sample = '00189-VNIR-mock-up.h5'
+    # folder=r'C:\Users\Usuario\Documents\DOC_Yannick\HYPERDOC Database\Other/'
     # sample= 'reg_test.h5'
-    sample=  'MPD41a_VNIR.mat'
+    # sample=  'MPD41a_VNIR.mat'
 
     filepath = os.path.join(folder, sample)
+    print(filepath)
 
     app = QApplication(sys.argv)
 

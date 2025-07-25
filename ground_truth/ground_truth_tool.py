@@ -253,6 +253,13 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         self.class_colors ={}  # color of each class
         n0 = self.nclass_box.value()
 
+        # transform image
+        self.transforms=''
+        self.pushButton_rotate.clicked.connect(lambda: self.transform(np.rot90))
+        self.pushButton_flip_h.clicked.connect(lambda: self.transform(np.fliplr))
+        self.pushButton_flip_v.clicked.connect(lambda: self.transform(np.flipud))
+        self.pushButton_reset_transform.clicked.connect(self.undo_all_transforms)
+
         # Replace placeholders with custom widgets
         self._replace_placeholder('viewer_left', ZoomableGraphicsView,cursor_style='cross')
         self._replace_placeholder('viewer_right', ZoomableGraphicsView,cursor_style='defaut')
@@ -300,6 +307,7 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         self.pushButton_band_selection.toggled.connect(self.band_selection)
         self.pushButton_save_GT.clicked.connect(self.save_GT)
         self.pushButton_reset.clicked.connect(self.reset_all)
+        self.pushButton_load_GT.clicked.connect(self.load_gt_from_png)
 
         # RGB sliders <-> spinboxes
         self.sliders_rgb = [self.horizontalSlider_red_channel, self.horizontalSlider_green_channel,
@@ -539,6 +547,228 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         # return super().eventFilter(source, event)
         return False
 
+    def transform(self,trans_type):
+
+        try:
+            self.data=trans_type(self.data)
+            if trans_type==np.rot90:
+                self.transforms+='r'
+            elif trans_type==np.flipud:
+                self.transforms+='v'
+            elif trans_type==np.fliplr:
+                self.transforms+='h'
+
+        except Exception as e:
+            print("[transform] Failed on data:", e)
+            return
+
+        for attr in ['cls_map', 'selection_mask_map']:
+            try:
+                arr = getattr(self, attr, None)
+                if arr is not None:
+                    setattr(self, attr, trans_type(arr))
+            except Exception as e:
+                print(f"[transform] Failed on {attr}:", e)
+
+        self.show_image()
+
+    def undo_all_transforms(self):
+        if not hasattr(self, 'transforms') or not self.transforms:
+            return
+
+        self.simplify_transforms()
+
+        for key in reversed(self.transforms):
+            try:
+                if key == 'r':
+                    self.data = np.rot90(self.data, k=3)  # sens inverse
+                    if self.cls_map is not None:
+                        self.cls_map = np.rot90(self.cls_map, k=3)
+                    if self.selection_mask_map is not None:
+                        self.selection_mask_map = np.rot90(self.selection_mask_map, k=3)
+
+                elif key == 'h':
+                    self.data = np.fliplr(self.data)
+                    if self.cls_map is not None:
+                        self.cls_map = np.fliplr(self.cls_map)
+                    if self.selection_mask_map is not None:
+                        self.selection_mask_map = np.fliplr(self.selection_mask_map)
+
+                elif key == 'v':
+                    self.data = np.flipud(self.data)
+                    if self.cls_map is not None:
+                        self.cls_map = np.flipud(self.cls_map)
+                    if self.selection_mask_map is not None:
+                        self.selection_mask_map = np.flipud(self.selection_mask_map)
+            except Exception as e:
+                print(f"[undo_all_transforms] Failed to undo '{key}':", e)
+
+        self.transforms = ''
+        self.show_image()
+
+    def load_gt_from_png(self,auto_load=False,ask_path=True):
+
+        flag_gt_loaded=False
+
+        if auto_load:
+
+            ## first try to find in folders by name :
+            filepath_GT=(self.cube.cube_info.filepath.split('.')[0] + '_GT.png')
+            try:
+                img = Image.open(filepath_GT).convert('P')
+                flag_gt_loaded = True
+            except:
+                pass
+
+            if not flag_gt_loaded:
+                try:
+                    folder_GT = os.path.join(os.path.dirname(os.path.dirname(filepath_GT)), 'GT')
+                    file_GT=filepath_GT.split('/')[-1]
+                    filepath_GT = os.path.join(folder_GT, file_GT)
+                    img = Image.open(filepath_GT).convert('P')
+                    flag_gt_loaded = True
+                except:
+                    pass
+
+        if not flag_gt_loaded and ask_path:
+            filepath_GT,_=QFileDialog.getOpenFileName(self,'Open Ground Truth png file',self.cube.cube_info.filepath,filter='PNG (*.png)')
+            if not filepath_GT:
+                return
+
+        try:
+            img = Image.open(filepath_GT).convert('P')
+            flag_gt_loaded = True
+
+        except:
+            pass
+
+        if not flag_gt_loaded:
+            QMessageBox.warning(self,'Problem with GT png loading','Problem with GT png loading. \nPlease check format or path.')
+            return
+
+        label_map = np.array(img)  # contains GT_labels like 3, 7, 12...
+        palette = np.array(img.getpalette()).reshape((-1, 3))  # shape: (256, 3)
+
+        self.fill_from_loaded_gt(label_map=label_map,rgb_dic=palette)
+
+        self.update_counts()
+        self.show_image()
+        self.update_legend()
+        self.checkBox_enable_segment.setChecked(False)
+
+        print(f"[GT Load] Loaded classes from {filepath_GT}")
+
+    def load_gt_from_metadata(self):
+
+        if "gt_index_map" in self.cube.cube_info.metadata_temp.keys():
+            key_gt = "gt_index_map"
+        elif "GT_index_map" in self.cube.cube_info.metadata_temp.keys():
+            key_gt = "GT_index_map"
+        else:
+            return False
+
+        label_map = self.cube.cube_info.metadata_temp[key_gt]
+
+        if 'GT_cmap' in self.cube.cube_info.metadata_temp:
+            rgb_gt_dic = self.cube.cube_info.metadata_temp['GT_cmap']
+
+        elif 'gt_cmap' in self.cube.cube_info.metadata_temp:
+            rgb_gt_dic = self.cube.cube_info.metadata_temp['gt_cmap']
+
+        else:
+            rgb_gt_dic = GT_cmap
+
+        fill_succes=self.fill_from_loaded_gt(label_map=label_map,rgb_dic=rgb_gt_dic)
+
+        self.update_counts()
+        self.show_image()
+        self.update_legend()
+        self.checkBox_enable_segment.setChecked(False)
+
+        if fill_succes:
+            print(f"[GT Load] Loaded classes from METADATA key {key_gt}")
+        else :
+            print(f"[GT Load] PROBLEM Loading classes from METADATA key {key_gt}")
+
+        return fill_succes
+
+    def fill_from_loaded_gt(self,label_map,rgb_dic):
+
+        try: # get index and ame from GTLabels
+            gtlabels = self.cube.metadata.get('GTLabels', [[], []])
+            label_nums, label_names = gtlabels if len(gtlabels) == 2 else ([], [])
+            label_nums_int = list(map(int, label_nums))  # convert to int for indexing
+
+            # Create mapping: GT_label → internal class index (0, 1, 2, ...)
+            label_to_class = {label: idx for idx, label in enumerate(label_nums_int)}
+            class_to_label = {v: k for k, v in label_to_class.items()}
+
+            # Remap label_map → cls_map with internal class indices
+            cls_map = np.full_like(label_map, fill_value=-1, dtype=int)
+            for gt_label, class_idx in label_to_class.items():
+                cls_map[label_map == gt_label] = class_idx
+        except:
+            print('[GT load GTmap] Problem to assign index and label from metadata')
+            return False
+
+
+        self.cls_map = cls_map
+        self.class_colors = {}
+        self.class_info = {}
+
+        try:
+            # Fill class_colors and class_info with corresponding names/colors
+            for class_idx in np.unique(cls_map):
+                if class_idx < 0:
+                    continue
+
+                gt_label = class_to_label[class_idx]
+                name = label_names[label_nums_int.index(gt_label)]
+                try:
+                    #  PNG: palette 2D shape=(256,3)
+                    if rgb_dic.ndim == 2 and rgb_dic.shape[1] == 3:
+                        rgb = tuple(rgb_dic[gt_label][::-1])
+                    #  GT_cmap: shape=(3, N)
+                    elif isinstance(rgb_dic, np.ndarray) and rgb_dic.shape[0] == 3:
+                        r = int(rgb_dic[0, gt_label] * 255)
+                        g = int(rgb_dic[1, gt_label] * 255)
+                        b = int(rgb_dic[2, gt_label] * 255)
+                        rgb = (b, g, r)
+                    else:
+                        raise ValueError("Unexpected GT_cmap format.")
+                except Exception as e:
+                    print(f"Error parsing color for class {class_idx}: {e}")
+                    rgb = (128, 128, 128)  # fallback gray
+
+                self.class_colors[class_idx] = rgb
+                print(f'info_cls {class_idx} -> {gt_label}, {name}, {rgb}')
+                self.class_info[class_idx] = [gt_label, name, rgb]
+
+        except:
+            print('[GT load GTmap] Problem to reconstruct class colors and info')
+            return False
+
+        try:# Restore mean and std spectra if available
+
+            means = self.cube.metadata.get('spectra_mean', [])
+            stds = self.cube.metadata.get('spectra_std', [])
+
+            self.class_means = {i: np.array(mu) for i, mu in enumerate(means)}
+            self.class_stds = {i: np.array(sigma) for i, sigma in enumerate(stds)}
+
+        except:
+            print('[GT load GTmap] Problem to get spectra mean and std')
+
+        return True
+
+    def simplify_transforms(self):
+        t = self.transforms
+        old = ''
+        while t != old:
+            old = t
+            t = t.replace('vh', 'rr').replace('hv', 'rr').replace('rrrr', '')
+        self.transforms = t
+
     def save_GT(self):
         # We send to metadata : map de GT, class_counts (pixels_averaged), 'GT_cmap','spectra_mean','spectra_std'
 
@@ -562,8 +792,7 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
             mask = self.cls_map == class_index
             GT_label_map[mask] = label_GT
 
-        self.cube.cube_info.metadata_temp['gt_label_map']=GT_label_map.astype(np.uint8)
-
+        self.cube.cube_info.metadata_temp['gt_index_map']=GT_label_map.astype(np.uint8)
         self.cube.cube_info.metadata_temp['spectra_mean']=list(self.class_means.values())
         self.cube.cube_info.metadata_temp['spectra_std']=list(self.class_stds.values())
 
@@ -601,7 +830,10 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
             )
             if reply == QMessageBox.Yes:
                 self.cube.metadata=self.cube.cube_info.metadata_temp
-                filepath=self.cube.cube_info.filepath
+                filepath_def=self.cube.cube_info.filepath
+
+                filepath,_=QFileDialog.getSaveFileName(self,"Save cube with Ground Truth Information",filepath_def)
+
                 ext = os.path.splitext(filepath)[1].lower()
 
                 if ext ==  ".mat":
@@ -629,7 +861,6 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
             BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
         csv_path = os.path.join(BASE_DIR, "ground_truth/Materials labels and palette assignation - Materials_labels_palette.csv")
-        # csv_path = 'Materials labels and palette assignation - Materials_labels_palette.csv'
         self.class_win = LabelWidget(csv_path,self.class_info)
         self.class_win.resize(1000, 600)
         self.class_win.class_info_updated.connect(self.on_class_info_updated) # connect to signal from LabelWidget
@@ -1125,24 +1356,6 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
 
             self.cubeLoaded.emit(cube)  # Notify the manager
 
-        # todo : check if GT already done in the file
-
-        if "GTLabels" in cube.metadata.keys():
-            try:
-                if len(cube.metadata["GTLabels"][0]) != 0:
-                    reply = QMessageBox.question(
-                        self, "Erase previous Ground Truth ?",
-                        "Ground truth labels has been found in the file. \n Are you sure that you want to make a new Ground Truth for this cube ?",
-                        QMessageBox.Yes | QMessageBox.No
-                    )
-                    if reply == QMessageBox.No:
-                        return
-            except:
-                try:
-                    print(cube.metadata["GTLabels"][0])
-                except:
-                    print(cube.metadata["GTLabels"])
-
         self.cube = cube
         self.data = self.cube.data
         self.wl = self.cube.wl
@@ -1157,6 +1370,26 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
 
         self.reset_state()
         self.modif_sliders()
+
+        flag_gtmap_found=False
+
+        if "gt_index_map" in cube.metadata.keys() or "GT_index_map" in cube.metadata.keys():
+            try:
+                flag_gtmap_found=self.load_gt_from_metadata()
+            except:
+                pass
+
+        if not flag_gtmap_found and ("GTLabels" in cube.metadata.keys()):
+            try:
+                if len(cube.metadata["GTLabels"][0]) != 0:
+                    self.load_gt_from_png(auto_load=True)
+
+            except:
+                try:
+                    print(cube.metadata["GTLabels"][0])
+                except:
+                    print(cube.metadata["GTLabels"])
+
         self.show_image(self.cube.cube_info.filepath)
 
     def load_cube_info(self, ci: CubeInfoTemp):
@@ -1704,9 +1937,8 @@ if __name__=='__main__':
     app = QApplication(sys.argv)
     w = GroundTruthWidget()
     folder=r'C:\Users\Usuario\Documents\DOC_Yannick\HYPERDOC Database_TEST\Samples\minicubes/'
-    file_name='00278-SWIR-mock-up.h5'
+    file_name='00189-VNIR-mock-up.h5'
     filepath=folder+file_name
     w.load_cube(filepath=filepath)
     w.show()
     sys.exit(app.exec_())
-
