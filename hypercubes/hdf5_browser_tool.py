@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'HDF5BrowserWidget.ui'
+# Form implementation generated from reading ui file 'hdf5_browser_window.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.11
 #

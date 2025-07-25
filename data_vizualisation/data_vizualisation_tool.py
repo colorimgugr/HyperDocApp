@@ -36,8 +36,6 @@ from matplotlib.pyplot import fill_between
 from data_vizualisation.data_vizualisation_window import*
 from hypercubes.hypercube import*
 
-#todo : fix distributions of images in Canvas_Images -> too much superposed
-
 class Data_Viz_Window(QWidget,Ui_DataVizualisation):
 
     def __init__(self,parent=None):
@@ -441,27 +439,43 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
 
     def rotate(self):
         for hyp in self.hyps:
-            hyp.data=np.rot90(hyp.data)
-
-        self.GT.image=np.rot90(self.GT.image)
+            try:
+                hyp.data=np.rot90(hyp.data)
+            except:
+                pass
+        try:
+            self.GT.image=np.rot90(self.GT.image)
+        except:
+            pass
 
         self.update_visible_canvas()
 
 
     def flip_v(self):
         for hyp in self.hyps:
-            hyp.data=np.flipud(hyp.data)
+            try:
+                hyp.data=np.flipud(hyp.data)
+            except:
+                pass
 
-        self.GT.image=np.flipud(self.GT.image)
+        try:
+            self.GT.image = np.flipud(self.GT.image)
+        except:
+            pass
 
         self.update_visible_canvas()
 
     def flip_h(self):
         for hyp in self.hyps:
-            hyp.data = np.fliplr(hyp.data)
+            try:
+                hyp.data = np.fliplr(hyp.data)
+            except:
+                pass
 
-        self.GT.image = np.fliplr(self.GT.image)
-
+        try:
+            self.GT.image = np.fliplr(self.GT.image)
+        except:
+            pass
         self.update_visible_canvas()
 
 
@@ -863,10 +877,11 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
                             number.append(hyp.metadata['number'])
                             parent_cube.append(hyp.metadata['parent_cube'])
                     except :
-                        try :
-                            name.append(hyp.cube_info.metadata_temp['name'])
-                        except:
-                            name.append(hyp.cube_info.filepath.split('/')[-1])
+                        pass
+                    try :
+                        name.append(hyp.cube_info.metadata_temp['name'])
+                    except:
+                        name.append(hyp.cube_info.filepath.split('/')[-1])
                 else:
                     rgb_images.append(None)
 
@@ -1234,7 +1249,6 @@ class Canvas_Image(FigureCanvas):
                     gt_overlay = self.axs[i].imshow(GT_solo_overlay, alpha=0)
                     self.gt_overlays.append(gt_overlay)
 
-
             else:
                 self.images.append(None)
 
@@ -1555,4 +1569,3 @@ if __name__ == "__main__":
     window.open_hypercubes_and_GT(filepath=filepath)
 
     sys.exit(app.exec_())
-

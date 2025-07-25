@@ -17,9 +17,10 @@ from matplotlib.figure import Figure
 from PyQt5.QtWidgets import (QWidget,QSizePolicy,
     QApplication, QFileDialog, QMessageBox, QDialog, QTreeWidgetItem,QVBoxLayout,QHBoxLayout,
 )
-from PyQt5.QtCore   import pyqtSignal, QEventLoop, QRectF,QTimer
+from PyQt5.QtCore   import pyqtSignal, QEventLoop, QRectF,QTimer,pyqtSlot
 
-from hypercubes.hdf5_browser_tool import Ui_HDF5BrowserWidget
+from hypercubes.hdf5_browser_window import Ui_HDF5BrowserWidget
+
 from hypercubes.white_calibration_window import Ui_dialog_white_calibration
 from interface.some_widget_for_interface import*
 
@@ -32,6 +33,7 @@ class CubeInfoTemp:
     data_path: Optional[str] = None # data location in the file
     metadata_path: Optional[str] = None # metadata location in the path
     wl_path: Optional[str] = None #wl location in the path
+    gtmap_path:Optional[str] = None # Ground Truth map location in the path (if present)
     metadata_temp: dict = field(default_factory=dict) # all metadatas modified in the app before saving
     data_shape: Optional[Union[List[float], np.ndarray]] = None # cube shape [width, height, bands]
     wl_trans:Optional[str]= None # if need to transpose wl dim from dim 1 to dim 3
@@ -41,10 +43,13 @@ class CubeInfoTemp:
         return self._filepath
 
     # protect filepath modification
-    @filepath.setter
     def filepath(self, val):
-        print(f"[DEBUG] Changing filepath from {self._filepath} to {val}")
-        self._filepath = val
+        # Normalise pour éviter que deux bouts de chaîne écrites différemment soient considérées différentes
+        old = Path(self._filepath).resolve() if self._filepath else None
+        new = Path(val).resolve()
+        if old != new:
+            print(f"[DEBUG] Changing filepath from {self._filepath} to {val}")
+            self._filepath = val
 
     # because only one filepath for one cube...and one cube for one filepath, let's define the cubeInfo equality
     def __eq__(self, other):
@@ -228,6 +233,7 @@ class Hypercube:
                         self.cube_info.data_path = "#refs#/d"
                         self.cube_info.wl_path = "#refs#/c"
                         self.cube_info.metadata_path = "Metadata"
+                        self.cube_info.gtmap_path= self.cube_info.metadata_path+"/gt_index_map"
                         self.cube_info.wl_trans = True
                         flag_loaded=True  # success
                         print('loaded .mat v7p3 with classic hypercube look')
@@ -368,6 +374,7 @@ class Hypercube:
                     self.cube_info.data_path = "DataCube"
                     self.cube_info.wl_path = "@wl"
                     self.cube_info.metadata_path = "/"
+                    self.cube_info.gtmap_path = self.cube_info.metadata_path+"gt_index_map"
                     self.cube_info.metadata_temp = copy.deepcopy(self.metadata)
                     self.cube_info.wl_trans = True
                     self.cube_info.filepath=filepath
@@ -1015,6 +1022,8 @@ class HDF5BrowserWidget(QWidget, Ui_HDF5BrowserWidget):
         self.btn_select_cube.clicked.connect(lambda: self._assign(self.le_cube))
         self.btn_select_wl.clicked.connect(lambda: self._assign(self.le_wl))
         self.btn_select_meta.clicked.connect(lambda: self._assign(self.le_meta))
+        self.btn_select_gtmap.clicked.connect(lambda: self._assign(self.le_gtmap))
+
         self.btn_ok.clicked.connect(self._on_accept)
         self.btn_cancel.clicked.connect(self._on_reject)
 
@@ -1029,6 +1038,8 @@ class HDF5BrowserWidget(QWidget, Ui_HDF5BrowserWidget):
             self.le_wl.setText(cube_info.wl_path)
         if cube_info.metadata_path:
             self.le_meta.setText(cube_info.metadata_path)
+        if cube_info.gtmap_path:
+            self.le_gtmap.setText(cube_info.gtmap_path)
 
     def _is_hdf5_file(self, path: str) -> bool:
         """True if `path` can be opened by h5py (including .mat v7.3)."""
@@ -1043,47 +1054,64 @@ class HDF5BrowserWidget(QWidget, Ui_HDF5BrowserWidget):
             self.filepath=path
             self._load_file()
 
-    def _on_accept(self):
-        print("[DEBUG] on_accept called")
-
     def _load_file(self):
-        """Fill the QTreeWidget with either legacy-MAT variables or HDF5 contents."""
+        """Fill the QTreeWidget with HDF5, MAT or ENVI metadata."""
         self.treeWidget.clear()
         root = self.treeWidget.invisibleRootItem()
         ext = os.path.splitext(self.filepath)[1].lower()
-        self.label_filename.setText(self.filepath.split('/')[-1])
+        self.label_filename.setText(os.path.basename(self.filepath))
 
-        is_mat     = (ext == '.mat')
-        is_hdf5    = (ext in ('.h5', '.hdf5')) or (is_mat and self._is_hdf5_file(self.filepath))
+        is_mat = (ext == '.mat')
+        is_hdr = (ext == '.hdr')
+        is_hdf5 = (ext in ('.h5', '.hdf5')) or (is_mat and self._is_hdf5_file(self.filepath))
 
-        if is_mat and not is_hdf5:
-            # Legacy MATLAB (< v7.3) via mat4py
+        if is_hdr:
+            try:
+                img = envi.open(self.filepath)
+                meta = img.metadata
+                dims = (meta.get("lines"), meta.get("samples"), meta.get("bands"))
+                root.addChild(QTreeWidgetItem(["DataCube", "ENVI", "<ENVI>", f"{dims}"]))
+                for k, v in meta.items():
+                    val = v if isinstance(v, str) else str(v)
+                    node = QTreeWidgetItem([k, "Metadata", f"meta@{k}", f"{len(val)} chars"])
+                    root.addChild(node)
+
+                # disable cube selection, set wl_path if present
+                self.le_cube.setText("<fixed: ENVI cube>")
+                self.le_cube.setEnabled(False)
+
+                if 'wavelength' in meta:
+                    self.le_wl.setText("meta@wavelength")
+                    self.cube_info.wl_path = "meta@wavelength"
+
+                self.le_meta.setText("<ENVI metadata>")
+                self.cube_info.metadata_path = "<ENVI metadata>"
+
+            except Exception as e:
+                QMessageBox.critical(None, "ENVI Error", f"Failed to read ENVI file:\n{e}")
+                return
+
+        elif is_mat and not is_hdf5:
             mat_dict = loadmat(self.filepath)
             for name, val in mat_dict.items():
-                # skip Python‐side globals
                 if name.startswith('__'):
                     continue
                 self._add_mat_node(name, val, root, name)
+
         else:
-            # HDF5 or MATLAB v7.3 via h5py
             with h5py.File(self.filepath, 'r') as f:
                 def recurse(group, parent, path):
-                    # show attributes
                     if group.attrs:
                         attrs_node = QTreeWidgetItem(['<Attributes>', 'Group', path or '/', ''])
                         parent.addChild(attrs_node)
-
                         for key, val in group.attrs.items():
                             size = self._format_bytes(self._get_attr_size(val))
-                            attrs_node.addChild(
-                                QTreeWidgetItem([key, 'Attribute', f"{path}@{key}", size])
-                            )
-                    # show groups/datasets
+                            attrs_node.addChild(QTreeWidgetItem([key, 'Attribute', f"{path}@{key}", size]))
+
                     for name, obj in group.items():
-                        full  = f"{path}/{name}" if path else name
-                        kind  = 'Group'   if isinstance(obj, h5py.Group) else 'Dataset'
-                        raw_size = self._get_obj_size(obj)
-                        size = self._format_bytes(raw_size)
+                        full = f"{path}/{name}" if path else name
+                        kind = 'Group' if isinstance(obj, h5py.Group) else 'Dataset'
+                        size = self._format_bytes(self._get_obj_size(obj))
                         node = QTreeWidgetItem([name, kind, full, size])
                         parent.addChild(node)
                         if isinstance(obj, h5py.Group):
@@ -1091,7 +1119,6 @@ class HDF5BrowserWidget(QWidget, Ui_HDF5BrowserWidget):
 
                 recurse(f, root, "")
 
-        # expand everything so you immediately see the branches
         self.treeWidget.expandAll()
 
     def _add_mat_node(self, name, val, parent, path):
@@ -1121,6 +1148,8 @@ class HDF5BrowserWidget(QWidget, Ui_HDF5BrowserWidget):
         self.cube_info.data_path = self.le_cube.text().strip() or None
         self.cube_info.wl_path = self.le_wl.text().strip() or None
         self.cube_info.metadata_path = self.le_meta.text().strip() or None
+        self.cube_info.gtmap_path = self.le_gtmap.text().strip() or None
+
         self.cube_info.wl_trans = self.comboBox_channel_wl.currentText()=='First'
 
         self._accepted = True
@@ -1140,16 +1169,6 @@ class HDF5BrowserWidget(QWidget, Ui_HDF5BrowserWidget):
         if not self._accepted:
             self._on_reject()
         event.accept()
-
-    def load_file(self, filepath):
-        """
-        Point the browser at a new file and rebuild the tree.
-        """
-        self.filepath = filepath
-        self.le_cube.clear()
-        self.le_wl.clear()
-        self.le_meta.clear()
-        self._load_file()
 
     def _format_bytes(self, num, suffix='B'):
         for unit in ['', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi']:
@@ -1179,6 +1198,27 @@ class HDF5BrowserWidget(QWidget, Ui_HDF5BrowserWidget):
         except Exception:
             return 0
 
+    @pyqtSlot(CubeInfoTemp)
+    def load_from_cubeinfo(self, cube_info: CubeInfoTemp):
+        """
+        update CubeInfoTemp from other tools
+        """
+        self.cube_info = cube_info
+        # Recharge l'arborescence si besoin
+        self._update(self.cube_info.filepath)
+
+        # Mets à jour les champs
+        self.le_cube.setText(cube_info.data_path or "")
+        self.le_wl.setText(cube_info.wl_path or "")
+        self.le_meta.setText(cube_info.metadata_path or "")
+        self.le_gtmap.setText(cube_info.gtmap_path or "")
+
+        # channel wl
+        mode = 'First' if cube_info.wl_trans else 'Last'
+        idx = self.comboBox_channel_wl.findText(mode)
+        if idx != -1:
+            self.comboBox_channel_wl.setCurrentIndex(idx)
+
 
 def save_images(dirpath: str,
                 fixed_img: np.ndarray,
@@ -1206,14 +1246,14 @@ if __name__ == '__main__':
     matplotlib.use('Qt5Agg')  # 'TkAgg' or 'Qt5Agg'
     import matplotlib.pyplot as plt
 
-    # folder = r'C:\Users\Usuario\Documents\DOC_Yannick\HYPERDOC Database\Samples\minicubes/'
-    # fname = '00189-VNIR-mock-up.h5'
+    folder = r'C:\Users\Usuario\Documents\DOC_Yannick\HYPERDOC Database_TEST\Samples\minicubes/'
+    fname = '00189-VNIR-mock-up.h5'
     #
     # folder = r'C:\Users\Usuario\Documents\DOC_Yannick\Thin_film\CITIC\241216\PikaL'
     # fname = 'c1318_12.bil.hdr' # test pikaL
 
-    folder = r'C:\Users\Usuario\Documents\DOC_Yannick\HYPERDOC Database_TEST\hypspex'
-    fname = 'P1A_SWIR_384_SN3189_2335us_2023-09-05T205402_raw_rad.hdr' # test pikaL
+    # folder = r'C:\Users\Usuario\Documents\DOC_Yannick\HYPERDOC Database_TEST\hypspex'
+    # fname = 'P1A_SWIR_384_SN3189_2335us_2023-09-05T205402_raw_rad.hdr' # test pikaL
 
     # folder = r'C:\Users\Usuario\Documents\DOC_Yannick\HYPERDOC Database_TEST'
     # fname = 'P1A_SWIR_384_SN3189_2335us_2023-09-05T205402_raw_rad.hdr' # test specim

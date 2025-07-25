@@ -45,6 +45,12 @@ class HypercubeManager(QtCore.QObject):
         self._cubes_info_list.append(ci)
         self.cubesChanged.emit(self.paths)
 
+    def ensureLoadedCubeInfo(self, ci: CubeInfoTemp) -> CubeInfoTemp:
+
+        if ci.data_path is None:
+            self.get_loaded_cube(ci.filepath, cube_info=ci)
+        return ci
+
     def get_loaded_cube(self, filepath: str,cube_info=None) -> Hypercube:
         """
         Return cached Hypercube if present. Otherwise, load it,
