@@ -1525,14 +1525,14 @@ def update_font(_app,width=None,_font="Segoe UI",):
         screen_width=width
 
     if screen_width < 1280:
-        font_size = 7
+        font_size = 6
     elif screen_width < 1920:
         font_size = 8
     else:
         font_size = 9
 
     _app.setFont(QFont(_font, font_size))
-    plt.rcParams.update({"font.size": font_size + 3, "font.family": _font})
+    plt.rcParams.update({"font.size": font_size + 2, "font.family": _font})
 
 def check_resolution_change():
     """ Vérifie si la résolution a changé et met à jour la police si besoin """

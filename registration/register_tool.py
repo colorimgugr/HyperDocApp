@@ -102,6 +102,7 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
 
         self.cube=[self.fixed_cube,self.moving_cube]
         self.img=[self.fixed_img,self.moving_img]
+        self.transforms=["",""] # to follow transforms
         self.radioButton_one=[self.radioButton_one_ref,self.radioButton_one_mov]
         self.radioButton_whole=[self.radioButton_whole_ref,self.radioButton_whole_mov]
         self.slider_channel=[self.horizontalSlider_ref_channel,self.horizontalSlider_mov_channel]
@@ -116,6 +117,15 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
         self.pushButton_reset.clicked.connect(self.reset_all)
 
         self.pushButton_switch_images.clicked.connect(self.switch_fixe_mov)
+
+        #transform connect :
+        self.pushButton_rotate_mov.clicked.connect(lambda: self.transform(np.rot90,1))
+        self.pushButton_flip_h_mov.clicked.connect(lambda: self.transform(np.fliplr,1))
+        self.pushButton_flip_v_mov.clicked.connect(lambda: self.transform(np.flipud,1))
+        self.pushButton_rotate_fix.clicked.connect(lambda: self.transform(np.rot90,0))
+        self.pushButton_flip_h_fix.clicked.connect(lambda: self.transform(np.fliplr,0))
+        self.pushButton_flip_v_fix.clicked.connect(lambda: self.transform(np.flipud,0))
+        # self.pushButton_reset_transform.clicked.connect(self.undo_all_transforms)
 
         self.overlay_selector.currentIndexChanged.connect(self.update_display)
 
@@ -177,6 +187,32 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
             self.spinBox_mov_channel.setEnabled(True)
 
         self.update_images()
+
+    def transform(self,trans_type,i_mov):
+        data = self.cube[i_mov].data
+        try:
+            data=trans_type(data)
+            if trans_type==np.rot90:
+                self.transforms[i_mov]+='r'
+            elif trans_type==np.flipud:
+                self.transforms[i_mov]+='v'
+            elif trans_type==np.fliplr:
+                self.transforms[i_mov]+='h'
+
+        except Exception as e:
+            print("[transform] Failed on data:", e)
+            return
+
+        self.cube[i_mov].data=data
+        # regenerate the image slice
+        mode = ['one', 'whole'][self.radioButton_whole[i_mov].isChecked()]
+        chan = np.argmin(np.abs(self.slider_channel[i_mov].value() - self.cube[i_mov].wl))
+        img = self.cube_to_img(data, mode, chan)
+        img = (img * 256 / np.max(img)).astype('uint8')
+        self.viewer_img[i_mov].clear_rectangle()
+        self.viewer_img[i_mov].setImage(np_to_qpixmap(img))
+        suffixe_label = [" (fixed)", " (moving)"][i_mov]
+        self.viewer_label[i_mov].setText(self.cube[i_mov].filepath.split('/')[-1] + suffixe_label)
 
     def update_images(self):
 

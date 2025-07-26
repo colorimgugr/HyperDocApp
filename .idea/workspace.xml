@@ -4,8 +4,15 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="path problems with .splt('/') fixed with os.path">
-      <change beforePath="$PROJECT_DIR$/ground_truth/ground_truth_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/ground_truth/ground_truth_tool.py" afterDir="false" />
+    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="check if loaded GT good size">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/MainWindow.py" beforeDir="false" afterPath="$PROJECT_DIR$/MainWindow.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data_vizualisation/data_vizualisation_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/data_vizualisation/data_vizualisation_tool.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data_vizualisation/data_vizualisation_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/data_vizualisation/data_vizualisation_window.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data_vizualisation/data_vizualisation_window.ui" beforeDir="false" afterPath="$PROJECT_DIR$/data_vizualisation/data_vizualisation_window.ui" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/registration/register_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/registration/register_tool.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/registration/registration_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/registration/registration_window.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/registration/registration_window.ui" beforeDir="false" afterPath="$PROJECT_DIR$/registration/registration_window.ui" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -132,14 +139,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1744020944801</updated>
-    </task>
-    <task id="LOCAL-00026" summary="le register_tool envoie un cube_info dans le signal">
-      <option name="closed" value="true" />
-      <created>1747664241381</created>
-      <option name="number" value="00026" />
-      <option name="presentableId" value="LOCAL-00026" />
-      <option name="project" value="LOCAL" />
-      <updated>1747664241381</updated>
     </task>
     <task id="LOCAL-00027" summary="metadata not editable from metadata tool blocked">
       <option name="closed" value="true" />
@@ -525,7 +524,15 @@
       <option name="project" value="LOCAL" />
       <updated>1753529659680</updated>
     </task>
-    <option name="localTasksCounter" value="75" />
+    <task id="LOCAL-00075" summary="check if loaded GT good size">
+      <option name="closed" value="true" />
+      <created>1753530080860</created>
+      <option name="number" value="00075" />
+      <option name="presentableId" value="LOCAL-00075" />
+      <option name="project" value="LOCAL" />
+      <updated>1753530080860</updated>
+    </task>
+    <option name="localTasksCounter" value="76" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -577,7 +584,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="fixed bugg meta wl with register cube&#10;fixed rgb save bugg register" />
     <MESSAGE value="plein de trucs :-p" />
     <MESSAGE value="data_viz : &#10;- all metadata pop up OK&#10;- live spectrum ok&#10;- resize graph ok&#10;- 3 imeges same size OK" />
     <MESSAGE value="ouverture des cubes dans data_viz elargie en format, ajout de la hash_up table pour association de cube, depandance UV differentes" />
@@ -602,6 +608,7 @@
     <MESSAGE value="plein de truc." />
     <MESSAGE value="Refonte totale de hypercube manager -&gt; Ordered dic au lieu de liste&#10;MAIS attention : filepath pour trouver GT seul bugg...a revoir" />
     <MESSAGE value="path problems with .splt('/') fixed with os.path" />
-    <option name="LAST_COMMIT_MESSAGE" value="path problems with .splt('/') fixed with os.path" />
+    <MESSAGE value="check if loaded GT good size" />
+    <option name="LAST_COMMIT_MESSAGE" value="check if loaded GT good size" />
   </component>
 </project>

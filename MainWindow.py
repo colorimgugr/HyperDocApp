@@ -543,8 +543,7 @@ class MainApp(QtWidgets.QMainWindow):
         widget._load_file()
 
         # 4) Affichage du dock
-        self.file_browser_dock.show()
-        widget.show()
+        # widget.show()
 
     def _send_to_all(self,filepath):
 
@@ -782,7 +781,7 @@ def update_font(_app,width=None,_font="Segoe UI",):
         font_size = 9
 
     _app.setFont(QFont(_font, font_size))
-    plt.rcParams.update({"font.size": font_size + 3, "font.family": _font})
+    plt.rcParams.update({"font.size": font_size + 2, "font.family": _font})
 
 def check_resolution_change():
     """ Check if resolution change to adapt font size """
@@ -815,7 +814,7 @@ if __name__ == "__main__":
     filepath = os.path.join(folder, fname)
 
     main._on_add_cube([filepath,filepath.replace('89','91')])
-    main._send_to_gt(filepath)
+    main._send_to_all(filepath)
 
     try:
         import matlab.engine
