@@ -620,15 +620,19 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
             except:
                 pass
 
+            print(f'[GT autoload] {flag_gt_loaded} filepath_GT -> {filepath_GT}')
+
             if not flag_gt_loaded:
+                folder_GT = os.path.join(os.path.dirname(os.path.dirname(filepath_GT)), 'GT')
+                file_GT = os.path.basename(filepath_GT)
+                filepath_GT = os.path.join(folder_GT, file_GT)
                 try:
-                    folder_GT = os.path.join(os.path.dirname(os.path.dirname(filepath_GT)), 'GT')
-                    file_GT=filepath_GT.split('/')[-1]
-                    filepath_GT = os.path.join(folder_GT, file_GT)
                     img = Image.open(filepath_GT).convert('P')
                     flag_gt_loaded = True
                 except:
                     pass
+
+                print(f'[GT autoload] filepath_GT from par dir  {flag_gt_loaded} -> {filepath_GT}')
 
         if not flag_gt_loaded and ask_path:
             filepath_GT,_=QFileDialog.getOpenFileName(self,'Open Ground Truth png file',self.cube.cube_info.filepath,filter='PNG (*.png)')
@@ -1304,8 +1308,6 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
 
     def load_cube(self,cube_info=None,filepath=None,cube=None):
 
-        # print(f'cube_info at start -> {cube_info}')
-
         if self.cls_map is not None : # if work done, stop to permit saving before continue.
             reply = QMessageBox.question(
                 self, "Erase previous selection ?",
@@ -1341,9 +1343,6 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
             loading = LoadingDialog(message_progress, filename=filepath, parent=self)
             loading.show()
             QApplication.processEvents()
-
-            print(f'filepath -> {filepath}')
-            print(f'cube_info -> {cube_info}')
 
             try :
                 cube = Hypercube(filepath=filepath, cube_info= cube_info,load_init=True)

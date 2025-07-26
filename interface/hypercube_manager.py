@@ -142,3 +142,16 @@ class HypercubeManager(QObject):
         # 3) Émet le signal pour rafraîchir vos menus/listes
         self.cubes_changed.emit(self.paths)
 
+
+if __name__ == "__main__":
+    folder = r'C:\Users\Usuario\Documents\DOC_Yannick\HYPERDOC Database_TEST\Samples\minicubes/'
+    fname = '00189-VNIR-mock-up.h5'
+    import os
+
+    filepath = os.path.join(folder, fname)
+
+
+    hm=HypercubeManager()
+    ci=hm.add_or_sync_cube(filepath)
+    hc=hm.get_loaded_cube(filepath)
+    hc2=hm.get_loaded_cube(filepath,cube_info=ci)

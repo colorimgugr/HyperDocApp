@@ -156,8 +156,8 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
     def change_hyp_quick(self,prev_next):
 
         last_hyp_path = self.cubes_path
-        init_dir_hyp = '/'.join(last_hyp_path.split('/')[:-1])
-        file_init = last_hyp_path.split('/')[-1]
+        init_dir_hyp=os.path.dirname(last_hyp_path)
+        file_init = os.path.basename(last_hyp_path)
         last_num=file_init.split('-')[0]
         if "." in last_num:
             return
@@ -294,11 +294,11 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
 
         if self.image_loaded[0]:
             if path_VNIR is not None:
-                file_GT=(path_VNIR.split('.')[0] + '_GT.png').split('/')[-1]
+                file_GT=os.path.basename(path_VNIR.split('.')[0] + '_GT.png')
             elif path_UV is not None :
-                file_GT = (path_UV.split('.')[0] + '_GT.png').split('/')[-1]
+                file_GT = os.path.basename(path_UV.split('.')[0] + '_GT.png')
         elif self.image_loaded[1]:
-            file_GT=(path_SWIR.split('.')[0] + '_GT.png').split('/')[-1]
+            file_GT=os.path.basename(path_SWIR.split('.')[0] + '_GT.png')
 
         # load GT using previous folder_name saved with file_GT
         if self.folder_GT is not None :
@@ -450,7 +450,6 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
 
         self.update_visible_canvas()
 
-
     def flip_v(self):
         for hyp in self.hyps:
             try:
@@ -477,7 +476,6 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
         except:
             pass
         self.update_visible_canvas()
-
 
     def update_visible_canvas(self):
         """Update Canvas_Image from visible image radiobuttons"""
@@ -881,7 +879,7 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
                     try :
                         name.append(hyp.cube_info.metadata_temp['name'])
                     except:
-                        name.append(hyp.cube_info.filepath.split('/')[-1])
+                        name.append(os.path.basename(hyp.cube_info.filepath))
                 else:
                     rgb_images.append(None)
 
@@ -980,7 +978,7 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
 
                 if term in ['.png','.jpg','.svg']:
                     self.canvas_spectra.save_spectra(file_name)
-                    self.label_general_message.setText(f"Spectra image saved as : {file_name.split('/')[-1]}")
+                    self.label_general_message.setText(f"Spectra image saved as : {os.path.basename(file_name)}")
 
                 else:
                     delimiter = '\t'
@@ -999,7 +997,7 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
 
                                 np.savetxt(file_name.replace('.',end_name[i]), data.T, header=header, comments='', delimiter='\t')
 
-                    self.label_general_message.setText(f"Spectra values saved as : {file_name.split('/')[-1]}")
+                    self.label_general_message.setText(f"Spectra values saved as : {os.path.basename(file_name)}")
 
         except:
             self.label_general_message.setText('Saving spectra FAILED')

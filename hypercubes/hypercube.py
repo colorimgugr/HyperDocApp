@@ -48,7 +48,7 @@ class CubeInfoTemp:
         old = Path(self._filepath).resolve() if self._filepath else None
         new = Path(val).resolve()
         if old != new:
-            print(f"[DEBUG] Changing filepath from {self._filepath} to {val}")
+            # print(f"[DEBUG] Changing filepath from {self._filepath} to {val}")
             self._filepath = val
 
     # because only one filepath for one cube...and one cube for one filepath, let's define the cubeInfo equality
@@ -236,16 +236,16 @@ class Hypercube:
                         self.cube_info.gtmap_path= self.cube_info.metadata_path+"/gt_index_map"
                         self.cube_info.wl_trans = True
                         flag_loaded=True  # success
-                        print('loaded .mat v7p3 with classic hypercube look')
+                        # print('loaded .mat v7p3 with classic hypercube look')
                except Exception:
                    pass
 
                if not flag_loaded:
                    try:
                        if self.cube_info.data_path is None :
-                           print('try wih browser')
+                           # print('try wih browser')
                            ans=self.look_with_browser(filepath)
-                           print(ans)
+                           # print(ans)
                            if not ans:
                                return
 
@@ -253,7 +253,7 @@ class Hypercube:
                             self.get_data_mat7p3_or_h5(filepath)
                             self.cube_info.wl_trans = True
                             flag_loaded=True
-                            print('loaded .mat v7p3 fro known cube_info.pathS')
+                            # print('loaded .mat v7p3 fro known cube_info.pathS')
                        except:
                            pass
                    except:
@@ -274,7 +274,7 @@ class Hypercube:
                     self.cube_info.wl_trans = True
 
                     flag_loaded=True
-                    print('Loaded .mat NO v7p3 with classic')
+                    # print('Loaded .mat NO v7p3 with classic')
                 except:
                     pass
 
@@ -319,7 +319,7 @@ class Hypercube:
                                 except:
                                     pass
 
-                            print('loaded .mat NO v7p3 with BROWSER')
+                            # print('loaded .mat NO v7p3 with BROWSER')
                             flag_loaded=True
                         except:
                             pass
@@ -383,7 +383,7 @@ class Hypercube:
                         self.cube_info.data_shape = self.data.shape
 
                 flag_loaded=True  # success → no dialog
-                print('.h5 loaded from classic')
+                # print('.h5 loaded from classic')
 
             except Exception:
                 pass
@@ -433,7 +433,7 @@ class Hypercube:
                                 self.cube_info.data_shape = self.data.shape
 
                         flag_loaded=True
-                        print('loaded .h5 from browser')
+                        # print('loaded .h5 from browser')
                     except:
                         pass
 
@@ -701,7 +701,7 @@ class Hypercube:
         }
         if self.metadata is not None:
            hdr_meta.update(self.metadata)
-        print(filepath)
+        # print(filepath)
         envi.save_image(filepath, self.data, dtype=np.float32, metadata=hdr_meta,force=True)
 
     def save_matlab_cube(self,filepath: str):
@@ -889,8 +889,6 @@ class Hypercube:
             else:
                 white_ref_values = self.get_ref_white(white_ref_name)
 
-            print(f'[Hypercube_calib] white_ref_name : {white_ref_name}')
-
             calib_mode = dialog.get_calibration_mode()
             coords = dialog.get_selected_rect()
 
@@ -925,16 +923,10 @@ class Hypercube:
                 self.data /= (self / white_ref_values)
                 self.metadata['calibration_type'] = 'full_flat'
 
-            try :
-                print(f'[Hypercube_calib] mean_white shape: {mean_white.shape}')
-                print(f'[Hypercube_calib] cube shape: {self.data.shape}')
-            except:
-                pass
-
             self.metadata['calibration_reflectance_values'] = white_ref_values
             self.metadata['white_reference'] = white_ref_name
             self.metadata['reflectance_data_from'] = 'selected white in image ' + white_ref_name
-            print('Calibration done using selected region and chosen white reference.')
+            # print('Calibration done using selected region and chosen white reference.')
 
             ans = QMessageBox.question(None, 'Save with calibration',
                                        'Do you want to save the reflectance cube?',
@@ -985,7 +977,7 @@ class Hypercube:
             reflectance_white = data['Multi_90white'].squeeze()
 
         else:
-            print('Unknown white reference label')
+            print('[HYP Calibration] Unknown white reference label')
             return
 
         interp_ref_func = interp1d(wl_white, reflectance_white, kind='cubic',
@@ -1000,7 +992,6 @@ class HDF5BrowserWidget(QWidget, Ui_HDF5BrowserWidget):
     Embeddable widget for browsing HDF5 / legacy MAT files.
     Emits `accepted` when OK is clicked, `rejected` on Cancel.
     """
-
     accepted = pyqtSignal(object)
     rejected = pyqtSignal()
 
@@ -1248,7 +1239,7 @@ if __name__ == '__main__':
 
     folder = r'C:\Users\Usuario\Documents\DOC_Yannick\HYPERDOC Database_TEST\Samples\minicubes/'
     fname = '00189-VNIR-mock-up.h5'
-    #
+
     # folder = r'C:\Users\Usuario\Documents\DOC_Yannick\Thin_film\CITIC\241216\PikaL'
     # fname = 'c1318_12.bil.hdr' # test pikaL
 
@@ -1283,12 +1274,12 @@ if __name__ == '__main__':
     # for key in cube.cube_info.metadata_temp:
     #     print(f' {key} -> {cube.cube_info.metadata_temp[key]}')
 
-    mid=int(cube.data.shape[2]/2)
-    chan=[0,mid,cube.data.shape[2]-1]
-    image_np=cube.data[:,:,chan]
-    print(f'max data : {np.max(cube.data)}')
-
-
-    fig,ax=plt.subplots()
-    ax.imshow(image_np)
-    plt.show()
+    # mid=int(cube.data.shape[2]/2)
+    # chan=[0,mid,cube.data.shape[2]-1]
+    # image_np=cube.data[:,:,chan]
+    # print(f'max data : {np.max(cube.data)}')
+    #
+    #
+    # fig,ax=plt.subplots()
+    # ax.imshow(image_np)
+    # plt.show()
