@@ -315,6 +315,7 @@ class MainApp(QtWidgets.QMainWindow):
         self.meta_dock.widget().cubeLoaded.connect(lambda hc: self._on_tool_loaded_cube(hc, self.meta_dock.widget()))
         self.gt_dock.widget().cubeLoaded.connect(lambda hc: self._on_tool_loaded_cube(hc, self.gt_dock.widget()))
 
+
         # visible docks of rightDock take all space possible
 
         self.centralWidget().hide()
@@ -487,13 +488,12 @@ class MainApp(QtWidgets.QMainWindow):
         ci = self.hypercube_manager.add_or_sync_cube(filepath)
         hc = self.hypercube_manager.get_loaded_cube(filepath, cube_info=ci)
 
-        print(f'[send GT] ci.filepath : {ci.filepath}')
-        print(f'[send GT] hc.ci.filepath : {ci.filepath}')
+        # print(f'[send GT] ci.filepath : {ci.filepath}')
+        # print(f'[send GT] hc.ci.filepath : {ci.filepath}')
 
         if hc.data is None:
             widget.load_cube(cube_info=ci)
         else:
-            hc.cube_info = ci
             widget.load_cube(cube_info=ci,cube=hc)
 
     def _send_to_data_viz(self,filepath):
@@ -579,6 +579,8 @@ class MainApp(QtWidgets.QMainWindow):
         print(f"[MainWindow] Cube loaded from {tool_widget.__class__.__name__}: {path}")
         if already_registered:
             print(f"[MainWindow] Cube already present in list: {path}")
+
+        self._update_cube_menu(self.hypercube_manager.paths)
 
     def _update_cube_menu(self, paths):
         """Met à jour le menu de cubes avec sous-menus et actions fonctionnelles."""
@@ -805,6 +807,15 @@ if __name__ == "__main__":
 
     main = MainApp()
     main.show()
+
+    folder = r'C:\Users\Usuario\Documents\DOC_Yannick\HYPERDOC Database_TEST\Samples\minicubes/'
+    fname = '00189-VNIR-mock-up.h5'
+    import os
+
+    filepath = os.path.join(folder, fname)
+
+    main._on_add_cube([filepath,filepath.replace('89','91')])
+    main._send_to_gt(filepath)
 
     try:
         import matlab.engine
