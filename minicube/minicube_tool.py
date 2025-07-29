@@ -1,18 +1,22 @@
 import sys
+import os
 import numpy as np
 import cv2
 
 from PyQt5.QtWidgets import QApplication, QMessageBox, QWidget, QFileDialog, QVBoxLayout,QDialog,QDialogButtonBox, QFormLayout, QLineEdit
 from PyQt5.QtGui import QPixmap, QImage
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt,QRectF,pyqtSignal
 
-from extract_minicube_window import Ui_Form
-from hypercubes.hypercube import Hypercube
+from minicube.extract_minicube_window import Ui_Form
+from hypercubes.hypercube import Hypercube,CubeInfoTemp
 from interface.some_widget_for_interface import ZoomableGraphicsView
 
 class MiniCubeTool(QWidget, Ui_Form):
-    def __init__(self):
-        super().__init__()
+
+    cube_saved = pyqtSignal(CubeInfoTemp)
+
+    def __init__(self,parent=None):
+        super().__init__(parent)
         self.setupUi(self)
         self.cube = None
         self.data = None
@@ -88,14 +92,25 @@ class MiniCubeTool(QWidget, Ui_Form):
         except:
             pass
 
-    def load_cube(self,filepath=None):
+    def load_cube(self,filepath=None,cube_info=None,cube=None):
 
-        if not filepath:
-            filepath, _ = QFileDialog.getOpenFileName(self, "Open Cube", "", "Hypercube (*.h5 *.mat *.hdr)")
-            if not filepath :
-                return
+        if not cube:
+            if not filepath:
+                if cube_info:
+                    try:
+                        filepath=cube_info.filepath
+                    except:
+                        pass
+                filepath, _ = QFileDialog.getOpenFileName(self, "Open Cube", "", "Hypercube (*.h5 *.mat *.hdr)")
+                if not filepath :
+                    return
 
-        self.cube = Hypercube(filepath=filepath, load_init=True)
+
+            self.cube = Hypercube(filepath=filepath, load_init=True,cube_info=cube_info)
+
+        else:
+            self.cube=cube
+
         self.data = self.cube.data
         self.wl = self.cube.wl
         self.cubes_path=filepath
@@ -217,6 +232,12 @@ class MiniCubeTool(QWidget, Ui_Form):
         pixmap = self._np2pixmap(rgb)
         self.viewer.setImage(pixmap)
 
+        coords = self.viewer.get_rect_coords()
+        if coords is not None:
+            x, y, w, h = coords
+            rect_f = QRectF(x, y, w, h)
+            self.viewer.add_selection_overlay(rect_f,surface=False)
+
     def show_metadata_dialog(self, minicube):
         dialog = QDialog(self)
         dialog.setWindowTitle("Edit Minicube Metadata")
@@ -310,6 +331,8 @@ class MiniCubeTool(QWidget, Ui_Form):
 
         minicube.save(path, fmt=fmt,meta_from_cube_info=True)
         QMessageBox.information(self, "Saved", f"Minicube saved to:\n{path}")
+        minicube.cube_info.filepath=path
+        self.cube_saved.emit(minicube.cube_info)
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

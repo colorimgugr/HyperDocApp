@@ -153,6 +153,19 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
     def next_cube(self):
         self.change_hyp_quick(+1)
 
+    def on_metadata_updated(self, updated_ci: CubeInfoTemp): #
+        """when signal from hypercube Manager is received"""
+        print('[DATA VIZ] : MODIF CUBE INFOR SIGNAL RECEIVED')
+
+        for hyp in self.hyps:
+            if hyp.cube_info and hyp.cube_info == updated_ci:
+                print('[DATA VIZ] : CUBE INFO UPDATED FROM SIGNAL')
+                hyp.cube_info = copy.deepcopy(updated_ci)
+                hyp.metadata=copy.deepcopy(updated_ci.metadata_temp)
+                self.update_combo_meta(init=True)
+                self.update_metadata_label()
+                print(f"[MetadataTool] Metadata updated externally for {updated_ci.filepath}")
+
     def change_hyp_quick(self,prev_next):
 
         last_hyp_path = self.cubes_path
@@ -167,9 +180,12 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
 
         file_new = files[(index_init + prev_next) % len(files)]
         i = prev_next
-        while (last_num in file_new or '.h5' not in file_new):
+        allowed_ext = ('.h5', '.mat', '.hdr')
+        # while (last_num in file_new or not file_new.lower().endswith(allowed_ext)):
+        while (not file_new.lower().endswith(allowed_ext)):
             i += prev_next
             file_new = files[(index_init + i) % len(files)]
+            print(f'[DATA VIZ - Quick change : {i}] -> {file_new}')
 
         file_hyp = init_dir_hyp + '/' + file_new
 

@@ -1,9 +1,8 @@
 # cd C:\Users\Usuario\Documents\GitHub\Hypertool
 # python MainWindow.py
 # sys.excepthook = excepthook #set the exception handler
-# pyinstaller  --noconfirm --noconsole --exclude-module tensorflow --exclude-module torch --exclude-module matlab --icon="interface/icons/hyperdoc_logo_transparente.ico" --add-data "interface/icons:Hypertool/interface/icons" --add-data "ground_truth/Materials labels and palette assignation - Materials_labels_palette.csv:ground_truth"  --add-data "data_vizualisation/Spatially registered minicubes equivalence.csv:data_vizualisation"  MainWindow.py
+# pyinstaller  --noconfirm --noconsole --exclude-module tensorflow --exclude-module torch --exclude-module matlab --icon="interface/icons/hyperdoc_logo_transparente.ico" --add-data "interface/icons:Hypertool/interface/icons" --add-data "hypercubes/white_ref_reflectance_data:hypercubes/white_ref_reflectance_data" --add-data "ground_truth/Materials labels and palette assignation - Materials_labels_palette.csv:ground_truth"  --add-data "data_vizualisation/Spatially registered minicubes equivalence.csv:data_vizualisation"  MainWindow.py
 # C:\Envs\py37test\Scripts\activate
-
 
 # GUI Qt
 from PyQt5 import QtWidgets, QtCore
@@ -23,6 +22,7 @@ from registration.register_tool        import RegistrationApp
 from interface.hypercube_manager import HypercubeManager
 from metadata.metadata_tool import MetadataTool
 from ground_truth.ground_truth_tool import GroundTruthWidget
+from minicube.minicube_tool import MiniCubeTool
 
 # grafics to control changes
 import matplotlib.pyplot as plt
@@ -231,9 +231,11 @@ class MainApp(QtWidgets.QMainWindow):
         self.data_viz_dock =self._add_dock("Data Visualization", Data_Viz_Window,  QtCore.Qt.RightDockWidgetArea)
         self.reg_dock=self._add_dock("Registration",   RegistrationApp,     QtCore.Qt.RightDockWidgetArea)
         self.gt_dock=self._add_dock("Ground Truth",   GroundTruthWidget,     QtCore.Qt.RightDockWidgetArea)
+        self.minicube_dock=self._add_dock("Minicube Extract",   MiniCubeTool,     QtCore.Qt.RightDockWidgetArea)
         self.tabifyDockWidget(self.reg_dock, self.gt_dock)
         self.tabifyDockWidget(self.reg_dock, self.data_viz_dock)
-        self.data_viz_dock.raise_()
+        self.tabifyDockWidget(self.reg_dock, self.minicube_dock)
+        self.gt_dock.raise_()
 
         # Tool menu
         view = self.menuBar().addMenu("Tools")
@@ -248,6 +250,7 @@ class MainApp(QtWidgets.QMainWindow):
         act_file = self.onToolButtonPress(self.file_browser_dock,icon_name="file_browser_icon.png",tooltip="File Browser")
         act_met = self.onToolButtonPress(self.meta_dock, "metadata_icon.png", "Metadata")
         self.toolbar.addSeparator()
+        act_mini=self.onToolButtonPress(self.minicube_dock, "minicube_icon.png", "Minicube Extract")
         act_data = self.onToolButtonPress(self.data_viz_dock, "icon_data_viz.svg", "Data Vizualisation")
         act_reg = self.onToolButtonPress(self.reg_dock, "registration_icon.png", "Registration")
         act_gt =self.onToolButtonPress(self.gt_dock, "GT_icon_1.png", "Ground Truth")
@@ -285,7 +288,7 @@ class MainApp(QtWidgets.QMainWindow):
         self.toolbar.addWidget(self.saveBtn)
 
         # update if list modified
-        self.hypercube_manager.cubes_changed.connect(self._update_save_menu)
+        self.hypercube_manager.cubes_changed.connect(lambda: self._update_save_menu(self.hypercube_manager.paths))
         self._update_save_menu(self.hypercube_manager.paths)
 
         spacer = QWidget()
@@ -300,26 +303,44 @@ class MainApp(QtWidgets.QMainWindow):
         #### connect tools with hypercube manager for managing changes in cubeInfoTemp
         self.meta_dock.widget().metadataChanged.connect(self.hypercube_manager.update_metadata)
 
-        self.reg_dock.widget().cube_saved.connect(
-            lambda ci: self.hypercube_manager.add_or_sync_cube(ci.filepath)
-        )
-        self.gt_dock.widget().cube_saved.connect(
-            lambda ci: self.hypercube_manager.add_or_sync_cube(ci.filepath)
-        )
-
+        self.hypercube_manager.metadata_updated.connect(self.data_viz_dock.widget().on_metadata_updated)
         self.hypercube_manager.metadata_updated.connect(self.meta_dock.widget().on_metadata_updated)
         self.hypercube_manager.metadata_updated.connect(self.reg_dock.widget().load_cube_info)
         self.hypercube_manager.metadata_updated.connect(self.gt_dock.widget().load_cube_info)
+
+        self.hypercube_manager.cubes_changed.connect(self._update_cube_menu)
 
         self.reg_dock.widget().cubeLoaded.connect(lambda hc: self._on_tool_loaded_cube(hc, self.reg_dock.widget()))
         self.meta_dock.widget().cubeLoaded.connect(lambda hc: self._on_tool_loaded_cube(hc, self.meta_dock.widget()))
         self.gt_dock.widget().cubeLoaded.connect(lambda hc: self._on_tool_loaded_cube(hc, self.gt_dock.widget()))
 
+        self._connect_tool_cube_saved_signals()
 
         # visible docks of rightDock take all space possible
 
         self.centralWidget().hide()
         # self.showMaximized()
+
+    def _connect_tool_cube_saved_signals(self):
+        """
+        Connecte les signaux cube_saved des outils à la mise à jour du menu.
+        """
+
+        def handle_cube_saved(ci):
+            self.hypercube_manager.add_or_sync_cube(ci.filepath)
+            QtCore.QTimer.singleShot(0, lambda: self._update_cube_menu(self.hypercube_manager.paths))
+            QtCore.QTimer.singleShot(0, lambda: self._update_save_menu(self.hypercube_manager.paths))
+            print(f"[INFO] Cube ajouté/synchronisé : {ci.filepath}")
+
+        for tool in [
+            self.reg_dock.widget(),
+            self.gt_dock.widget(),
+            self.minicube_dock.widget(),
+        ]:
+            try:
+                tool.cube_saved.connect(handle_cube_saved)
+            except AttributeError:
+                print(f"[Warning] Le widget {tool.__class__.__name__} n’a pas de signal 'cube_saved'.")
 
     def open_suggestion_box(self):
         self.suggestion_window = SuggestionWidget()
@@ -339,7 +360,6 @@ class MainApp(QtWidgets.QMainWindow):
         self.toolbar.addAction(act)
         return act
 
-    @QtCore.pyqtSlot(CubeInfoTemp)
     def _on_file_browser_accepted(self, updated_ci: CubeInfoTemp):
         """
         Called when HDF5BrowserWidget OK is pressed.
@@ -401,7 +421,6 @@ class MainApp(QtWidgets.QMainWindow):
             # stocke le chemin complet dans les data de l’action
             action.setData(path)
             self.cubeMenu.addAction(action)
-
 
     def save_cube(self,filepath):
         ci = self.hypercube_manager.add_or_sync_cube(filepath)
@@ -522,6 +541,16 @@ class MainApp(QtWidgets.QMainWindow):
             hc.cube_info = ci
             widget.load_cube(filepath=ci.filepath,cube_info=ci,i_mov=imov,cube=hc)
 
+    def _send_to_minicube(self,filepath):
+        widget = self.minicube_dock.widget()
+        ci = self.hypercube_manager.add_or_sync_cube(filepath)
+        hc = self.hypercube_manager.get_loaded_cube(filepath, cube_info=ci)
+
+        if hc.data is None:
+            widget.load_cube(cube_info=ci)
+        else:
+            widget.load_cube(cube_info=ci, cube=hc)
+
     def _send_to_browser(self, filepath):
         ci = self.hypercube_manager.add_or_sync_cube(filepath)
         hc = self.hypercube_manager.get_loaded_cube(filepath, cube_info=ci)
@@ -555,8 +584,8 @@ class MainApp(QtWidgets.QMainWindow):
         self._send_to_metadata(filepath)
         self._send_to_registration(filepath,1)
         self._send_to_browser(filepath)
+        self._send_to_minicube(filepath)
 
-    @QtCore.pyqtSlot(object, object)
     def _on_tool_loaded_cube(self, hc: Hypercube, tool_widget):
         # Chemin résolu du cube
         path = hc.filepath
@@ -593,6 +622,11 @@ class MainApp(QtWidgets.QMainWindow):
 
             # Séparateur
             sub.addSeparator()
+
+            # Envoyer au dock mini
+            act_mini = QtWidgets.QAction("Send to Minicube tool", self)
+            act_mini.triggered.connect(lambda checked, p=path: self._send_to_minicube(p))
+            sub.addAction(act_mini)
 
             # Envoyer au dock viz
             act_viz = QtWidgets.QAction("Send to Vizualisation tool", self)
@@ -797,7 +831,7 @@ def check_resolution_change():
 
 if __name__ == "__main__":
 
-    # sys.excepthook = excepthook #set the exception handler
+    sys.excepthook = excepthook #set the exception handler
 
     app = QtWidgets.QApplication(sys.argv)
 
@@ -809,12 +843,10 @@ if __name__ == "__main__":
 
     folder = r'C:\Users\Usuario\Documents\DOC_Yannick\HYPERDOC Database_TEST\Samples\minicubes/'
     fname = '00189-VNIR-mock-up.h5'
-    import os
 
     filepath = os.path.join(folder, fname)
+    main._on_add_cube([filepath,filepath.replace('189','191')])
 
-    main._on_add_cube([filepath,filepath.replace('89','91')])
-    main._send_to_all(filepath)
 
     try:
         import matlab.engine

@@ -144,3 +144,17 @@ Traceback (most recent call last):
   File "<frozen genericpath>", line 164, in _check_arg_types
 TypeError: join() argument must be str, bytes, or os.PathLike object, not 'NoneType'
 
+2025-07-27 05:19:37,638 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\ground_truth\ground_truth_tool.py", line 1401, in load_cube_info
+    self.cube.cube_info = ci
+    ^^^^^^^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'cube_info'
+
+2025-07-27 05:22:49,974 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\ground_truth\ground_truth_tool.py", line 1401, in load_cube_info
+    self.cube.cube_info = ci
+    ^^^^^^^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'cube_info'
+

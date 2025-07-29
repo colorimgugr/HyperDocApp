@@ -40,6 +40,7 @@ class HypercubeManager(QObject):
         path = str(Path(filepath).resolve())
         # Return existing instance if present
         if path in self._cubes_info:
+            self.cubes_changed.emit(self.paths)
             return self._cubes_info[path]
 
         # Create new CubeInfoTemp and load initial data
@@ -80,19 +81,14 @@ class HypercubeManager(QObject):
         while len(self._cube_cache) > self.max_cache_size:
             self._cube_cache.popitem(last=False)
 
-    def update_metadata(self, filepath: str, key: str, value) -> None:
-        """
-        Update metadata for a registered cube and emit metadata_updated.
-        """
-        path = str(Path(filepath).resolve())
-        ci = self._cubes_info.get(path)
-        if not ci or self._updating_metadata:
+    def update_metadata(self, cube_info: CubeInfoTemp):
+        print('[Hypercube Manager] -> entered in update_metadata')
+        path = str(Path(cube_info.filepath).resolve())
+        if path not in self._cubes_info:
             return
-
-        self._updating_metadata = True
-        ci.metadata_temp[key] = value
-        self.metadata_updated.emit(ci)
-        self._updating_metadata = False
+        self._cubes_info[path] = cube_info
+        self.metadata_updated.emit(cube_info)
+        print('[Hypercube Manager] -> metadata Updated')
 
     def remove_cube(self, filepath: str) -> None:
         """

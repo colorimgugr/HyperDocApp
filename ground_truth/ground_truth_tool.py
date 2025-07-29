@@ -195,7 +195,7 @@ GT_cmap=np.array([[0.        , 1.        , 0.24313725, 0.22745098, 0.37254902,
         0.        , 0.        , 0.        , 0.49019608, 0.09803922,
         0.8627451 , 0.74509804, 0.58823529, 0.39215686, 0.19607843]])
 
-class le (QGraphicsView):
+class ZoomableGraphicsView (QGraphicsView):
     def __init__(self,cursor_style='default'):
         super().__init__()
         self.setScene(QGraphicsScene())
@@ -1398,6 +1398,8 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         self.show_image(self.cube.cube_info.filepath)
 
     def load_cube_info(self, ci: CubeInfoTemp):
+        if not self.cube:
+            return
         self.cube.cube_info = ci
 
     def reset_state(self):

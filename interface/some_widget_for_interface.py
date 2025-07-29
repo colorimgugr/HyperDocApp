@@ -52,11 +52,14 @@ class ZoomableGraphicsView(QGraphicsView):
         self.setMouseTracking(True)  # enable mouseMoveEvent without press
 
     def setImage(self, pixmap):
-        self.clear_rectangle()
+        # self.clear_rectangle()
         self.scene().clear()
+        self._selection_overlay = None
+        self.last_rect_item = None
         self.pixmap_item = QGraphicsPixmapItem(pixmap)
         self.scene().addItem(self.pixmap_item)
         self.setSceneRect(QRectF(pixmap.rect()))
+
 
     def wheelEvent(self, event):
         zoom_in_factor = 1.25
@@ -130,6 +133,7 @@ class ZoomableGraphicsView(QGraphicsView):
             y2 = max(0, min(y2, h - 1))
 
             # Erase previous rectangle
+            self.clear_selection_overlay()
             self.clear_rectangle()
 
             # Création du rectangle avec coins clampés
@@ -166,15 +170,32 @@ class ZoomableGraphicsView(QGraphicsView):
         self.last_rect_item = None
         self.rect_coords=None
 
-    def add_selection_overlay(self, rect: QRectF):
+    # def add_selection_overlay(self, rect: QRectF):
+    #     # Remove previous overlay if any
+    #     if hasattr(self, '_selection_overlay') and self._selection_overlay is not None:
+    #         self.scene().removeItem(self._selection_overlay)
+    #
+    #     overlay = QGraphicsRectItem(rect)
+    #     overlay.setBrush(QColor(0, 255, 0, 80) ) # Green with transparency
+    #     overlay.setPen(QPen(Qt.green, 2, Qt.DashLine))
+    #     overlay.setZValue(10)  # Ensure it's above the image
+    #     self.scene().addItem(overlay)
+    #     self._selection_overlay = overlay
+
+    def add_selection_overlay(self, rect: QRectF,surface=True):
         # Remove previous overlay if any
         if hasattr(self, '_selection_overlay') and self._selection_overlay is not None:
-            self.scene().removeItem(self._selection_overlay)
+            try:
+                self.scene().removeItem(self._selection_overlay)
+            except RuntimeError:
+                pass  # item déjà supprimé côté C++
+            self._selection_overlay = None
 
         overlay = QGraphicsRectItem(rect)
-        overlay.setBrush(QColor(0, 255, 0, 80))  # Green with transparency
-        overlay.setPen(QPen(Qt.green, 2, Qt.DashLine))
-        overlay.setZValue(10)  # Ensure it's above the image
+        if surface:
+            overlay.setBrush(QColor(0, 255, 0, 80))  # Green with transparency
+        overlay.setPen(QPen(Qt.red, 1, Qt.DashLine))
+        overlay.setZValue(10)  # On top
         self.scene().addItem(overlay)
         self._selection_overlay = overlay
 

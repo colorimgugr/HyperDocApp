@@ -4,14 +4,21 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="[registration] -&gt; individual transforms OK">
-      <change afterPath="$PROJECT_DIR$/minicube/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/minicube/extract_minicube_window.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/minicube/extract_minicube_window.ui" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/minicube/minicube_tool.py" afterDir="false" />
+    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="[Minicube] : v1 finished">
+      <change beforePath="$PROJECT_DIR$/.idea/Hypertool.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/Hypertool.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/MainWindow.py" beforeDir="false" afterPath="$PROJECT_DIR$/MainWindow.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/MainWindow.spec" beforeDir="false" afterPath="$PROJECT_DIR$/MainWindow.spec" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data_vizualisation/data_vizualisation_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/data_vizualisation/data_vizualisation_tool.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ground_truth/ground_truth_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/ground_truth/ground_truth_tool.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/registration/minicube_window.ui" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/interface/hypercube_manager.py" beforeDir="false" afterPath="$PROJECT_DIR$/interface/hypercube_manager.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/interface/icons/all_icon.svg" beforeDir="false" afterPath="$PROJECT_DIR$/interface/icons/all_icon.svg" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/interface/some_widget_for_interface.py" beforeDir="false" afterPath="$PROJECT_DIR$/interface/some_widget_for_interface.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/log/error.log" beforeDir="false" afterPath="$PROJECT_DIR$/log/error.log" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/metadata/metadata_dock.py" beforeDir="false" afterPath="$PROJECT_DIR$/metadata/metadata_dock.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/metadata/metadata_dock.ui" beforeDir="false" afterPath="$PROJECT_DIR$/metadata/metadata_dock.ui" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/metadata/metadata_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/metadata/metadata_tool.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/minicube/minicube_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/minicube/minicube_tool.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -69,24 +76,24 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "Python.HyperdocApp_core_v3.5.1.executor": "Run",
-    "Python.HyperdocApp_main_.executor": "Run",
-    "Python.Hyperdoc_GUI_design.executor": "Run",
-    "Python.Run in console.executor": "Run",
-    "Python.Test_update.executor": "Run",
-    "Python.Unnamed.executor": "Run",
-    "Python.hypercube_app_v26.executor": "Run",
-    "Python.open.executor": "Run",
-    "Python.register_images.executor": "Run",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "main",
-    "last_opened_file_path": "C:/Users/Usuario/Documents/GitHub/Hypertool/minicube",
-    "settings.editor.selected.configurable": "preferences.keymap"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Python.HyperdocApp_core_v3.5.1.executor&quot;: &quot;Run&quot;,
+    &quot;Python.HyperdocApp_main_.executor&quot;: &quot;Run&quot;,
+    &quot;Python.Hyperdoc_GUI_design.executor&quot;: &quot;Run&quot;,
+    &quot;Python.Run in console.executor&quot;: &quot;Run&quot;,
+    &quot;Python.Test_update.executor&quot;: &quot;Run&quot;,
+    &quot;Python.Unnamed.executor&quot;: &quot;Run&quot;,
+    &quot;Python.hypercube_app_v26.executor&quot;: &quot;Run&quot;,
+    &quot;Python.open.executor&quot;: &quot;Run&quot;,
+    &quot;Python.register_images.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/Usuario/Documents/GitHub/Hypertool/minicube&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.keymap&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="C:\Users\Usuario\Documents\GitHub\Hypertool\minicube" />
@@ -139,14 +146,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1744020944801</updated>
-    </task>
-    <task id="LOCAL-00028" summary="Ground truth tool : ok for rgb visualisation + live spectrum">
-      <option name="closed" value="true" />
-      <created>1747924637084</created>
-      <option name="number" value="00028" />
-      <option name="presentableId" value="LOCAL-00028" />
-      <option name="project" value="LOCAL" />
-      <updated>1747924637084</updated>
     </task>
     <task id="LOCAL-00029" summary="Added GT spectrum to live spectrum + std deviation.&#10;Resolve conflict between pixel selction and draggable.">
       <option name="closed" value="true" />
@@ -532,7 +531,15 @@
       <option name="project" value="LOCAL" />
       <updated>1753536974936</updated>
     </task>
-    <option name="localTasksCounter" value="77" />
+    <task id="LOCAL-00077" summary="[Minicube] : v1 finished">
+      <option name="closed" value="true" />
+      <created>1753543852604</created>
+      <option name="number" value="00077" />
+      <option name="presentableId" value="LOCAL-00077" />
+      <option name="project" value="LOCAL" />
+      <updated>1753543852604</updated>
+    </task>
+    <option name="localTasksCounter" value="78" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -584,7 +591,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="data_viz : &#10;- all metadata pop up OK&#10;- live spectrum ok&#10;- resize graph ok&#10;- 3 imeges same size OK" />
     <MESSAGE value="ouverture des cubes dans data_viz elargie en format, ajout de la hash_up table pour association de cube, depandance UV differentes" />
     <MESSAGE value="syncronize Drag and scroll for images and GT&#10;Open non h5&#10;live spectrum initiate if no GT" />
     <MESSAGE value="Main added all tools and open cube with dialog" />
@@ -609,6 +615,7 @@
     <MESSAGE value="path problems with .splt('/') fixed with os.path" />
     <MESSAGE value="check if loaded GT good size" />
     <MESSAGE value="[registration] -&gt; individual transforms OK" />
-    <option name="LAST_COMMIT_MESSAGE" value="[registration] -&gt; individual transforms OK" />
+    <MESSAGE value="[Minicube] : v1 finished" />
+    <option name="LAST_COMMIT_MESSAGE" value="[Minicube] : v1 finished" />
   </component>
 </project>

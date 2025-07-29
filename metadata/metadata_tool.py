@@ -37,7 +37,7 @@ class MetadataTool(QWidget, Ui_Metadata_tool):
         self.checkBox_edit.toggled.connect(self.toggle_edit_metadata)
 
         # connect buttons
-        self.pushButton_save.pressed.connect(self.keep_metadatum)
+        self.pushButton_valid_metadatum.pressed.connect(self.keep_metadatum)
         self.pushButton_cancel.pressed.connect(self.reset_metadata)
         self.pushButton_reset_one.pressed.connect(self.reset_metadatum)
         self.toolButton_up.clicked.connect(lambda : self.step_combo(-1))
@@ -665,6 +665,8 @@ class MetadataTool(QWidget, Ui_Metadata_tool):
         else:
             self.textEdit_metadata.setStyleSheet("QTextEdit  { color: green; }")
 
+        print(f'metadata_temp[{key}] -> {self.cube_info.metadata_temp[key]}')
+
     def toggle_edit_metadata(self):
         """
         Switch between read (QLabel) and edit (QTextEdit).
@@ -696,7 +698,7 @@ class MetadataTool(QWidget, Ui_Metadata_tool):
 
         self.stacked_metadata.setCurrentIndex(1 if editable else 0)
         self.textEdit_metadata.setReadOnly(not editable)
-        self.pushButton_save.setEnabled(editable)
+        self.pushButton_valid_metadatum.setEnabled(editable)
         self.textEdit_metadata.setStyleSheet("QTextEdit  { color: black; }")
         self.update_metadata_label()
 
@@ -773,6 +775,8 @@ class MetadataTool(QWidget, Ui_Metadata_tool):
         if ans==qm.Yes:
             self.metadataChanged.emit(self.cube_info)
             print(f"[MetadataTool] Metadata updated and signal emitted for {self.cube_info.filepath}")
+            key='cubeinfo'
+            print(f'metadata_temp[{key}] -> {self.cube_info.metadata_temp[key]}')
 
         else:
             return
