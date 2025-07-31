@@ -4,21 +4,18 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="[Minicube] : v1 finished">
-      <change beforePath="$PROJECT_DIR$/.idea/Hypertool.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/Hypertool.iml" afterDir="false" />
+    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="[DataViz] &amp; [Metadata] : DataViz updated on metadata change. Quick change to all files ending with .h5, .hdr and .mat">
+      <change afterPath="$PROJECT_DIR$/identification/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/identification/classifier_predict.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/identification/classifier_train.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/identification/identification_tool.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/identification/identification_window.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/identification/identification_window.ui" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/MainWindow.py" beforeDir="false" afterPath="$PROJECT_DIR$/MainWindow.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/MainWindow.spec" beforeDir="false" afterPath="$PROJECT_DIR$/MainWindow.spec" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data_vizualisation/data_vizualisation_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/data_vizualisation/data_vizualisation_tool.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ground_truth/ground_truth_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/ground_truth/ground_truth_tool.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/interface/hypercube_manager.py" beforeDir="false" afterPath="$PROJECT_DIR$/interface/hypercube_manager.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/interface/icons/all_icon.svg" beforeDir="false" afterPath="$PROJECT_DIR$/interface/icons/all_icon.svg" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/interface/some_widget_for_interface.py" beforeDir="false" afterPath="$PROJECT_DIR$/interface/some_widget_for_interface.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/log/error.log" beforeDir="false" afterPath="$PROJECT_DIR$/log/error.log" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/metadata/metadata_dock.py" beforeDir="false" afterPath="$PROJECT_DIR$/metadata/metadata_dock.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/metadata/metadata_dock.ui" beforeDir="false" afterPath="$PROJECT_DIR$/metadata/metadata_dock.ui" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/metadata/metadata_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/metadata/metadata_tool.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/minicube/minicube_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/minicube/minicube_tool.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ground_truth/ground_truth_tool.spec" beforeDir="false" afterPath="$PROJECT_DIR$/ground_truth/ground_truth_tool.spec" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hypercubes/hypercube.py" beforeDir="false" afterPath="$PROJECT_DIR$/hypercubes/hypercube.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -90,12 +87,13 @@
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
     &quot;git-widget-placeholder&quot;: &quot;main&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Users/Usuario/Documents/GitHub/Hypertool/minicube&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/Usuario/Documents/GitHub/Hypertool/identificacion&quot;,
     &quot;settings.editor.selected.configurable&quot;: &quot;preferences.keymap&quot;
   }
 }</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\Usuario\Documents\GitHub\Hypertool\identificacion" />
       <recent name="C:\Users\Usuario\Documents\GitHub\Hypertool\minicube" />
       <recent name="C:\Users\Usuario\Documents\GitHub\Hypertool" />
       <recent name="C:\Users\Usuario\Documents\GitHub\Hypertool\hypercubes" />
@@ -146,14 +144,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1744020944801</updated>
-    </task>
-    <task id="LOCAL-00029" summary="Added GT spectrum to live spectrum + std deviation.&#10;Resolve conflict between pixel selction and draggable.">
-      <option name="closed" value="true" />
-      <created>1748011389316</created>
-      <option name="number" value="00029" />
-      <option name="presentableId" value="LOCAL-00029" />
-      <option name="project" value="LOCAL" />
-      <updated>1748011389316</updated>
     </task>
     <task id="LOCAL-00030" summary="OK for selection rectangle and pixel of different color, multiple distance.">
       <option name="closed" value="true" />
@@ -539,7 +529,15 @@
       <option name="project" value="LOCAL" />
       <updated>1753543852604</updated>
     </task>
-    <option name="localTasksCounter" value="78" />
+    <task id="LOCAL-00078" summary="[DataViz] &amp; [Metadata] : DataViz updated on metadata change. Quick change to all files ending with .h5, .hdr and .mat">
+      <option name="closed" value="true" />
+      <created>1753785992254</created>
+      <option name="number" value="00078" />
+      <option name="presentableId" value="LOCAL-00078" />
+      <option name="project" value="LOCAL" />
+      <updated>1753785992255</updated>
+    </task>
+    <option name="localTasksCounter" value="79" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -591,7 +589,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="ouverture des cubes dans data_viz elargie en format, ajout de la hash_up table pour association de cube, depandance UV differentes" />
     <MESSAGE value="syncronize Drag and scroll for images and GT&#10;Open non h5&#10;live spectrum initiate if no GT" />
     <MESSAGE value="Main added all tools and open cube with dialog" />
     <MESSAGE value="Metadata tool with generate meta first step.&#10;Much robust for lokking at changes keep save etc..." />
@@ -616,6 +613,7 @@
     <MESSAGE value="check if loaded GT good size" />
     <MESSAGE value="[registration] -&gt; individual transforms OK" />
     <MESSAGE value="[Minicube] : v1 finished" />
-    <option name="LAST_COMMIT_MESSAGE" value="[Minicube] : v1 finished" />
+    <MESSAGE value="[DataViz] &amp; [Metadata] : DataViz updated on metadata change. Quick change to all files ending with .h5, .hdr and .mat" />
+    <option name="LAST_COMMIT_MESSAGE" value="[DataViz] &amp; [Metadata] : DataViz updated on metadata change. Quick change to all files ending with .h5, .hdr and .mat" />
   </component>
 </project>

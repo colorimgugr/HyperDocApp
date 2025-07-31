@@ -5,7 +5,7 @@ a = Analysis(
     ['ground_truth_tool.py'],
     pathex=[],
     binaries=[],
-    datas=[('Materials labels and palette assignation - Materials_labels_palette.csv', '.')],
+    datas=[('ground_truth/Materials labels and palette assignation - Materials_labels_palette.csv', 'ground_truth')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
@@ -26,13 +26,12 @@ exe = EXE(
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
-    console=False,
+    console=True,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=['GT_icon.ico'],
 )
 coll = COLLECT(
     exe,
