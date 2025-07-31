@@ -10,17 +10,20 @@ import h5py
 import numpy as np
 from spectral.io import envi
 from scipy.io import loadmat
+from scipy.ndimage import uniform_filter
+from skimage.filters import threshold_otsu
 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
 
-from PyQt5.QtWidgets import (QWidget,QSizePolicy,
+
+from PyQt5.QtWidgets import (QWidget,QSizePolicy,QMainWindow,QWidget,
     QApplication, QFileDialog, QMessageBox, QDialog, QTreeWidgetItem,QVBoxLayout,QHBoxLayout,
 )
 from PyQt5.QtCore   import pyqtSignal, QEventLoop, QRectF,QTimer,pyqtSlot
 
 from hypercubes.hdf5_browser_window import Ui_HDF5BrowserWidget
-
 from hypercubes.white_calibration_window import Ui_dialog_white_calibration
 from interface.some_widget_for_interface import*
 
@@ -60,6 +63,75 @@ class CubeInfoTemp:
     def __hash__(self):
         # if in dic or set
         return hash(Path(self.filepath).resolve())
+
+import numpy as np
+
+def averagefilter(image, window=(3, 3), padding='constant'):
+    """
+    2D mean filtering using integral image method (fast summed-area table).
+    Parameters
+    ----------
+    image : ndarray
+        Input 2D image.
+    window : tuple of int
+        (m, n) window size.
+    padding : str or scalar
+        Padding mode ('constant', 'edge', 'reflect', 'wrap') or a constant value.
+    Returns
+    -------
+    image_filt : ndarray
+        Filtered image, same dtype as input.
+    """
+    m, n = window
+
+    # Ensure odd dimensions
+    if m % 2 == 0:
+        m -= 1
+    if n % 2 == 0:
+        n -= 1
+
+    if image.ndim != 2:
+        raise ValueError("Input image must be 2D (grayscale).")
+
+    rows, cols = image.shape
+
+    # Map MATLAB's padding names to numpy.pad modes
+    pad_map = {
+        'replicate': 'edge',
+        'symmetric': 'reflect',
+        'circular': 'wrap',
+        'constant': 'constant'
+    }
+    pad_mode = pad_map.get(padding, padding)  # keep numeric if scalar
+
+    # Pad before and after
+    pad_pre = ((m+1)//2, (n+1)//2)
+    pad_post = ((m-1)//2, (n-1)//2)
+
+    if isinstance(pad_mode, (int, float)):
+        img_pad_pre = np.pad(image, pad_pre, mode='constant', constant_values=pad_mode)
+        img_pad = np.pad(img_pad_pre, pad_post, mode='constant', constant_values=pad_mode)
+    else:
+        img_pad_pre = np.pad(image, pad_pre, mode=pad_mode)
+        img_pad = np.pad(img_pad_pre, pad_post, mode=pad_mode)
+
+    # Convert to double for computation
+    img_d = img_pad.astype(float)
+
+    # Integral image
+    t = np.cumsum(np.cumsum(img_d, axis=0), axis=1)
+
+    # Window sum extraction
+    imageI = (
+        t[m:rows+m, n:cols+n] +
+        t[0:rows, 0:cols] -
+        t[m:rows+m, 0:cols] -
+        t[0:rows, n:cols+n]
+    )
+    # Average
+    imageI = imageI / (m * n)
+
+    return imageI.astype(image.dtype)
 
 class MatplotlibCanvas(FigureCanvas):
     def __init__(self, parent=None, width=5, height=3, dpi=100):
@@ -987,6 +1059,151 @@ class Hypercube:
         reflectance_interp = interp_ref_func(self.wl)
         return reflectance_interp
 
+    def get_best_band(self):
+        """
+        return band with smaller SNR ratio
+        """
+        hypercube = self.data
+        bands_number = hypercube.shape[2]
+        noise_values = np.zeros(bands_number)
+
+        for k in range(bands_number):
+            band = hypercube[:, :, k]
+            average = np.mean(band)
+            std_dev = np.std(band)
+            noise_values[k] = 10 * np.log10((average ** 2) / (std_dev ** 2))
+
+        best_band = np.argmin(noise_values)
+        return best_band
+
+    def binarize_niblack(self, image, param={}):
+
+        try:
+            k_threshold=param['k']
+        except:
+            k_threshold = -0.2
+
+        X = image.astype(float)
+        filt_radius = X.shape[0] // 3
+        y, x = np.ogrid[-filt_radius:filt_radius + 1, -filt_radius:filt_radius + 1]
+        mask = x ** 2 + y ** 2 <= filt_radius ** 2
+        mask = mask / np.sum(mask)
+
+        local_mean = uniform_filter(X, size=filt_radius * 2 + 1, mode='reflect')
+        local_std = np.sqrt(uniform_filter(X ** 2, size=filt_radius * 2 + 1, mode='reflect'))
+        return X <= (local_mean + k_threshold * local_std)
+
+    def binarize_otsu(self, image):
+        thresh = threshold_otsu(image)
+        return image < thresh
+
+    def binarize_sauvola(self, image,param={}):
+
+        try:
+            k=param['k']
+        except:
+            k=0.4
+
+        try:
+            win_div=param['window']
+        except:
+            win_div=3
+
+        try:
+            padding=param['padding']
+        except:
+            padding = 'replicate'
+
+        image = image.astype(float)
+        h, w = image.shape
+        window = (h // win_div, w // win_div)
+
+        #Local mean
+        mean_p = averagefilter(image, window, padding)
+
+        # sq local mean
+        mean_sq = averagefilter(image ** 2, window, padding)
+        deviation = np.sqrt(mean_sq - mean_p ** 2)
+
+        # Sauvola
+        R = np.max(deviation)
+        threshold = mean_p * (1 + k * (deviation / R - 1))
+        BW = image < threshold
+        return BW
+
+    def binarize_wolf(self, image,param={},):
+        try:
+            k = param['k']
+        except:
+            k = 0.5
+
+        try:
+            win_div = param['window']
+        except:
+            win_div = 3
+
+        try:
+            padding = param['padding']
+        except:
+            padding = 'reflect'
+
+
+        X = image.astype(float)
+        window_size = (X.shape[0] // win_div, X.shape[1] // win_div)
+
+        m = averagefilter(X, size=window_size, mode=padding)
+        m_sq = averagefilter(X ** 2, size=window_size, mode=padding)
+        std = np.sqrt(m_sq - m ** 2)
+
+        R = np.max(std)
+        M = np.min(X)
+        thresh = (1 - k) * m + k * std / R * (m - M) + k * M
+        return X < thresh
+
+    def binarize_bradley(self, image,param={}):
+
+        try:
+            k = int(param['k'])
+        except:
+            k = 10
+
+        try:
+            win_size = param['window']
+        except:
+            win_size = 15
+
+        try:
+            padding = param['padding']
+        except:
+            padding = 'replicate'
+
+        window=(win_size,win_size)
+        mean_p = averagefilter(image, window, padding)
+        BW = np.ones_like(image, dtype=bool)
+        BW[image >= mean_p * (1 - k / 100)] = 0
+        return BW
+
+    def get_binary_from_best_band(self, algorithm="Bradley",param={}):
+        """
+        return a binary map from
+        """
+        idx = self.get_best_band()
+        image = self.data[:, :, idx]
+
+        if algorithm.lower() == "niblack":
+            return self.binarize_niblack(image,param)
+        elif algorithm.lower() == "otsu":
+            return self.binarize_otsu(image)
+        elif algorithm.lower() == "sauvola":
+            return self.binarize_sauvola(image,param)
+        elif algorithm.lower() == "wolf":
+            return self.binarize_wolf(image,param)
+        elif algorithm.lower() == "bradley":
+            return self.binarize_bradley(image,param)
+        else:
+            raise ValueError(f"Unknown binarization algorithm: {algorithm}")
+
+
 class HDF5BrowserWidget(QWidget, Ui_HDF5BrowserWidget):
     """
     Embeddable widget for browsing HDF5 / legacy MAT files.
@@ -1210,76 +1427,58 @@ class HDF5BrowserWidget(QWidget, Ui_HDF5BrowserWidget):
         if idx != -1:
             self.comboBox_channel_wl.setCurrentIndex(idx)
 
-
-def save_images(dirpath: str,
-                fixed_img: np.ndarray,
-                aligned_img: np.ndarray,
-                image_format: str = 'png',
-                rgb: bool = False):
-    """Save 'fixed' and 'aligned' images side by side."""
-    os.makedirs(dirpath, exist_ok=True)
-    ext = image_format.lower()
-
-    def write(name, img):
-        out = os.path.join(dirpath, f"{name}.{ext}")
-        if img.ndim == 2 and rgb:
-            img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
-        if img.ndim == 3 and rgb:
-            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        cv2.imwrite(out, img)
-
-    write('fixed', fixed_img)
-    write('aligned', aligned_img)
+# def save_images(dirpath: str,
+#                 fixed_img: np.ndarray,
+#                 aligned_img: np.ndarray,
+#                 image_format: str = 'png',
+#                 rgb: bool = False):
+#     """Save 'fixed' and 'aligned' images side by side."""
+#     os.makedirs(dirpath, exist_ok=True)
+#     ext = image_format.lower()
+#
+#     def write(name, img):
+#         out = os.path.join(dirpath, f"{name}.{ext}")
+#         if img.ndim == 2 and rgb:
+#             img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
+#         if img.ndim == 3 and rgb:
+#             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+#         cv2.imwrite(out, img)
+#
+#     write('fixed', fixed_img)
+#     write('aligned', aligned_img)
 
 if __name__ == '__main__':
 
-    import matplotlib
-    matplotlib.use('Qt5Agg')  # 'TkAgg' or 'Qt5Agg'
-    import matplotlib.pyplot as plt
-
     folder = r'C:\Users\Usuario\Documents\DOC_Yannick\HYPERDOC Database_TEST\Samples\minicubes/'
-    fname = '00189-VNIR-mock-up.h5'
-
-    # folder = r'C:\Users\Usuario\Documents\DOC_Yannick\Thin_film\CITIC\241216\PikaL'
-    # fname = 'c1318_12.bil.hdr' # test pikaL
-
-    # folder = r'C:\Users\Usuario\Documents\DOC_Yannick\HYPERDOC Database_TEST\hypspex'
-    # fname = 'P1A_SWIR_384_SN3189_2335us_2023-09-05T205402_raw_rad.hdr' # test pikaL
-
-    # folder = r'C:\Users\Usuario\Documents\DOC_Yannick\HYPERDOC Database_TEST'
-    # fname = 'P1A_SWIR_384_SN3189_2335us_2023-09-05T205402_raw_rad.hdr' # test specim
-    # fname = 'P1A_SWIR_384_SN3189_2335us_2023-09-05T205402_raw_rad_calib.hdr' # test specim calib
-
-    # folder = r'G:\Mi unidad\CIMLab\Proyectos y OTRI\Hyperdoc\Datos\Muestras controladas 22-23\NTNU captures\UGS\VNIR'
-    # fname = 'P1A_VNIR_1800_SN00841_12004us_2023-09-05T220145_raw.hdr' # test specim
-
-    # fname = 'MPD41a_SWIR.mat'
-    # fname = 'MPD41a_SWIR_cube_NOv7p3.mat'
-    # fname = 'MPD41a_SWIR_sruct_NOv7p3.mat'
-    # fname = 'MPD41a_SWIR_struct_YESv7p3.mat'
+    fname = '00279-VNIR-mock-up.h5'
+    # folder=(r'C:\Users\Usuario\Documents\DOC_Yannick\HYPERDOC Database_TEST\identification')
+    # fname='01378-VNIR-royal.h5'
 
     import os
 
     filepath = os.path.join(folder, fname)
 
-    # app = QApplication(sys.argv)
+    app = QApplication(sys.argv)
 
     # cube = Hypercube(filepath=filepath, load_init=True)
     cube = Hypercube(filepath=filepath, cube_info=None, load_init=True)
+    # img = cube.get_rgb_image([50, 30, 10])
+    img=cube.get_binary_from_best_band()
 
-    # cube.calibrating_from_image_extract()
+    window = QMainWindow()
+    central_widget = QWidget()
+    layout = QVBoxLayout(central_widget)
 
-    # path=cube.cube_info.filepath.replace('.','_calib.')
+    mpl = MatplotlibCanvas()
+    toolbar = NavigationToolbar(mpl, window)
+    layout.addWidget(toolbar)
+    layout.addWidget(mpl)
 
-    # for key in cube.cube_info.metadata_temp:
-    #     print(f' {key} -> {cube.cube_info.metadata_temp[key]}')
+    window.setCentralWidget(central_widget)
 
-    # mid=int(cube.data.shape[2]/2)
-    # chan=[0,mid,cube.data.shape[2]-1]
-    # image_np=cube.data[:,:,chan]
-    # print(f'max data : {np.max(cube.data)}')
-    #
-    #
-    # fig,ax=plt.subplots()
-    # ax.imshow(image_np)
-    # plt.show()
+    # Affichage de l'image
+    mpl.ax.imshow(img)
+    mpl.draw()
+
+    window.show()
+    sys.exit(app.exec_())

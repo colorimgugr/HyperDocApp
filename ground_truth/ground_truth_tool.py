@@ -412,10 +412,10 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
                 H, W = self.data.shape[:2]
                 self._preview_mask = np.zeros((H, W), dtype=bool)
 
-                H, W = self._preview_mask.shape
-                if 0 <= y < H and 0 <= x < W:
-                    self._preview_mask[y, x] = True
-                    self.show_image(preview=True)
+            H, W = self._preview_mask.shape
+            if 0 <= y < H and 0 <= x < W:
+                self._preview_mask[y, x] = True
+                self.show_image(preview=True)
 
             return True
 
@@ -1547,7 +1547,7 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
             base = self.current_composite
             layer = np.zeros_like(base)
             layer[..., :] = 0,0,255  # BGR = (0,0,0)
-            mixed = cv2.addWeighted(base, 1-0.1, layer, 0.1, 0)
+            mixed = cv2.addWeighted(base, 1-0.3, layer, 0.3, 0)
             mask3 = self._preview_mask[:, :, None]
             result = np.where(mask3, mixed, base)
             self.viewer_left.setImage(self._np2pixmap(result))
