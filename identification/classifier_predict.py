@@ -100,10 +100,7 @@ for key in hyps:
     wl_cut=hyps[key].wl[index_limits[0]:index_limits[1]+1]
     hyps_cut[key]=Hypercube(data=data_cut,wl=wl_cut,cube_info=hyps[key].cube_info)
 
-
-
 # todo : if spectral range camera user < spectral range data set -> cut dataset before training model. If model already trained...ignore features
-
 
 ## check data size
 

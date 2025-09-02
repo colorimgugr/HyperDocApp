@@ -10,6 +10,7 @@ import h5py
 import numpy as np
 from spectral.io import envi
 from scipy.io import loadmat
+from scipy.interpolate import interp1d
 from scipy.ndimage import uniform_filter
 from skimage.filters import threshold_otsu
 
@@ -183,6 +184,25 @@ class Hypercube:
         self.data     = None
         self.wl       = None
         self.metadata = {}
+
+    def get_interpolate_cube(self, _wl_step, interp_kind='linear'):
+
+        interp_func = interp1d(
+            self.wl,
+            self.data,
+            kind=interp_kind,
+            axis=2,
+            bounds_error=False,
+            fill_value=(self.data[:, :, 0], self.data[:, :, -1])
+        )
+
+        wl_i = int(self.wl[0] / _wl_step) * _wl_step
+        wl_e = int(self.wl[-1] /_wl_step + 0.5) * _wl_step
+        wl_interp = np.arange(wl_i, wl_e + _wl_step, _wl_step)
+
+        data_cube_interpolated = interp_func(wl_interp)
+
+        return data_cube_interpolated, wl_interp
 
     def get_rgb_image(self, indices):
         """Return an RGB composite from three-band indices, or None."""
@@ -1149,10 +1169,10 @@ class Hypercube:
 
 
         X = image.astype(float)
-        window_size = (X.shape[0] // win_div, X.shape[1] // win_div)
+        window = (X.shape[0] // win_div, X.shape[1] // win_div)
 
-        m = averagefilter(X, size=window_size, mode=padding)
-        m_sq = averagefilter(X ** 2, size=window_size, mode=padding)
+        m = averagefilter(X, window=window, padding=padding)
+        m_sq = averagefilter(X ** 2, window=window, padding=padding)
         std = np.sqrt(m_sq - m ** 2)
 
         R = np.max(std)
@@ -1163,9 +1183,9 @@ class Hypercube:
     def binarize_bradley(self, image,param={}):
 
         try:
-            k = int(param['k'])
+            k = param['k']
         except:
-            k = 10
+            k = 0.1
 
         try:
             win_size = param['window']
@@ -1180,7 +1200,7 @@ class Hypercube:
         window=(win_size,win_size)
         mean_p = averagefilter(image, window, padding)
         BW = np.ones_like(image, dtype=bool)
-        BW[image >= mean_p * (1 - k / 100)] = 0
+        BW[image >= mean_p * (1 - k)] = 0
         return BW
 
     def get_binary_from_best_band(self, algorithm="Bradley",param={}):
