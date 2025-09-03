@@ -13,7 +13,6 @@ import time
 import traceback
 
 from pandas.core.common import count_not_none
-import torch
 
 from identification.identification_window import Ui_IdentificationWidget
 from hypercubes.hypercube import Hypercube
@@ -27,8 +26,10 @@ from identification.load_cube_dialog import Ui_Dialog
 # todo : pb avec slier et radiobuttons false color
 # todo : pb avec gestion de la table depuis maj passage au rerun
 # todo : affichage touts les resultats ensemble
-# todo : save claffication
+# todo : save clasification
 # todo : launch/reinit selected
+# todo : check npix pb for chunk size
+# todo : legend and update legend
 
 class ClassifySignals(QObject):
     finished = pyqtSignal()                          # fin (toujours émis)
@@ -298,7 +299,6 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         self._running_idx: int = -1
         self._current_worker = None
         self._stop_all = False
-        self._rerun_done_policy = None
 
         # Combo to select which model's result to show
         self.comboBox_clas_show_model.clear()
@@ -614,7 +614,7 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         models_dir = "identification/data"
 
         if model_name == "CNN 1D":
-
+            import torch
             from classifier_train import SpectralCNN1D
             print(f'SpectralCNN1D imported')
             input_length = self.data.shape[2]
@@ -684,10 +684,6 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
             pass
         self.pushButton_clas_ink_launch.setEnabled(True)
         self._current_worker = None
-
-    def cancel_classification(self):
-        if self._current_worker is not None:
-            self._current_worker.cancel()
 
     def update_legend(self):
         # Vider le contenu actuel du frame_legend
@@ -841,6 +837,7 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         tw = self.tableWidget_classificationList
         tw.setRowCount(0)
         for row, name in enumerate(self.job_order):
+            print(f'[REFRESH TABLE] : row : {row}, name : {name}')
             job = self.jobs[name]
             tw.insertRow(row)
             # Model
@@ -961,6 +958,7 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
 
         # Refresh any dependent UI
         self._refresh_show_model_combo()
+        self._refresh_table()
 
     def move_selected_job_up(self):
         row = self._selected_row()
@@ -977,6 +975,7 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         self.tableWidget_classificationList.selectRow(row + 1)
 
     def start_queue(self):
+        print(f'[START QUEUE] : job order {self.job_order}')
         if not self.job_order:
             QMessageBox.information(self, "Empty", "No jobs in the queue.")
             return
@@ -985,11 +984,11 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
             return
 
         self._stop_all = False
-        self._rerun_done_policy = None  # reset à chaque Start
+        self._skip_done_on_run = False
 
         """Start the queue of jobs, with confirmation if some are already Done."""
-        done_jobs = [name for name, job in self.jobs.items() if job.status == "Done"]
-        if done_jobs:
+        done_exists = any(self.jobs.get(n) and self.jobs[n].status == "Done" for n in self.job_order)
+        if done_exists:
             reply = QMessageBox.question(
                 self,
                 "Confirm restart",
@@ -997,12 +996,11 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
                 "Do you want to restart them anyway?",
                 QMessageBox.Yes | QMessageBox.No
             )
-            if reply == QMessageBox.No:
-                # Skip jobs already done
-                self.job_order = [name for name in self.job_order if name not in done_jobs]
+            self._skip_done_on_run = (reply == QMessageBox.No)
+        else:
+            self._skip_done_on_run = False
 
-        # --- fin nouvelle partie
-
+        self._stop_all = False
         self._running_idx = 0
         self._launch_next_job()
 
@@ -1014,6 +1012,14 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         # 2) annuler le worker en cours
         if self._current_worker:
             self._current_worker.cancel()
+            if 0 <= self._running_idx < len(self.job_order):
+                running_name = self.job_order[self._running_idx]
+                job = self.jobs.get(running_name)
+                if job:
+                    job.status = "Canceled"
+                    job.progress = 0
+                    job.duration_s = None
+                    self._update_row_from_job(running_name)
 
         # 3) marquer les jobs restants comme annulés (hors courant)
         if self._running_idx >= 0:
@@ -1039,8 +1045,15 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
 
             # Skip jobs that are already Done if they remain in the queue
             if job.status == "Done":
-                self._running_idx += 1
-                continue
+                if self._skip_done_on_run:
+                    self._running_idx += 1
+                    continue
+                else:
+                    # Rerun: reset visible state (do not modify job_order)
+                    job.status = "Queued"
+                    job.progress = 0
+                    job.duration_s = None
+                    self._update_row_from_job(name)
 
             # Check preconditions
             if self.binary_map is None or self.data is None:
@@ -1097,7 +1110,14 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         # Progress
         pb = self.tableWidget_classificationList.cellWidget(row, 3)
         if isinstance(pb, QProgressBar):
-            pb.setValue(int(job.progress))
+            if job.status == "Running":
+                pb.setVisible(True)
+                pb.setValue(int(job.progress))
+            elif job.status in ("Canceled", "Error", "Done"):
+                if job.status == "Canceled":
+                    pb.setValue(0)
+            else:
+                pb.setValue(int(job.progress))
         # Duration
         dur_item = self.tableWidget_classificationList.item(row, 4)
         if dur_item:
@@ -1108,7 +1128,6 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         if not job: return
         job.progress = max(0, min(100, int(value)))
         self._update_row_from_job(name)
-        # (optionnel) self.label_status.setText(f"{name}: {job.progress}%")
 
     def _on_job_error(self, name: str, message: str):
         job = self.jobs.get(name)
@@ -1116,6 +1135,7 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         # différencier une vraie erreur d’une annulation volontaire
         if "canceled" in message.lower() or "cancelled" in message.lower():
             job.status = "Canceled"
+            job.progress = 0
         else:
             job.status = "Error"
         job.duration_s = None if job._t0 is None else (time.time() - job._t0)
@@ -1140,11 +1160,7 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         self._refresh_show_model_combo(select_name=name)
 
     def _on_job_partial(self, name: str, start: int, end: int, preds_chunk: np.ndarray):
-        # Reconstruire/mettre à jour une carte partielle :
-        # 1) garde un buffer 1D des prédictions du job courant si tu veux (optionnel),
-        # 2) OU re-colorise ponctuellement en utilisant le mask (plus simple si tu attends _on_job_result pour la carte finale).
-        # Exemple simple : on fait rien ici si tu préfères n'afficher qu'à la fin,
-        # mais tu peux aussi colorer chaque chunk en construisant un class_map incrémental.
+        # Todo : afficher chunk par chuk l'image
         pass
 
     def _on_job_finished(self, name: str):
