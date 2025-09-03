@@ -66,7 +66,7 @@
       <item>
        <widget class="QTabWidget" name="tabWidget">
         <property name="currentIndex">
-         <number>0</number>
+         <number>1</number>
         </property>
         <widget class="QWidget" name="tabWidgetPage2">
          <attribute name="title">
@@ -319,7 +319,14 @@
             <item>
              <widget class="QPushButton" name="pushButton_clas_remove">
               <property name="text">
-               <string>Remove</string>
+               <string>Remove selected</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="pushButton_clas_remove_all">
+              <property name="text">
+               <string>Remove all</string>
               </property>
              </widget>
             </item>
@@ -344,13 +351,27 @@
               </property>
              </widget>
             </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QVBoxLayout" name="verticalLayout_6">
+            <item>
+             <widget class="QPushButton" name="pushButton_clas_start_selected">
+              <property name="styleSheet">
+               <string notr="true">background-color: rgb(85, 170, 0);</string>
+              </property>
+              <property name="text">
+               <string>Launch selected</string>
+              </property>
+             </widget>
+            </item>
             <item>
              <widget class="QPushButton" name="pushButton_clas_start">
               <property name="styleSheet">
                <string notr="true">background-color: rgb(85, 170, 0);</string>
               </property>
               <property name="text">
-               <string>Start</string>
+               <string>Start all</string>
               </property>
              </widget>
             </item>
@@ -361,7 +382,7 @@
 color: rgb(255, 255, 255);</string>
               </property>
               <property name="text">
-               <string>Stop</string>
+               <string>Cancel queue</string>
               </property>
              </widget>
             </item>
@@ -398,7 +419,7 @@ color: rgb(255, 255, 255);</string>
       <item>
        <widget class="QTabWidget" name="tabWidget_2">
         <property name="currentIndex">
-         <number>1</number>
+         <number>0</number>
         </property>
         <widget class="QWidget" name="tabWidgetPage1_2">
          <attribute name="title">
