@@ -4,9 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="[Identification] : Queue of classifier. OK if all queue.">
+    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="[Identification] : Queue of classifier. Probleme with done jobs fixed">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/identification/identification_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/identification/identification_tool.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/identification/identification_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/identification/identification_window.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/identification/identification_window.ui" beforeDir="false" afterPath="$PROJECT_DIR$/identification/identification_window.ui" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -136,14 +137,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1744020944801</updated>
-    </task>
-    <task id="LOCAL-00032" summary="Erase Mode OK .. .BUT .. no se vee la selction anterior en pixel mode when drag">
-      <option name="closed" value="true" />
-      <created>1748356760842</created>
-      <option name="number" value="00032" />
-      <option name="presentableId" value="LOCAL-00032" />
-      <option name="project" value="LOCAL" />
-      <updated>1748356760842</updated>
     </task>
     <task id="LOCAL-00033" summary="Erase all right&#10;correction of overlays supperposition in drag mode">
       <option name="closed" value="true" />
@@ -529,7 +522,15 @@
       <option name="project" value="LOCAL" />
       <updated>1756825147939</updated>
     </task>
-    <option name="localTasksCounter" value="81" />
+    <task id="LOCAL-00081" summary="[Identification] : Queue of classifier. Probleme with done jobs fixed">
+      <option name="closed" value="true" />
+      <created>1756893056645</created>
+      <option name="number" value="00081" />
+      <option name="presentableId" value="LOCAL-00081" />
+      <option name="project" value="LOCAL" />
+      <updated>1756893056646</updated>
+    </task>
+    <option name="localTasksCounter" value="82" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -581,7 +582,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Metadata tool with generate meta first step.&#10;Much robust for lokking at changes keep save etc..." />
     <MESSAGE value="Metadata tool copy from other cube et add/remove metadatum" />
     <MESSAGE value="Metadata tool copy from other cube -&gt; type keep for non editable like numpy&#10;open cube possibility" />
     <MESSAGE value="[Metadata] copy from other cube -&gt; type keep for non editable like numpy&#10;open cube possibility&#10;[Registration] all metadata seems OK. Gestion des croped parent etc...." />
@@ -606,6 +606,7 @@
     <MESSAGE value="[DataViz] &amp; [Metadata] : DataViz updated on metadata change. Quick change to all files ending with .h5, .hdr and .mat" />
     <MESSAGE value="[Identification] : first step for binarisation OK" />
     <MESSAGE value="[Identification] : Queue of classifier. OK if all queue." />
-    <option name="LAST_COMMIT_MESSAGE" value="[Identification] : Queue of classifier. OK if all queue." />
+    <MESSAGE value="[Identification] : Queue of classifier. Probleme with done jobs fixed" />
+    <option name="LAST_COMMIT_MESSAGE" value="[Identification] : Queue of classifier. Probleme with done jobs fixed" />
   </component>
 </project>

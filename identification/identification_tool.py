@@ -1,12 +1,16 @@
+# identification_tool.py
+
 import sys
 import os
 import numpy as np
 import cv2
 from PyQt5.QtWidgets import (QWidget, QApplication, QFileDialog, QSizePolicy, QMessageBox, QSplitter,
-                             QDialog,QPushButton,QTableWidgetItem,QHeaderView,QProgressBar,
+                             QDialog,QPushButton,QTableWidgetItem,QHeaderView,QProgressBar,QVBoxLayout,
+                             QScrollArea, QLabel, QHBoxLayout
                              )
 from PyQt5.QtGui import QPixmap, QImage
 from PyQt5.QtCore import Qt,QObject, pyqtSignal, QRunnable, QThreadPool, pyqtSlot
+
 from dataclasses import dataclass, field
 from typing import List, Optional, Dict
 import time
@@ -20,16 +24,11 @@ from ground_truth.ground_truth_tool import ZoomableGraphicsView
 from identification.load_cube_dialog import Ui_Dialog
 
 # todo : crop cube before binarization/classification
-# todo : block slider rgb default
-# todo : on job partial to implement
 # todo : parfaire le chargement des cubes
-# todo : pb avec slier et radiobuttons false color
-# todo : pb avec gestion de la table depuis maj passage au rerun
-# todo : affichage touts les resultats ensemble
-# todo : save clasification
-# todo : launch/reinit selected
-# todo : check npix pb for chunk size
+# todo : save classification (h5p ou image classique avec meta)
+# todo : save in temp classification app in progress ?
 # todo : legend and update legend
+# todo : add QDialogs before remove, launch selected, reinit selected if DONE
 
 class ClassifySignals(QObject):
     finished = pyqtSignal()                          # fin (toujours émis)
@@ -135,6 +134,13 @@ class ClassificationJob:
     duration_s: Optional[float] = None
     class_map: Optional[np.ndarray] = None
     _t0: Optional[float] = field(default=None, repr=False)  # internal start time
+
+    def reinit(self):
+        self.status = "Queued"
+        self.progress = 0
+        self.duration_s = None
+        self._t0 = None
+        self.class_map: Optional[np.ndarray] = None
 
 def fused_cube(cube1,cube2):
     cubes={}
@@ -299,6 +305,7 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         self._running_idx: int = -1
         self._current_worker = None
         self._stop_all = False
+        self.only_selected = False
 
         # Combo to select which model's result to show
         self.comboBox_clas_show_model.clear()
@@ -322,12 +329,16 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         self.comboBox_bin_algorith_choice.currentIndexChanged.connect(self.update_bin_defaults)
 
         self.pushButton_clas_add_ink.clicked.connect(
-            lambda: self.add_job(self.comboBox_clas_ink_model.currentText())        )
+            lambda: self.add_job(self.comboBox_clas_ink_model.currentText()))
         self.pushButton_clas_remove.clicked.connect(self.remove_selected_job)
+        self.pushButton_clas_remove_all.clicked.connect(self.remove_all_jobs)
         self.pushButton_clas_up.clicked.connect(self.move_selected_job_up)
         self.pushButton_clas_down.clicked.connect(self.move_selected_job_down)
         self.pushButton_clas_start.clicked.connect(self.start_queue)
+        self.pushButton_clas_start_selected.clicked.connect(self.start_selected_job)
         self.pushButton_clas_stop.clicked.connect(self.stop_queue)
+        self.pushButton_clas_reinit.clicked.connect(self.reinit_selected_job)
+        self.pushButton_show_all.clicked.connect(self._show_all_results_dialog)
 
         self.sliders_rgb = [
             self.horizontalSlider_red_channel,
@@ -349,6 +360,9 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         self.radioButton_rgb_user.toggled.connect(self.update_rgb_controls)
         self.radioButton_rgb_default.toggled.connect(self.update_rgb_controls)
         self.radioButton_grayscale.toggled.connect(self.update_rgb_controls)
+
+        self.radioButton_rgb_default.setChecked(True)
+        self.update_rgb_controls()
 
         # --- Boutons de rotation / flip ---
         self.pushButton_rotate.clicked.connect(lambda: self.transform(np.rot90))
@@ -439,6 +453,7 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
             element.setSingleStep(wl_step)
             if default:
                 element.setValue(self.default_rgb_channels()[i])
+                element.setEnabled(False)
             elif self.radioButton_grayscale.isChecked():
                 element.setEnabled(i == 2)
             else:
@@ -450,6 +465,7 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
             element.setSingleStep(wl_step)
             if default:
                 element.setValue(self.default_rgb_channels()[i])
+                element.setEnabled(False)
             elif self.radioButton_grayscale.isChecked():
                 element.setEnabled(i == 2)
             else:
@@ -488,7 +504,7 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
                 self.wl = self.cube.wl
                 flag_loaded=True
             except:
-                print('Probleme with cube in parameter')
+                print('Problem with cube in parameter')
 
         if not flag_loaded:
             if not filepath:
@@ -563,6 +579,84 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         self.alpha = value / 100.0
         self.update_overlay()
 
+    def _show_all_results_dialog(self):
+
+        # get jobs
+        jobs_with_maps = [(name, job) for name, job in self.jobs.items() if job.class_map is not None]
+        if not jobs_with_maps:
+            QMessageBox.information(self, "No results", "Aucun résultat de classification disponible pour l’instant.")
+            return
+
+        dlg = QDialog(self)
+        dlg.setWindowTitle("All classification results")
+        dlg.resize(1100, 800)
+
+        # Scroll area
+        scroll = QScrollArea(dlg)
+        scroll.setWidgetResizable(True)
+
+        container = QWidget()
+        vbox = QVBoxLayout(container)
+        vbox.setContentsMargins(12, 12, 12, 12)
+        vbox.setSpacing(12)
+
+        for name, job in jobs_with_maps:
+
+            # --- Construire une image couleur BGR à partir de la class_map du job ---
+            cm = job.class_map
+            h, w = cm.shape
+
+            # Image couleur (BGR) vide
+            colored = np.zeros((h, w, 3), dtype=np.uint8)
+
+            # Colorisation selon la même palette que le viewer principal
+            # (0=Substrate gris, 1=NCC orange, 2=CC jaune, 3=MGP violet)
+            for val, bgr in self.palette_bgr.items():
+                colored[cm == val] = bgr
+
+            bgr_img = colored
+            pix = self._np2pixmap(bgr_img)
+
+            # Ligne = [Titre | Aperçu]
+            row = QWidget()
+            hl = QHBoxLayout(row)
+            hl.setContentsMargins(8, 8, 8, 8)
+            hl.setSpacing(16)
+
+            # Titre (nom du job + statut/progrès)
+            title = QLabel(f"<b>{name}</b><br><span style='color:gray'>"
+                           f"{job.clf_type} — {', '.join(job.kind)} — {job.status} ({job.progress}%)</span>")
+            title.setTextFormat(Qt.RichText)
+            title.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
+            hl.addWidget(title, 0, Qt.AlignTop)
+
+            # Image (échelle raisonnable pour l’aperçu)
+            img_label = QLabel()
+            max_w = 200
+            max_h = 200
+            pix_small = pix.scaled(max_w, max_h, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            img_label.setPixmap(pix_small)
+
+            img_label.setAlignment(Qt.AlignLeft | Qt.AlignTop)
+            img_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
+            hl.addWidget(img_label, 1)
+
+            vbox.addWidget(row)
+
+            # Ligne séparatrice légère
+            sep = QLabel("<hr>")
+            sep.setTextFormat(Qt.RichText)
+            vbox.addWidget(sep)
+
+        scroll.setWidget(container)
+
+        # Layout principal du dialog
+        main = QVBoxLayout(dlg)
+        main.addWidget(scroll)
+        dlg.setLayout(main)
+
+        dlg.exec_()
+
     def update_bin_defaults(self):
         algo = self.comboBox_bin_algorith_choice.currentText().lower()
 
@@ -616,49 +710,19 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         if model_name == "CNN 1D":
             import torch
             from classifier_train import SpectralCNN1D
-            print(f'SpectralCNN1D imported')
             input_length = self.data.shape[2]
             num_classes = 3
             self.classifier = SpectralCNN1D(input_length, num_classes)
             self.classifier.load_state_dict(torch.load(os.path.join(models_dir, "model_CNN1D.pth"), map_location="cpu"))
-            print(f'SpectralCNN1D loaded')
 
             self.classifier.eval()
             self.classifier_type = "cnn"
-            print(f'CNN 1D classifier initialized')
 
         else:
             import joblib
             filename = f"model_{model_name.lower()}.joblib"
             self.classifier = joblib.load(os.path.join(models_dir, filename))
             self.classifier_type = "sklearn"
-
-    def classify_inks(self):
-        if self.binary_map is None:
-            QMessageBox.warning(self, "Warning", "Run binarization first.")
-            return
-
-        # Désactiver le bouton pour éviter les doubles clics
-        self.pushButton_clas_ink_launch.setEnabled(False)
-
-        mask = self.binary_map.astype(bool)
-        spectra = self.data[mask, :]  # [N_pixels, N_bands]
-
-        try:
-            self.progressBar_classif.setValue(0)
-            self.progressBar_classif.setVisible(True)
-        except Exception:
-            pass  # si pas de progress bar dans l'UI
-
-        # Créer et lancer le worker
-        worker = ClassifyWorker(spectra, self.classifier, self.classifier_type, chunk_size=100_000)
-        worker.signals.progress.connect(self._on_classif_progress)
-        worker.signals.error.connect(self._on_classif_error)
-        worker.signals.result.connect(lambda preds: self._on_classif_result(preds, mask))
-        worker.signals.finished.connect(self._on_classif_finished)
-
-        self._current_worker = worker
-        self.threadpool.start(worker)
 
     def _on_classif_progress(self, value):
         try:
@@ -837,7 +901,6 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         tw = self.tableWidget_classificationList
         tw.setRowCount(0)
         for row, name in enumerate(self.job_order):
-            print(f'[REFRESH TABLE] : row : {row}, name : {name}')
             job = self.jobs[name]
             tw.insertRow(row)
             # Model
@@ -914,11 +977,16 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         self._refresh_table()
         self._refresh_show_model_combo()
 
-    def remove_selected_job(self):
+    def remove_all_jobs(self):
         table = self.tableWidget_classificationList
-        row = table.currentRow()
+        for row in range(table.rowCount()):
+            self.remove_job(-1)
+
+    def remove_job(self,row):
+        table = self.tableWidget_classificationList
+        table.size()
         if row < 0:
-            return
+            row=table.rowCount()-1
 
         # If the first column holds the job name; adjust index if yours differs
         NAME_COL = 0
@@ -960,6 +1028,20 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         self._refresh_show_model_combo()
         self._refresh_table()
 
+    def remove_selected_job(self):
+        table = self.tableWidget_classificationList
+        row = table.currentRow()
+        self.remove_job(row)
+
+    def start_selected_job(self):
+        table = self.tableWidget_classificationList
+        row = table.currentRow()
+        self._running_idx = row
+        self._stop_all = False
+        self._skip_done_on_run = False
+        self.only_selected=True
+        self._launch_next_job()
+
     def move_selected_job_up(self):
         row = self._selected_row()
         if row <= 0: return
@@ -975,7 +1057,6 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         self.tableWidget_classificationList.selectRow(row + 1)
 
     def start_queue(self):
-        print(f'[START QUEUE] : job order {self.job_order}')
         if not self.job_order:
             QMessageBox.information(self, "Empty", "No jobs in the queue.")
             return
@@ -985,6 +1066,7 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
 
         self._stop_all = False
         self._skip_done_on_run = False
+        self.only_selected=False
 
         """Start the queue of jobs, with confirmation if some are already Done."""
         done_exists = any(self.jobs.get(n) and self.jobs[n].status == "Done" for n in self.job_order)
@@ -1000,7 +1082,6 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         else:
             self._skip_done_on_run = False
 
-        self._stop_all = False
         self._running_idx = 0
         self._launch_next_job()
 
@@ -1039,7 +1120,12 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
             self._running_idx = -1
             return
 
-        while 0 <= self._running_idx < len(self.job_order):
+        if self.only_selected:
+            idx_lim=self._running_idx+1
+        else:
+            idx_lim=len(self.job_order)
+
+        while 0 <= self._running_idx < idx_lim:
             name = self.job_order[self._running_idx]
             job = self.jobs[name]
 
@@ -1067,16 +1153,22 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
             job.status = "Running"
             job.progress = 0
             job._t0 = time.time()
+
             self._update_row_from_job(name)
 
             # Load classifier and create worker
             self.load_classifier(job.clf_type)
 
             mask = self.binary_map.astype(bool)
+            job._mask_indices = np.flatnonzero(mask.ravel())  # indices plats des pixels True
+            job._shape = mask.shape
+            job.class_map = np.zeros(mask.shape, dtype=np.uint8)
+
             spectra = self.data[mask, :]
+            print(f'[LAUNCH JOB] data size : {self.data.shape} ; spectra size : {spectra.shape}')
             N = spectra.shape[0]
             target_steps = 50
-            min_chunk = 50
+            min_chunk = 20
             max_chunk = 200000
             chunk_size = max(1, min(max_chunk, max(min_chunk, N // target_steps)))
 
@@ -1160,8 +1252,47 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         self._refresh_show_model_combo(select_name=name)
 
     def _on_job_partial(self, name: str, start: int, end: int, preds_chunk: np.ndarray):
-        # Todo : afficher chunk par chuk l'image
-        pass
+        job = self.jobs.get(name)
+        if not job:
+            return
+
+        # Sécurité: s'assurer que les structures existent
+        if getattr(job, "_mask_indices", None) is None or getattr(job, "_shape", None) is None:
+            if self.binary_map is None:
+                return
+            mask = self.binary_map.astype(bool)
+            job._mask_indices = np.flatnonzero(mask.ravel())
+            job._shape = mask.shape
+            if job.class_map is None:
+                job.class_map = np.zeros(job._shape, dtype=np.uint8)
+
+        # Écrire le chunk dans la carte (classes +1 car 0 = substrat)
+        flat_idx = job._mask_indices[start:end]
+        cm_flat = job.class_map.ravel()
+        cm_flat[flat_idx] = preds_chunk.astype(np.uint8) + 1
+        job.class_map = cm_flat.reshape(job._shape)
+
+        # S'assurer que le modèle est dispo dans le combo d’affichage
+        # (au tout début, ça l’ajoute; ensuite, ça garde la sélection)
+        current_cb_idx = self.comboBox_clas_show_model.currentIndex()
+        current_name = None
+        if current_cb_idx >= 0:
+            current_name = (self.comboBox_clas_show_model.itemData(current_cb_idx, Qt.UserRole)
+                            or self.comboBox_clas_show_model.currentText())
+        self._refresh_show_model_combo(select_name=current_name or name)
+
+        # Si ce modèle est celui affiché, on rafraîchit l’overlay en temps réel
+        # (ou si c'est le seul dans la liste)
+        selected_idx = self.comboBox_clas_show_model.currentIndex()
+        selected_name = None
+        if selected_idx >= 0:
+            selected_name = (self.comboBox_clas_show_model.itemData(selected_idx, Qt.UserRole)
+                             or self.comboBox_clas_show_model.currentText())
+
+        if selected_name == name or self.comboBox_clas_show_model.count() == 1:
+            self.class_map = job.class_map
+            self.radioButton_overlay_identification.setChecked(True)
+            self.show_classification_result()
 
     def _on_job_finished(self, name: str):
         job = self.jobs.get(name)
@@ -1181,7 +1312,7 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         self._advance_and_launch_next()
 
     def _advance_and_launch_next(self):
-        if self._stop_all:
+        if self._stop_all or self.only_selected:
             self._running_idx = -1
             return
 
@@ -1191,6 +1322,17 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         else:
             self._running_idx = -1  # finished all
             # (optionnel) self.label_status.setText("All jobs done")
+
+    def reinit_selected_job(self):
+        table = self.tableWidget_classificationList
+        row = table.currentRow()
+        name = self.job_order[row]
+        job = self.jobs[name]
+
+        job.reinit()
+
+        self._refresh_table()
+        self._refresh_show_model_combo()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
