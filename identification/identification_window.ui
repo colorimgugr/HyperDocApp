@@ -426,7 +426,7 @@ color: rgb(255, 255, 255);</string>
         </property>
         <widget class="QWidget" name="tabWidgetPage1_2">
          <attribute name="title">
-          <string>Image Visualization</string>
+          <string>Image Adjustment</string>
          </attribute>
          <layout class="QHBoxLayout" name="horizontalLayout_5">
           <item>
@@ -640,7 +640,7 @@ color: rgb(255, 255, 255);</string>
         </widget>
         <widget class="QWidget" name="tabWidgetPage2_2">
          <attribute name="title">
-          <string>Image Overlays</string>
+          <string>Results Vizualisation</string>
          </attribute>
          <layout class="QVBoxLayout" name="verticalLayout_9">
           <item>
@@ -743,7 +743,7 @@ color: rgb(255, 255, 255);</string>
      <property name="lineWidth">
       <number>0</number>
      </property>
-     <layout class="QHBoxLayout" name="horizontalLayout_4">
+     <layout class="QHBoxLayout" name="horizontalLayout_4" stretch="6,1">
       <item>
        <widget class="QSplitter" name="splitter">
         <property name="styleSheet">
@@ -784,6 +784,35 @@ color: rgb(255, 255, 255);</string>
            </widget>
           </item>
          </layout>
+        </widget>
+       </widget>
+      </item>
+      <item>
+       <widget class="QTabWidget" name="tabWidget_info_classification">
+        <property name="currentIndex">
+         <number>0</number>
+        </property>
+        <widget class="QWidget" name="tab_legend">
+         <attribute name="title">
+          <string>Legend</string>
+         </attribute>
+         <layout class="QVBoxLayout" name="verticalLayout_10">
+          <item>
+           <widget class="QFrame" name="frame_legend">
+            <property name="frameShape">
+             <enum>QFrame::StyledPanel</enum>
+            </property>
+            <property name="frameShadow">
+             <enum>QFrame::Raised</enum>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+        <widget class="QWidget" name="tab_statistics">
+         <attribute name="title">
+          <string>Statistics</string>
+         </attribute>
         </widget>
        </widget>
       </item>
