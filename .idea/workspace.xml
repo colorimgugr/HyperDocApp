@@ -4,7 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="[Identification] : Added streaming, all images, false rgb sliders fixed, reinit and lauch selected">
+    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="[Identification] : Added saving in h5 and png &#10;with dialog options.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/identification/identification_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/identification/identification_tool.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/identification/identification_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/identification/identification_window.py" afterDir="false" />
@@ -137,14 +137,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1744020944801</updated>
-    </task>
-    <task id="LOCAL-00034" summary="Overlay transparency separate for for selection and GT&#10;GT and hyp image in QSplitter&#10;Supervised mode with thr">
-      <option name="closed" value="true" />
-      <created>1748438511282</created>
-      <option name="number" value="00034" />
-      <option name="presentableId" value="LOCAL-00034" />
-      <option name="project" value="LOCAL" />
-      <updated>1748438511282</updated>
     </task>
     <task id="LOCAL-00035" summary="doublons de selection gerer">
       <option name="closed" value="true" />
@@ -530,7 +522,15 @@
       <option name="project" value="LOCAL" />
       <updated>1756910122507</updated>
     </task>
-    <option name="localTasksCounter" value="83" />
+    <task id="LOCAL-00083" summary="[Identification] : Added saving in h5 and png &#10;with dialog options.">
+      <option name="closed" value="true" />
+      <created>1756919365643</created>
+      <option name="number" value="00083" />
+      <option name="presentableId" value="LOCAL-00083" />
+      <option name="project" value="LOCAL" />
+      <updated>1756919365643</updated>
+    </task>
+    <option name="localTasksCounter" value="84" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -582,7 +582,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Metadata tool copy from other cube -&gt; type keep for non editable like numpy&#10;open cube possibility" />
     <MESSAGE value="[Metadata] copy from other cube -&gt; type keep for non editable like numpy&#10;open cube possibility&#10;[Registration] all metadata seems OK. Gestion des croped parent etc...." />
     <MESSAGE value="Cube info loading and saving are syncronized with all tools (except visualize)&#10;[registration] manual features supression" />
     <MESSAGE value="[main] correction of suggestions suprresion" />
@@ -607,6 +606,7 @@
     <MESSAGE value="[Identification] : Queue of classifier. OK if all queue." />
     <MESSAGE value="[Identification] : Queue of classifier. Probleme with done jobs fixed" />
     <MESSAGE value="[Identification] : Added streaming, all images, false rgb sliders fixed, reinit and lauch selected" />
-    <option name="LAST_COMMIT_MESSAGE" value="[Identification] : Added streaming, all images, false rgb sliders fixed, reinit and lauch selected" />
+    <MESSAGE value="[Identification] : Added saving in h5 and png &#10;with dialog options." />
+    <option name="LAST_COMMIT_MESSAGE" value="[Identification] : Added saving in h5 and png &#10;with dialog options." />
   </component>
 </project>

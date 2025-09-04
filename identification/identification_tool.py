@@ -31,9 +31,12 @@ from identification.load_cube_dialog import Ui_Dialog
 # todo : crop cube before binarization/classification
 # todo : save classification (h5p ou image classique avec meta)
 # todo : save in temp classification app in progress ?
-# todo : legend and update legend
 # todo : add QDialogs before remove, launch selected, reinit selected if DONE
 # todo : check if h5 save OK.
+# todo : adapt overlay to
+# todo : think better metadata saving
+# todo : adapt transform to class map too
+
 
 def fused_cube(cube1,cube2):
     cubes={}
@@ -489,6 +492,8 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         self.pushButton_clas_reinit.clicked.connect(self.reinit_selected_job)
         self.pushButton_show_all.clicked.connect(self._show_all_results_dialog)
         self.pushButton_save_map.clicked.connect(self.on_click_save_map)
+        self.radioButton_overlay_binary.toggled.connect(lambda _: self.update_overlay())
+        self.radioButton_overlay_identification.toggled.connect(lambda _: self.update_overlay())
 
         self.sliders_rgb = [
             self.horizontalSlider_red_channel,
@@ -643,13 +648,33 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         """Rotation / Flip du cube"""
         try:
             self.data = trans_type(self.data)
-            self.cube.data=self.data
-            self.binary_map=trans_type(self.binary_map)
+            self.cube.data = self.data
+
+            # binary_map peut être None selon l’état de l’outil
+            if getattr(self, "binary_map", None) is not None:
+                bm = trans_type(self.binary_map)
+                # Garantir une carte 2D (H, W)
+                if bm.ndim == 3 and bm.shape[-1] == 1:
+                    bm = bm[..., 0]
+                self.binary_map = bm
+
+            if getattr(self, "class_map", None) is not None:
+                self.class_map = trans_type(self.class_map)
+
+            for job in self.jobs.values():
+                if hasattr(job, "_mask_indices"):
+                    job._mask_indices = None
+                if hasattr(job, "_shape"):
+                    job._shape = None
+                if getattr(job, "class_map", None) is not None:
+                    job.class_map = trans_type(job.class_map)
+
         except Exception as e:
             print(f"[transform] Failed: {e}")
             return
+
         self.show_rgb_image()
-        self.show_binary_result()
+        self.update_overlay()
 
     def load_cube(self,filepath=None,cube=None):
         flag_loaded=False
@@ -695,8 +720,12 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
                 self.spinBox_blue_channel.value()
             ]
         idx = [np.argmin(np.abs(ch - self.wl)) for ch in rgb_chan]
-        rgb = self.data[:, :, idx]
-        rgb = (rgb / np.max(rgb) * 255).astype(np.uint8)
+        rgb = self.data[:, :, idx].astype(np.float32)
+        max_val = float(np.max(rgb)) if rgb.size else 0.0
+        if max_val > 0:
+            rgb = (rgb / max_val) * 255.0
+        rgb = np.clip(rgb, 0, 255).astype(np.uint8)
+
         self.rgb_image = rgb
         self.viewer_left.setImage(self._np2pixmap(rgb))
 
@@ -719,11 +748,28 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         self.show_binary_result()
 
     def show_binary_result(self):
-        if self.binary_map is None:
+        if self.binary_map is None or not hasattr(self, "rgb_image"):
             return
-        bin_img = (self.binary_map * 255).astype(np.uint8)
-        bin_rgb = cv2.cvtColor(bin_img, cv2.COLOR_GRAY2BGR)
-        self.viewer_right.setImage(self._np2pixmap(bin_rgb))
+
+        # Palette binaire (BGR) :
+        bin_colors = {1: (0, 0, 0), 0: (255, 255, 255)}
+
+        # Image couleur (BGR) de la carte binaire
+        mask = (self.binary_map.astype(np.uint8) > 0)
+        h, w = mask.shape
+        result_bgr = np.zeros((h, w, 3), dtype=np.uint8)
+        result_bgr[~mask] = bin_colors[0]
+        result_bgr[mask] = bin_colors[1]
+
+        # Affichage de la carte à droite
+        self.viewer_right.setImage(self._np2pixmap(result_bgr))
+
+        # Overlay sur l’image RGB avec alpha (comme la classification)
+        overlay = cv2.addWeighted(self.rgb_image, 1 - self.alpha, result_bgr, self.alpha, 0)
+        self.viewer_left.setImage(self._np2pixmap(overlay))
+
+        # Mettre à jour la légende (tu gères déjà Binary/Classification dedans)
+        self.update_legend()
 
     def update_overlay(self):
         if self.radioButton_overlay_binary.isChecked():
@@ -906,55 +952,52 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         self._current_worker = None
 
     def update_legend(self):
-        # Vider le contenu actuel du frame_legend
-        for i in reversed(range(self.frame_legend.layout().count())):
-            item = self.frame_legend.layout().itemAt(i)
-            if item.widget():
-                item.widget().deleteLater()
+        from PyQt5.QtWidgets import QVBoxLayout, QLabel, QWidget, QHBoxLayout
+        from PyQt5.QtGui import QPixmap, QColor
 
+        # 1) Obtenir/Créer le layout
         layout = self.frame_legend.layout()
         if layout is None:
-            from PyQt5.QtWidgets import QVBoxLayout
             layout = QVBoxLayout()
             self.frame_legend.setLayout(layout)
+        else:
+            # 2) Vider proprement le layout existant
+            while layout.count():
+                item = layout.takeAt(0)
+                w = item.widget()
+                if w:
+                    w.deleteLater()
 
+        # 3) Choisir la palette/labels selon le mode
         if self.radioButton_overlay_binary.isChecked():
-            legend_items = [
-                ("Substrate", (128, 128, 128)),
-                ("Ink", (255, 0, 0))
-            ]
-        else:  # Identification
-            legend_items = [
-                ("Substrate", (128, 128, 128)),
-                ("MGP", (221, 0, 148)),
-                ("CC", (0, 255, 255)),
-                ("NCC", (0, 165, 255))
-            ]
+            colors = {1: (0, 0, 0), 0: (255, 255, 255)}
+            labels = {0: 'Substrate', 1: 'Ink'}
+        else:
+            colors = self.palette_bgr
+            labels = self.labels  # ➜ gardés centralisés dans l'objet
 
-        from PyQt5.QtWidgets import QLabel
-        from PyQt5.QtGui import QPixmap, QPainter, QColor
-
-        for label_text, bgr in legend_items:
-            # Créer une icône carrée colorée
+        # 4) Construire les items de légende
+        for key in sorted(labels.keys()):
+            bgr = colors[key]
             rgb = self.bgr_to_rgb(bgr)
-            pix = QPixmap(20, 20)
-            pix.fill(QColor(*rgb))
-            icon_label = QLabel()
-            icon_label.setPixmap(pix)
 
-            text_label = QLabel(label_text)
-            text_label.setStyleSheet("font-weight: bold;")
+            swatch = QPixmap(20, 20)
+            swatch.fill(QColor(*rgb))
+            icon = QLabel()
+            icon.setPixmap(swatch)
 
-            from PyQt5.QtWidgets import QHBoxLayout, QWidget
-            item_widget = QWidget()
-            h_layout = QHBoxLayout()
-            h_layout.setContentsMargins(2, 2, 2, 2)
-            h_layout.addWidget(icon_label)
-            h_layout.addWidget(text_label)
-            item_widget.setLayout(h_layout)
+            text = QLabel(labels[key])
+            text.setStyleSheet("font-weight: bold;")
 
-            layout.addWidget(item_widget)
+            row = QWidget()
+            h = QHBoxLayout(row)
+            h.setContentsMargins(2, 2, 2, 2)
+            h.addWidget(icon)
+            h.addWidget(text)
 
+            layout.addWidget(row)
+
+        # 5) Pousser le contenu vers le haut
         layout.addStretch(1)
 
     def show_classification_result(self):
@@ -962,12 +1005,7 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
             return
 
         # Palette : 0=substrat gris, 1=violet, 2=jaune, 3=orange
-        colors = {
-            0: (128, 128, 128),  # Substrate (gris)
-            3: (211, 0, 148),  # MGP (violet)
-            2: (0, 255, 255),  # CC (jaune)
-            1: (0, 165, 255)  # NCC (orange)
-        }
+        colors = self.palette_bgr
 
         h, w = self.class_map.shape
         result_rgb = np.zeros((h, w, 3), dtype=np.uint8)
@@ -980,6 +1018,8 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         # Overlay sur image originale
         overlay = cv2.addWeighted(self.rgb_image, 1 - self.alpha, result_rgb, self.alpha, 0)
         self.viewer_left.setImage(self._np2pixmap(overlay))
+
+        self.update_legend()
 
     def _refresh_show_model_combo(self, select_name: str = None):
         """
@@ -1497,7 +1537,7 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
             return
 
         # 2) Open dialog
-        dlg = SaveClassMapDialog(models, default_base_name="classification", parent=self)
+        dlg = SaveClassMapDialog(models, default_base_name="Base File Name", parent=self)
         if dlg.exec_() != QDialog.Accepted:
             return
 
@@ -1543,7 +1583,6 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
 
         if saved_files:
             QMessageBox.information(self, "Done", "Files saved:\n- " + "\n- ".join(saved_files))
-
 
     def _get_available_models(self):
         """
