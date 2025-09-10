@@ -65,7 +65,8 @@ class IlluminationWidget(QWidget, Ui_IlluminationWidget):
 
     def on_load_cube(self):
         self.load_cube()
-        self.image_rgb=self.cube.get_rgb_image([10,50,90])
+        self.image_rgb_temp=self.cube.get_rgb_image([10, 50, 90])
+        self.image_rgb = (self.image_rgb_temp * 255).astype(np.uint8)
         self.show_image()
 
     def show_image(self):
@@ -174,10 +175,10 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     w = IlluminationWidget()
     w.show()
-    filepath=r'C:\Users\Usuario\Documents\Test/01644-VNIR-genealogies.h5'
-    w.load_cube(filepath=filepath)
-    image_rgb_temp = w.cube.get_rgb_image([10, 50, 90])
-    w.image_rgb=(image_rgb_temp*255).astype(np.uint8)
-    w.show_image()
+    #filepath=r'C:\Users\K3605\Documents\Test/01644-VNIR-genealogies.h5'
+    #w.load_cube(filepath=filepath)
+    #image_rgb_temp = w.cube.get_rgb_image([10, 50, 90])
+    #w.image_rgb=(image_rgb_temp*255).astype(np.uint8)
+    #w.show_image()
  #tesmodification
     sys.exit(app.exec_())
