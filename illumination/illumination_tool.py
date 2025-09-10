@@ -73,7 +73,7 @@ class IlluminationWidget(QWidget, Ui_IlluminationWidget):
         pass
 
     def rgb_from_illuminant(self):
-        # Que acabe en astype(np.uint8)
+        # Que acabe la imagen en astype(np.uint8)
         pass
 
 
