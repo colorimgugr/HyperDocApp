@@ -179,5 +179,5 @@ if __name__ == "__main__":
     image_rgb_temp = w.cube.get_rgb_image([10, 50, 90])
     w.image_rgb=(image_rgb_temp*255).astype(np.uint8)
     w.show_image()
-
+ #tesmodification
     sys.exit(app.exec_())
