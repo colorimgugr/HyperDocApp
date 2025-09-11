@@ -65,8 +65,7 @@ class IlluminationWidget(QWidget, Ui_IlluminationWidget):
 
     def on_load_cube(self):
         self.load_cube()
-        self.image_rgb_temp=self.cube.get_rgb_image([10, 50, 90])
-        self.image_rgb = (self.image_rgb_temp * 255).astype(np.uint8)
+        self.image_rgb = (self.data[:,:,(10,50,90)] * 255).astype(np.uint8)
         self.show_image()
 
     def show_image(self):
