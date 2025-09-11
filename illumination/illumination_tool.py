@@ -40,7 +40,6 @@ class IlluminationWidget(QWidget, Ui_IlluminationWidget):
         # Layout and label inside frame_viewer
         self._replace_placeholder('frame_viewer', ZoomableGraphicsView)
 
-
         self.cube = None
         self.data = None
         self.wl =None
@@ -65,8 +64,9 @@ class IlluminationWidget(QWidget, Ui_IlluminationWidget):
 
     def on_load_cube(self):
         self.load_cube()
-        self.image_rgb_temp=self.cube.get_rgb_image([10, 50, 90])
-        self.image_rgb = (self.image_rgb_temp * 255).astype(np.uint8)
+        self.data = self.data / 1
+        #self.image_rgb = (self.cube.get_rgb_image([10, 50, 90]) * 255).astype(np.uint8)
+        self.image_rgb = (self.data[:, :, (10, 50, 90)]* 255).astype(np.uint8)
         self.show_image()
 
     def show_image(self):
@@ -75,6 +75,7 @@ class IlluminationWidget(QWidget, Ui_IlluminationWidget):
 
     def rgb_from_illuminant(self):
         # Que acabe la imagen en astype(np.uint8)
+
         pass
 
 
@@ -180,5 +181,5 @@ if __name__ == "__main__":
     #image_rgb_temp = w.cube.get_rgb_image([10, 50, 90])
     #w.image_rgb=(image_rgb_temp*255).astype(np.uint8)
     #w.show_image()
- #tesmodification
+
     sys.exit(app.exec_())
