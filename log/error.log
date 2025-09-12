@@ -158,3 +158,14 @@ Traceback (most recent call last):
     ^^^^^^^^^^^^^^^^^^^
 AttributeError: 'NoneType' object has no attribute 'cube_info'
 
+2025-09-12 09:55:19,183 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\data_vizualisation\data_vizualisation_tool.py", line 571, in search_gt_in_files
+    self.update_widgets()
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\data_vizualisation\data_vizualisation_tool.py", line 422, in update_widgets
+    self.modif_sliders(default=True)
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\data_vizualisation\data_vizualisation_tool.py", line 814, in modif_sliders
+    max_wl=int(hyp.wl[-1])
+               ~~~~~~^^^^
+TypeError: 'NoneType' object is not subscriptable
+

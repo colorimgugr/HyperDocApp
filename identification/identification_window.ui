@@ -293,6 +293,11 @@
                 <string>CNN 1D</string>
                </property>
               </item>
+              <item>
+               <property name="text">
+                <string>Add from disk...</string>
+               </property>
+              </item>
              </widget>
             </item>
             <item>

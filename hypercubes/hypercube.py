@@ -185,24 +185,43 @@ class Hypercube:
         self.wl       = None
         self.metadata = {}
 
-    def get_interpolate_cube(self, _wl_step, interp_kind='linear'):
+    def get_interpolate_cube(self, _wl_step=None, wl_interp=None, interp_kind='linear'):
+        """
+        Interpole le cube le long de l'axe spectral.
+        - Soit on fournit un pas (_wl_step) -> interpole entre wl[0] et wl[-1] avec ce pas
+        - Soit on fournit explicitement une grille (wl_interp) -> interpole exactement sur ces lambda
+        Renvoie: (data_interpolated, wl_interp)
+        """
+        if _wl_step is None and wl_interp is None:
+            raise ValueError("Provide either _wl_step or wl_interp")
 
-        interp_func = interp1d(
-            self.wl,
-            self.data,
+        # f(λ) vectorisé sur l'axe spectral
+        f = interp1d(
+            self.wl.astype(float),
+            self.data,  # shape: (H, W, B)
             kind=interp_kind,
             axis=2,
             bounds_error=False,
-            fill_value=(self.data[:, :, 0], self.data[:, :, -1])
+            fill_value=(self.data[:, :, 0], self.data[:, :, -1])  # extrap à plateaux
         )
 
-        wl_i = int(self.wl[0] / _wl_step) * _wl_step
-        wl_e = int(self.wl[-1] /_wl_step + 0.5) * _wl_step
-        wl_interp = np.arange(wl_i, wl_e + _wl_step, _wl_step)
+        if wl_interp is None:
+            wl_start = int(self.wl[0] / _wl_step) * _wl_step
+            wl_end = int(self.wl[-1] / _wl_step + 0.5) * _wl_step
+            wl_interp = np.arange(wl_start, wl_end + _wl_step, _wl_step, dtype=float)
+        else:
+            wl_interp = np.asarray(wl_interp, dtype=float)
+            # garde-fous utiles
+            if wl_interp.ndim != 1:
+                raise ValueError("wl_interp must be 1D")
+            if wl_interp.size < 2:
+                raise ValueError("wl_interp needs at least 2 wavelengths")
+            # Trie + unique (interp1d exige croissant strict)
+            wl_interp = np.unique(np.sort(wl_interp))
 
-        data_cube_interpolated = interp_func(wl_interp)
+        data_interp = f(wl_interp)
 
-        return data_cube_interpolated, wl_interp
+        return data_interp, wl_interp
 
     def get_rgb_image(self, indices):
         """Return an RGB composite from three-band indices, or None."""

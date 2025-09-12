@@ -98,55 +98,54 @@ def main(kind):
     print(f'[TRAIN] SVM  in {stop - start:.2f} seconds')
     # </editor-fold>
 
-    # <editor-fold desc="KNN">
-    # # KNN
-    # knn_model = make_pipeline(
-    #     StandardScaler(),
-    #     KNeighborsClassifier(
-    #         n_neighbors=1,
-    #         metric='cosine',
-    #         weights='uniform'
-    #     )
-    # )
-    # start=time()
-    # knn_model.fit(X_train, y_train)
-    # modelname="model_knn_"+kind+".joblib"
-    # joblib.dump(knn_model, os.path.join(folder,modelname))
-    # stop=time()
-    # print(f'[TRAIN] KNN  in {stop - start:.2f} seconds')
-    # # </editor-fold>
-    #
-    # # <editor-fold desc="LDA">
-    # start=time()
-    # lda_model = LinearDiscriminantAnalysis(solver='svd')
-    # lda_model.fit(X_train, y_train)
-    # modelname="model_lda_"+kind+".joblib"
-    # joblib.dump(lda_model, os.path.join(folder,modelname))
-    # stop=time()
-    # print(f'[TRAIN] LDA  in {stop - start:.2f} seconds')
-    # # </editor-fold>
-    #
-    # # <editor-fold desc="Random Forest">
-    # n_trees_total = 30
-    # rf_model = RandomForestClassifier(
-    #     n_estimators=0,         # Start with 0 tree
-    #     max_features=None,       # Use all predictors
-    #     max_leaf_nodes=751266,   # Max number of splits
-    #     bootstrap=True,
-    #     warm_start=True,           # Allow incremental training
-    #     n_jobs=-1,
-    # )
-    #
-    # start=time()
-    # for i in tqdm(range(1, n_trees_total + 1), desc="Training Random Forest"):
-    #     rf_model.set_params(n_estimators=i)  # Increment tree count
-    #     rf_model.fit(X_train, y_train)       # Train 1 extra tree
-    # # rf_model.fit(X_train, y_train)
-    # modelname="model_rdf_"+kind+".joblib"
-    # joblib.dump(rf_model, os.path.join(folder,modelname))
-    # stop=time()
-    # print(f'[TRAIN] RDF  in {stop - start:.2f} seconds')
-    # # </editor-fold>
+    #<editor-fold desc="KNN">
+    # KNN
+    knn_model = make_pipeline(
+        StandardScaler(),
+        KNeighborsClassifier(
+            n_neighbors=1,
+            metric='cosine',
+            weights='uniform'
+        )
+    )
+    start=time()
+    knn_model.fit(X_train, y_train)
+    modelname="model_knn_"+kind+".joblib"
+    joblib.dump(knn_model, os.path.join(folder,modelname))
+    stop=time()
+    print(f'[TRAIN] KNN  in {stop - start:.2f} seconds')
+    # </editor-fold>
+
+    # <editor-fold desc="LDA">
+    start=time()
+    lda_model = LinearDiscriminantAnalysis(solver='svd')
+    lda_model.fit(X_train, y_train)
+    modelname="model_lda_"+kind+".joblib"
+    joblib.dump(lda_model, os.path.join(folder,modelname))
+    stop=time()
+    print(f'[TRAIN] LDA  in {stop - start:.2f} seconds')
+    # </editor-fold>
+
+    # <editor-fold desc="Random Forest">
+    n_trees_total = 30
+    rf_model = RandomForestClassifier(
+        n_estimators=0,         # Start with 0 tree
+        max_features=None,       # Use all predictors
+        max_leaf_nodes=751266,   # Max number of splits
+        bootstrap=True,
+        warm_start=True,           # Allow incremental training
+        n_jobs=-1,
+    )
+
+    start=time()
+    for i in tqdm(range(1, n_trees_total + 1), desc="Training Random Forest"):
+        rf_model.set_params(n_estimators=i)  # Increment tree count
+        rf_model.fit(X_train, y_train)       # Train 1 extra tree
+    modelname="model_rdf_"+kind+".joblib"
+    joblib.dump(rf_model, os.path.join(folder,modelname))
+    stop=time()
+    print(f'[TRAIN] RDF  in {stop - start:.2f} seconds')
+    # </editor-fold>
 
     # # <editor-fold desc="DeepLabV3 (PyTorch)">
     # input_length = 261  # 111 VNIR + 150 SWIR

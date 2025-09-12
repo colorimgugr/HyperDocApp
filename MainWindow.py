@@ -28,6 +28,9 @@ from identification.identification_tool import IdentificationWidget
 # grafics to control changes
 import matplotlib.pyplot as plt
 
+# todo : add send to identification in cube menu
+# todo : identification_tool icon
+
 def apply_fusion_border_highlight(app,
                                   border_color: str = "#888888",
                                   title_bg:      str = "#E0E0E0",

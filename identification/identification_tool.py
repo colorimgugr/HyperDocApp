@@ -30,6 +30,8 @@ from identification.load_cube_dialog import Ui_Dialog
 # todo : add substrate classification
 # todo : add possibility to train if spectra range not complete -> FOLLOW spectral range carefully
 # todo : reset all ?
+# todo : convert numpy in list at saving
+# todo : finish training implementation (refresh table, queue training, save trained, load trained)
 
 def _safe_name_from(cube) -> str:
     md = getattr(cube, "metadata", {}) or {}
@@ -218,24 +220,28 @@ class ClassifyWorker(QRunnable):
 class ClassificationJob:
     name: str                 # unique key shown in table (e.g., "SVM (RBF)")
     clf_type: str             # "knn" | "cnn" | "svm" etc...
-    kind: List[str]           # e.g., ["Substrate","Ink 3 classes" ...]
-    status: str = "Queued"    # "Queued" | "Running" | "Done" | "Canceled" | "Error"
+    kind: List[str]                 # e.g., ["Substrate","Ink 3 classes" ...]
+    status: str = "Queued"    # "Queued" | "Running" | "Done" | "Canceled" | "Error" | "To train"
+    trained = True
+    trained_path = 'Default'
     progress: int = 0         # 0..100
     _t0: Optional[float] = field(default=None, repr=False)  # internal start time
     duration_s: Optional[float] = None    # whole classification duration
     class_map: Optional[np.ndarray] = None     # raw classification map
-    rect=None                # y, x, h, w of selected rectangle. None if no selection
+    rect=None                  # y, x, h, w of selected rectangle. None if no selection
     clean_map : Optional[np.ndarray] = None     # cleaned classification map
     clean_param= None           # clean parameters
     binary_algo= None           # binary algo
     binary_param = None         # binary param
+    spectral_range_used = None
 
     def reinit(self):
-        self.status = "Queued"
-        self.progress = 0
-        self.duration_s = None
-        self._t0 = None
-        self.class_map: Optional[np.ndarray] = None
+        if self.trained:
+            self.status = "Queued"
+            self.progress = 0
+            self.duration_s = None
+            self._t0 = None
+            self.class_map: Optional[np.ndarray] = None
 
 class LoadCubeDialog(QDialog):
     """
@@ -250,7 +256,6 @@ class LoadCubeDialog(QDialog):
         # Internal state
         self.cubes = {"VNIR": None, "SWIR": None}
         self._wl_ranges = {"VNIR": None, "SWIR": None}
-        self.whole_range = None # If false after, will change UI parameters
 
         # Wire buttons
         self.ui.pushButton_load_cube_1.clicked.connect(lambda: self._load("VNIR"))
@@ -641,6 +646,9 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         self.binary_param = None
         self.alpha = self.horizontalSlider_overlay_transparency.value() / 100.0
 
+        self.train_wl=np.arange(400, 1701, 5)
+        self.whole_range = None
+
         # Connections
         self.pushButton_load.clicked.connect(self.open_load_cube_dialog)
         self.pushButton_launch_bin.clicked.connect(self.launch_binarization)
@@ -876,6 +884,16 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
                 QMessageBox.warning(self, "Error", f"Failed to load cube: {e}")
                 return
 
+        # test spectral range
+
+        mask = (self.train_wl >= float(self.wl.min())) & (self.train_wl <= float(self.wl.max()))
+        target = self.train_wl[mask]
+
+        data_i, wl_i = self.cube.get_interpolate_cube(wl_interp=target, interp_kind='linear')
+
+        self.data = data_i
+        self.wl = wl_i
+        self.cube = Hypercube(data=self.data, wl=self.wl, cube_info=self.cube.cube_info)
         self.update_rgb_controls()
         self.show_rgb_image()
 
@@ -1468,8 +1486,112 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
             i += 1
         return name
 
+    def _train_new_model(self,name):
+
+        match name:
+            case 'LDA':
+                from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+                model=LinearDiscriminantAnalysis(solver='svd')
+                pass
+            case 'KNN':
+                from sklearn.pipeline import make_pipeline
+                from sklearn.preprocessing import StandardScaler
+                from sklearn.neighbors import KNeighborsClassifier
+                model = make_pipeline(
+                    StandardScaler(),
+                    KNeighborsClassifier(
+                        n_neighbors=1,
+                        metric='cosine',
+                        weights='uniform'
+                    )
+                )
+                pass
+
+            case 'SVM':
+                from sklearn.pipeline import make_pipeline
+                from sklearn.preprocessing import StandardScaler
+                from sklearn.svm import SVC
+
+                model = make_pipeline(
+                    StandardScaler(),
+                    SVC(
+                        kernel='rbf',  # Gaussian kernel
+                        C=10,  # Box constraint
+                        gamma='scale',  # Automatic kernel scale
+                        decision_function_shape='ovo'
+                    )
+                )
+                pass
+
+            case 'RDF':
+                from sklearn.ensemble import RandomForestClassifier
+                n_trees_total = 30
+                model = RandomForestClassifier(
+                    n_estimators=0,  # Start with 0 tree
+                    max_features=None,  # Use all predictors
+                    max_leaf_nodes=751266,  # Max number of splits
+                    bootstrap=True,
+                    warm_start=True,  # Allow incremental training
+                    n_jobs=-1,
+                )
+                pass
+
+            case _:
+                QMessageBox.warning(self,'Model can be trained','Model can not be trained.\nPlease choose between LDA, KNN, RDF or SVM')
+                return
+
+        return
+
     def add_job(self, name: str):
         clf_type=name
+        if clf_type=="Add from disk...":
+            QMessageBox.information(self,'TODO ;-)','TODO ;-)')
+            ## dialog to open file
+
+            ## check if joblib (no pth for now)
+
+            ## check if same number of features with message
+
+            ## validate and ask a name (and kind ?)
+
+            return
+
+        if getattr(sys, 'frozen', False):  # pynstaller case
+            BASE_DIR = sys._MEIPASS
+        else:
+            BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+
+        save_model_folder = os.path.join(BASE_DIR,
+                                         "identification/data")
+
+        if len(self.wl) != len(self.train_wl):
+            trained=False
+            reply=QMessageBox.question(self,
+                                 'Train new ?',
+                                 'Spectral range smaller than pretrained model. \nDo you want to train model first ?',
+                                 QMessageBox.Yes | QMessageBox.No)
+            if reply==QMessageBox.No:
+                return
+            else:
+
+                if name not in ['KNN','RDF','LDA','SVM']:
+                    QMessageBox.warning(self, 'Model can be trained',
+                                        'Model can not be trained.\nPlease choose between LDA, KNN, RDF or SVM')
+                    return
+
+
+                savepath, _ = QFileDialog.getSaveFileName(
+                    self,
+                    "Choose Model filename",
+                    os.path.join(save_model_folder, name),
+                    "joblib (*.joblib)"
+                )
+
+
+        else:
+            trained=True
+            savepath=save_model_folder
+
         # enforce uniqueness on 'name'
         unique = self._ensure_unique_name(name)
 
@@ -1484,6 +1606,9 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         job = ClassificationJob(unique, clf_type, kind)
         job.binary_param=self.binary_param
         job.binary_algo=self.binary_algo
+        job.spectral_range_used=[self.wl[0],self.wl[-1]]
+        job.trained=trained
+        job.trained_path=savepath
         self.jobs[unique] = job
         self.job_order.append(unique)
         self._refresh_table()
@@ -1964,6 +2089,7 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
                 "source_files": self.cube.metadata.get("source_files"),
                 "rect_crop": job.rect,
                 "binary_param": dic_binaire,
+                "spectral_range_used": job.spectral_range_used
             }
 
             if want_clean:
@@ -2163,6 +2289,7 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
                   QLabel(", ".join(job.kind) if isinstance(job.kind, (list, tuple)) else str(job.kind)))
         fl.addRow("Rect :", QLabel(self._fmt_rect(getattr(job, "rect", None))))
         fl.addRow("Sources :", QLabel(", ".join(map(str, src_names)) or "—"))
+        fl.addRow("Spectral range used :",QLabel(f'{job.spectral_range_used[0]} - {job.spectral_range_used[-1]}'))
         fl.addRow("Binary algorithm : ", QLabel(str(job.binary_algo)))
         fl.addRow("Binary parameters : ", QLabel(str(job.binary_param)))
         fl.addRow("Clean parameters : ", QLabel(str(job.clean_param)))
