@@ -21,20 +21,14 @@ from typing import List, Optional, Dict
 import time
 import traceback
 
-from pandas.core.common import count_not_none
+# from tensorflow.python.framework.auto_control_deps import automatic_control_dependencies
 
 from identification.identification_window import Ui_IdentificationWidget
 from hypercubes.hypercube import Hypercube
 from interface.some_widget_for_interface  import ZoomableGraphicsView
 from identification.load_cube_dialog import Ui_Dialog
 
-# todo : add substrate classification
-# todo : add possibility to train if spectra range not complete -> FOLLOW spectral range carefully
-# todo : reset all ?
-# todo : convert numpy in list at saving
-# todo : finish training implementation (refresh table, queue training, save trained, load trained)
-# todo : check for interpolation possible when different wl
-
+# todo : check all workflow of substrate classification and implement retraining and load from disk like ink classification
 
 def _safe_name_from(cube) -> str:
     md = getattr(cube, "metadata", {}) or {}
@@ -365,7 +359,7 @@ class TrainWorker(QRunnable):
 class ClassificationJob:
     name: str                 # unique key shown in table (e.g., "SVM (RBF)")
     clf_type: str             # "knn" | "cnn" | "svm" etc...
-    kind: List[str]                 # e.g., ["Substrate","Ink 3 classes" ...]
+    kind: str                 # e.g., ["Substrate","Ink 3 classes" ...]
     status: str = "Queued"    # "Queued" | "Running" | "Done" | "Canceled" | "Error" | "To train"
     trained = True
     trained_path = 'Default'
@@ -379,6 +373,7 @@ class ClassificationJob:
     binary_algo= None           # binary algo
     binary_param = None         # binary param
     spectral_range_used = None  # to save
+    substrate_name = 'Unknown'
 
     def reinit(self):
         if self.trained:
@@ -789,18 +784,21 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         self.binary_rec= None
         self.binary_algo = None
         self.binary_param = None
+        self.substrate_label= 'Unknown'
         self.alpha = self.horizontalSlider_overlay_transparency.value() / 100.0
 
-        self.train_wl=np.arange(400, 1701, 5)
+        self.train_wl=np.arange(400, 1705, 5)
         self.whole_range = None
 
         # Connections
         self.pushButton_load.clicked.connect(self.open_load_cube_dialog)
         self.pushButton_launch_bin.clicked.connect(self.launch_binarization)
+        self.pushButton_reset_bin.clicked.connect(self.reset_binary)
         self.horizontalSlider_overlay_transparency.valueChanged.connect(self.update_alpha)
         self.comboBox_bin_algorith_choice.currentIndexChanged.connect(self.update_bin_defaults)
         self.pushButton_clas_add_ink.clicked.connect(
             lambda: self.add_job(self.comboBox_clas_ink_model.currentText()))
+        self.pushButton_clas_classify_substrate.clicked.connect(self.classify_substrate)
         self.pushButton_clas_remove.clicked.connect(self.remove_selected_job)
         self.pushButton_clas_remove_all.clicked.connect(self.remove_all_jobs)
         self.pushButton_clas_up.clicked.connect(self.move_selected_job_up)
@@ -845,6 +843,9 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         self.radioButton_rgb_default.toggled.connect(self.update_rgb_controls)
         self.radioButton_grayscale.toggled.connect(self.update_rgb_controls)
 
+        self.radioButton_band_selection_manual.toggled.connect(self.band_viz)
+        self.radioButton_band_selection_auto.toggled.connect(self.band_viz)
+
         self.radioButton_rgb_default.setChecked(True)
         self.update_rgb_controls()
 
@@ -862,6 +863,7 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
             2: (0, 255, 255),  # CC (yellow)
             1: (0, 165, 255)  # NCC (orange)
         }
+
         self.labels={
             0: 'Substrate',
             3:  'MGP' ,
@@ -871,6 +873,15 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
 
     def bgr_to_rgb(self, bgr):
         return (bgr[2], bgr[1], bgr[0])
+
+    def band_viz(self):
+        self.radioButton_grayscale.setChecked(True)
+        self.tabWidget_Image.setCurrentIndex(0)
+        if self.radioButton_band_selection_auto.isChecked():
+            best_band=int(self.cube.get_best_band())
+            wl_best=int(self.wl[best_band])
+            self.horizontalSlider_blue_channel.setValue(wl_best)
+        self.update_rgb_controls()
 
     def open_load_cube_dialog(self):
         dlg = LoadCubeDialog(self)
@@ -1073,6 +1084,10 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         self.viewer_left.fitImage()
         self._draw_current_rect(surface=False)
 
+    def reset_binary(self):
+        self.binary_map=np.ones((self.data.shape[0],self.data.shape[1]))
+        self.show_binary_result()
+
     def launch_binarization(self):
         if self.cube is None:
             QMessageBox.warning(self, "Warning", "Load a cube first.")
@@ -1083,11 +1098,18 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
             'window': self.spinBox_bin_window_size.value(),
             'padding': self.comboBox_padding_mode.currentText()
         }
+
+        if self.radioButton_band_selection_manual.isChecked:
+            val_slid=self.horizontalSlider_blue_channel.value()
+            idx = np.argmin(np.abs(val_slid - self.wl))
+        else:
+            idx=None
+
         try:
             rect = self._get_selected_rect()
             if rect is None:
                 self.binary_rec=None
-                self.binary_map = self.cube.get_binary_from_best_band(algorithm, param)
+                self.binary_map = self.cube.get_binary_from_best_band(algorithm, param,idx)
             else:
                 y, x, h, w = rect
                 self.binary_rec = rect
@@ -1095,7 +1117,7 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
                 # -> on a besoin d'un petit helper côté Hypercube si tu n'en as pas déjà
                 #    (ici on réutilise "best_band" mais en local)
                 sub_cube = Hypercube(data=sub_data, wl=self.wl, cube_info=self.cube.cube_info)
-                sub_binary = sub_cube.get_binary_from_best_band(algorithm, param)
+                sub_binary = sub_cube.get_binary_from_best_band(algorithm, param,idx)
 
                 # Recompose une carte binaire pleine taille, remplie de 0 ailleurs
                 full_bin = np.zeros(self.data.shape[:2], dtype=sub_binary.dtype)
@@ -1346,6 +1368,121 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
             self.classifier_type = "sklearn"
             self.classifier_wl=model['train_wl']
 
+    def classify_substrate(self):
+        model_name=self.comboBox_clas_substrate_model.currentText()
+        rect = self._get_selected_rect()
+
+        SUBSTRATE_LABEL_DIC={11 : 'Parchment',
+                             12 : 'Cotton-Linen',
+                             13 : 'Linen',
+                             14 : 'Paper',
+                             15 : 'Translucent paper'
+        }
+
+        if rect is None:
+            if self.binary_map is not None:
+                choice = QMessageBox.question(
+                    self, "No rectangle selected",
+                    "The whole sample is selected\nDo you want to classify the whole substrate of the binary map ?",
+                    QMessageBox.Yes | QMessageBox.No
+                )
+                if choice == QMessageBox.No:
+                    return
+
+            else:
+                QMessageBox.Warning(self, "No rectangle selected",
+                    "Select a rectangle first and/or launch binarization")
+                return
+
+            sub_map=self.binary_map
+            sub_data=self.data
+
+        else:
+            y, x, h, w = rect
+            self.binary_rec = rect
+            sub_data = self.data[y:y + h, x:x + w, :]
+            sub_map=self.binary_map[y:y + h, x:x + w]
+
+        mask_sub = (sub_map == 0)
+        if mask_sub.sum() == 0:
+            QMessageBox.information(self, "No substrate", "No substrate pixels found in this region.")
+            return
+        X = sub_data[mask_sub, :]  # (N, B)
+
+        if getattr(sys, 'frozen', False):  # pynstaller case
+            BASE_DIR = sys._MEIPASS
+        else:
+            BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+
+        model_folder = os.path.join(BASE_DIR,
+                                         "identification/data")
+
+        clf_type=model_name.lower()+'_background_10pct'
+        filename = f"model_{clf_type}.joblib"
+        model_path=os.path.join(model_folder, filename)
+        try:
+            self.load_classifier(model_path)
+        except Exception as e:
+            QMessageBox.critical(self, "Model error", f"Could not load substrate model:\n{e}")
+            return
+
+        if self.checkBox_classify_substrate_fast.isChecked():
+            '''Make the Mid spectra of all pixels of sub_data where sub_map is 0 and classify with loaded model'''
+            x_mean = X.mean(axis=0, keepdims=True)
+            pred = int(self.classifier.predict(x_mean)[0])
+            self.substrate_label = SUBSTRATE_LABEL_DIC[pred]
+            print(f'[SUBSTRATE IDENT] FAST : {self.substrate_label}')
+
+        else :
+            '''Make the classification of all sub_data where sub_map is 0 and get %of each label classified'''
+            try:
+                # détermine un chunk raisonnable
+                N = X.shape[0]
+                target_steps = 50
+                min_chunk, max_chunk = 20, 200000
+                chunk_size = max(1, min(max_chunk, max(min_chunk, N // target_steps)))
+
+                worker = ClassifyWorker(
+                    X, self.classifier, self.classifier_type,
+                    chunk_size=chunk_size, emit_partial=False
+                )
+
+                def _on_err(msg):
+                    QMessageBox.critical(self, "Substrate classification", msg)
+
+                def _on_res(preds: np.ndarray):
+                    # stats
+                    if preds.size == 0:
+                        s = "No predictions."
+                    else:
+                        import numpy as _np
+                        classes = _np.unique(preds)
+                        counts = _np.bincount(preds, minlength=classes.max() + 1)
+                        tot = preds.size
+                        lines = []
+                        for c in classes:
+                            pct = 100.0 * counts[c] / tot
+                            lines.append(f"class {int(c)} : {counts[c]} px  ({pct:.1f}%)")
+                        s = "\n".join(lines)
+                        counts = np.bincount(preds)
+                        tot = counts.sum()
+                        pred = int(np.argmax(counts))
+
+                        self.substrate_label=SUBSTRATE_LABEL_DIC[pred]
+                        print(f'[SUBSTRATE IDENT] SLOW : {self.substrate_label}')
+
+                    QMessageBox.information(self, "Substrate (full)", s)
+
+                worker.signals.progress.connect(lambda: None)
+                worker.signals.error.connect(_on_err)
+                worker.signals.result.connect(_on_res)
+                worker.signals.finished.connect(lambda: None)
+
+                self.threadpool.start(worker)
+
+            except Exception as e:
+                QMessageBox.critical(self, "Substrate classification", f"Unexpected error:\n{e}")
+
     def _on_classif_progress(self, value):
         try:
             self.progressBar_classif.setValue(int(value))
@@ -1392,10 +1529,14 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         # 3) Choisir la palette/labels selon le mode
         if self.radioButton_overlay_binary.isChecked():
             colors = {1: (0, 0, 0), 0: (255, 255, 255)}
-            labels = {0: 'Substrate', 1: 'Ink'}
+            if self.substrate_label is None:
+                sub_name='Substrate'
+            else:
+                sub_name=self.substrate_label
+            labels = {0: sub_name, 1: 'Ink'}
         else:
             colors = self.palette_bgr
-            labels = self.labels  # ➜ gardés centralisés dans l'objet
+            labels = self.labels
 
         # 4) Construire les items de légende
         for key in sorted(labels.keys()):
@@ -1498,6 +1639,7 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
             self._draw_current_rect(use_job=True, surface=False)
 
         # Légende + infos (inchangés)
+        self.labels[0] = job.substrate_name
         self.update_legend()
         self._set_info_rows()
 
@@ -1553,15 +1695,12 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         tw.setEditTriggers(tw.NoEditTriggers)
         tw.verticalHeader().setVisible(False)
         header = tw.horizontalHeader()
-        header.setSectionResizeMode(0, QHeaderView.Stretch)  # Model
-        header.setSectionResizeMode(1, QHeaderView.Stretch)  # Kind
-        header.setSectionResizeMode(2, QHeaderView.ResizeToContents)  # Status
-        header.setSectionResizeMode(3, QHeaderView.ResizeToContents)  # Progress
+        self.tableWidget_classificationList.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        header.setSectionResizeMode(0, QHeaderView.Interactive)  # Model
+        header.setSectionResizeMode(1, QHeaderView.Interactive)  # Kind
+        header.setSectionResizeMode(2, QHeaderView.ResizeToContents)  # Status stays auto-sized
+        header.setSectionResizeMode(3, QHeaderView.Stretch)  # Progress stays auto-sized
         header.setSectionResizeMode(4, QHeaderView.ResizeToContents)  # Duration
-
-    def _kind_summary(self, labels: List[str], max_chars: int = 32) -> str:
-        s = "/".join(labels)
-        return s if len(s) <= max_chars else s[:max_chars - 1] + "…"
 
     def _make_progress_bar(self, value: int = 0) -> QProgressBar:
         pb = QProgressBar()
@@ -1583,9 +1722,8 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
             it_model.setToolTip(job.name)
             tw.setItem(row, 0, it_model)
             # Kind
-            kind_text = self._kind_summary(job.kind)
-            it_kind = QTableWidgetItem(kind_text)
-            it_kind.setToolTip(", ".join(job.kind))
+            it_kind = QTableWidgetItem(job.kind)
+            it_kind.setToolTip(job.kind)
             tw.setItem(row, 1, it_kind)
             # Status
             it_status = QTableWidgetItem(job.status)
@@ -1691,6 +1829,11 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
 
     def add_job(self, name: str):
 
+        if 'SUB_' in name:
+            kind='Substrate'
+        else:
+            kind='Ink 3 classes'
+
         clf_type=name
         if getattr(sys, 'frozen', False):  # pynstaller case
             BASE_DIR = sys._MEIPASS
@@ -1699,6 +1842,7 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
 
         save_model_folder = os.path.join(BASE_DIR,
                                          "identification/data")
+
         filename = f"model_{clf_type.lower()}.joblib"
         savepath=os.path.join(save_model_folder, filename)
 
@@ -1780,11 +1924,6 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         if unique is None:
             return
 
-        if 'sub' in unique:
-            kind=['Substrate']
-        else:
-            kind = ['Ink 3 classes']
-
         job = ClassificationJob(unique, clf_type, kind)
         if not trained:
             job.status='To Train'
@@ -1793,6 +1932,7 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         job.spectral_range_used=[self.wl[0],self.wl[-1]]
         job.trained=trained
         job.trained_path=savepath
+        job.substrate_name=self.substrate_label
 
         self.jobs[unique] = job
         self.job_order.append(unique)
@@ -2289,6 +2429,7 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
 
             filename_base = f"{base}_{model}_map"
             labels=self.labels
+            labels[0]=job.substrate_name
             palette_rgb = [0] * (256 * 3)  # init black
             for idx, (b, g, r) in self.palette_bgr.items():
                 palette_rgb[idx * 3:idx * 3 + 3] = [r, g, b]  # PIL wants RGB
@@ -2508,8 +2649,7 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         title.setTextFormat(Qt.RichText)
         fl.addRow(title)
         fl.addRow("Type :", QLabel(str(job.clf_type)))
-        fl.addRow("Kind :",
-                  QLabel(", ".join(job.kind) if isinstance(job.kind, (list, tuple)) else str(job.kind)))
+        fl.addRow("Kind :",QLabel(str(job.kind)))
         fl.addRow("Rect :", QLabel(self._fmt_rect(getattr(job, "rect", None))))
         fl.addRow("Sources :", QLabel(", ".join(map(str, src_names)) or "—"))
         fl.addRow("Spectral range used :",QLabel(f'{job.spectral_range_used[0]} - {job.spectral_range_used[-1]}'))

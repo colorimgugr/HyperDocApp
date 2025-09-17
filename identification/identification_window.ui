@@ -31,31 +31,7 @@
      <property name="frameShadow">
       <enum>QFrame::Raised</enum>
      </property>
-     <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="1,1,5,1,3">
-      <item>
-       <layout class="QVBoxLayout" name="verticalLayout_7">
-        <item>
-         <widget class="QPushButton" name="pushButton_load">
-          <property name="text">
-           <string>Load cube(s)</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="pushButton_reset">
-          <property name="toolTip">
-           <string>Reset all data loaded in the tool.</string>
-          </property>
-          <property name="styleSheet">
-           <string notr="true">color: rgba(255, 0, 0, 125);</string>
-          </property>
-          <property name="text">
-           <string>Reset all</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </item>
+     <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="1,5,1,3">
       <item>
        <widget class="Line" name="line_4">
         <property name="orientation">
@@ -66,7 +42,7 @@
       <item>
        <widget class="QTabWidget" name="tabWidget_Process">
         <property name="currentIndex">
-         <number>0</number>
+         <number>1</number>
         </property>
         <widget class="QWidget" name="tabWidgetPage2">
          <attribute name="title">
@@ -75,8 +51,56 @@
          <layout class="QVBoxLayout" name="verticalLayout_5">
           <item>
            <layout class="QGridLayout" name="gridLayout">
+            <item row="3" column="3">
+             <widget class="QRadioButton" name="radioButton_band_selection_manual">
+              <property name="text">
+               <string>Manual Band selection (Grayscale slider value)</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="2">
+             <widget class="QComboBox" name="comboBox_bin_algorith_choice">
+              <item>
+               <property name="text">
+                <string>Bradley</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Wolf</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Sauvola</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Otsu</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Niblack</string>
+               </property>
+              </item>
+             </widget>
+            </item>
             <item row="5" column="2">
              <widget class="QPushButton" name="pushButton_launch_bin">
+              <property name="minimumSize">
+               <size>
+                <width>150</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>150</width>
+                <height>16777215</height>
+               </size>
+              </property>
               <property name="styleSheet">
                <string notr="true">background-color: rgb(0, 170, 0);</string>
               </property>
@@ -85,13 +109,52 @@
               </property>
              </widget>
             </item>
-            <item row="1" column="1">
-             <widget class="QLabel" name="label_bin_algorith_choice">
+            <item row="2" column="1">
+             <widget class="QLabel" name="label_bin_k">
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>20</height>
+               </size>
+              </property>
               <property name="text">
-               <string>Binarization algorithm :</string>
+               <string>k :</string>
               </property>
               <property name="alignment">
                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item row="4" column="2">
+             <widget class="QSpinBox" name="spinBox_bin_window_size">
+              <property name="value">
+               <number>3</number>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="1">
+             <widget class="QLabel" name="label_padding_mode">
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>20</height>
+               </size>
+              </property>
+              <property name="text">
+               <string>Padding :</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="3">
+             <widget class="QRadioButton" name="radioButton_band_selection_auto">
+              <property name="text">
+               <string>Automatic best band selection</string>
+              </property>
+              <property name="checked">
+               <bool>true</bool>
               </property>
              </widget>
             </item>
@@ -135,84 +198,6 @@
               </property>
              </widget>
             </item>
-            <item row="2" column="1">
-             <widget class="QLabel" name="label_bin_k">
-              <property name="maximumSize">
-               <size>
-                <width>16777215</width>
-                <height>20</height>
-               </size>
-              </property>
-              <property name="text">
-               <string>k :</string>
-              </property>
-              <property name="alignment">
-               <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-              </property>
-             </widget>
-            </item>
-            <item row="4" column="2">
-             <widget class="QSpinBox" name="spinBox_bin_window_size">
-              <property name="value">
-               <number>3</number>
-              </property>
-             </widget>
-            </item>
-            <item row="3" column="1">
-             <widget class="QLabel" name="label_padding_mode">
-              <property name="maximumSize">
-               <size>
-                <width>16777215</width>
-                <height>20</height>
-               </size>
-              </property>
-              <property name="text">
-               <string>Padding :</string>
-              </property>
-              <property name="alignment">
-               <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="2">
-             <widget class="QComboBox" name="comboBox_bin_algorith_choice">
-              <item>
-               <property name="text">
-                <string>Bradley</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>Wolf</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>Sauvola</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>Otsu</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>Niblack</string>
-               </property>
-              </item>
-             </widget>
-            </item>
-            <item row="2" column="2">
-             <widget class="QDoubleSpinBox" name="doubleSpinBox_bin_k">
-              <property name="singleStep">
-               <double>0.100000000000000</double>
-              </property>
-              <property name="value">
-               <double>10.000000000000000</double>
-              </property>
-             </widget>
-            </item>
             <item row="3" column="0">
              <spacer name="horizontalSpacer">
               <property name="orientation">
@@ -226,7 +211,27 @@
               </property>
              </spacer>
             </item>
-            <item row="1" column="3">
+            <item row="1" column="1">
+             <widget class="QLabel" name="label_bin_algorith_choice">
+              <property name="text">
+               <string>Binarization algorithm :</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="2">
+             <widget class="QDoubleSpinBox" name="doubleSpinBox_bin_k">
+              <property name="singleStep">
+               <double>0.100000000000000</double>
+              </property>
+              <property name="value">
+               <double>10.000000000000000</double>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="4">
              <spacer name="horizontalSpacer_2">
               <property name="orientation">
                <enum>Qt::Horizontal</enum>
@@ -238,6 +243,32 @@
                </size>
               </property>
              </spacer>
+            </item>
+            <item row="5" column="3">
+             <widget class="QPushButton" name="pushButton_reset_bin">
+              <property name="minimumSize">
+               <size>
+                <width>150</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>150</width>
+                <height>16777215</height>
+               </size>
+              </property>
+              <property name="autoFillBackground">
+               <bool>false</bool>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">background-color: rgb(255, 0, 0);
+color: rgb(255, 255, 255);</string>
+              </property>
+              <property name="text">
+               <string>Reset Binarization</string>
+              </property>
+             </widget>
             </item>
            </layout>
           </item>
@@ -259,7 +290,7 @@
                </size>
               </property>
               <property name="text">
-               <string>Ink Model</string>
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Ink&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
               </property>
               <property name="alignment">
                <set>Qt::AlignCenter</set>
@@ -315,34 +346,71 @@
              </widget>
             </item>
             <item>
-             <widget class="QLabel" name="label_clas_substrate_model">
-              <property name="maximumSize">
-               <size>
-                <width>16777215</width>
-                <height>20</height>
-               </size>
-              </property>
-              <property name="text">
-               <string>Substrate Model</string>
-              </property>
-              <property name="alignment">
-               <set>Qt::AlignCenter</set>
-              </property>
-             </widget>
+             <layout class="QHBoxLayout" name="horizontalLayout_7">
+              <item>
+               <widget class="QLabel" name="label_clas_substrate_model">
+                <property name="maximumSize">
+                 <size>
+                  <width>16777215</width>
+                  <height>20</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Substrate&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                </property>
+                <property name="alignment">
+                 <set>Qt::AlignCenter</set>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QCheckBox" name="checkBox_classify_substrate_fast">
+                <property name="layoutDirection">
+                 <enum>Qt::RightToLeft</enum>
+                </property>
+                <property name="text">
+                 <string>Fast</string>
+                </property>
+                <property name="checked">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+             </layout>
             </item>
             <item>
              <widget class="QComboBox" name="comboBox_clas_substrate_model">
               <item>
                <property name="text">
-                <string># todo</string>
+                <string>LDA</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>KNN</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>RDF</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>SVM</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Add from disk...</string>
                </property>
               </item>
              </widget>
             </item>
             <item>
-             <widget class="QPushButton" name="pushButton_clas_add_substrate">
+             <widget class="QPushButton" name="pushButton_clas_classify_substrate">
               <property name="text">
-               <string>Add Substrate Classifier</string>
+               <string>Classify substrate</string>
               </property>
              </widget>
             </item>
@@ -603,7 +671,7 @@ color: rgb(255, 255, 255);</string>
       <item>
        <widget class="QTabWidget" name="tabWidget_Image">
         <property name="currentIndex">
-         <number>1</number>
+         <number>0</number>
         </property>
         <widget class="QWidget" name="tabWidgetPage1_2">
          <attribute name="title">
@@ -960,7 +1028,76 @@ color: rgb(255, 255, 255);</string>
      <property name="lineWidth">
       <number>0</number>
      </property>
-     <layout class="QHBoxLayout" name="horizontalLayout_4" stretch="6,1">
+     <layout class="QHBoxLayout" name="horizontalLayout_4" stretch="0,6">
+      <item>
+       <layout class="QVBoxLayout" name="verticalLayout_7">
+        <item>
+         <widget class="QPushButton" name="pushButton_load">
+          <property name="text">
+           <string>Load cube(s)</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="pushButton_reset">
+          <property name="toolTip">
+           <string>Reset all data loaded in the tool.</string>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">color: rgba(255, 0, 0, 125);</string>
+          </property>
+          <property name="text">
+           <string>Reset all</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QTabWidget" name="tabWidget_info_classification">
+          <property name="currentIndex">
+           <number>0</number>
+          </property>
+          <widget class="QWidget" name="tab_legend">
+           <attribute name="title">
+            <string>Info</string>
+           </attribute>
+           <layout class="QVBoxLayout" name="verticalLayout_10">
+            <item>
+             <layout class="QFormLayout" name="formLayout_Info"/>
+            </item>
+            <item>
+             <spacer name="verticalSpacer">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>40</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item>
+             <widget class="QFrame" name="frame_legend">
+              <property name="frameShape">
+               <enum>QFrame::StyledPanel</enum>
+              </property>
+              <property name="frameShadow">
+               <enum>QFrame::Raised</enum>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+          <widget class="QWidget" name="tab_statistics">
+           <attribute name="title">
+            <string>Statistics</string>
+           </attribute>
+          </widget>
+         </widget>
+        </item>
+       </layout>
+      </item>
       <item>
        <widget class="QSplitter" name="splitter">
         <property name="styleSheet">
@@ -982,7 +1119,7 @@ color: rgb(255, 255, 255);</string>
          <enum>Qt::Horizontal</enum>
         </property>
         <widget class="QFrame" name="verticalFrame">
-         <layout class="QHBoxLayout" name="horizontalLayout_9">
+         <layout class="QHBoxLayout" name="horizontalLayout_9" stretch="9">
           <item>
            <widget class="QSplitter" name="splitter_2">
             <property name="layoutDirection">
@@ -995,7 +1132,7 @@ color: rgb(255, 255, 255);</string>
              <property name="toolTip">
               <string>Promote to ZoomableGraphicsView</string>
              </property>
-             <layout class="QVBoxLayout" name="verticalLayout_2" stretch="0,1">
+             <layout class="QVBoxLayout" name="verticalLayout_2" stretch="0,0">
               <item>
                <widget class="QLabel" name="label_viewer_right">
                 <property name="sizePolicy">
@@ -1028,7 +1165,7 @@ color: rgb(255, 255, 255);</string>
              <property name="toolTip">
               <string>Promote to ZoomableGraphicsView</string>
              </property>
-             <layout class="QVBoxLayout" name="verticalLayout_14" stretch="0,1">
+             <layout class="QVBoxLayout" name="verticalLayout_14" stretch="0,0">
               <item>
                <widget class="QLabel" name="label_viewer_left">
                 <property name="sizePolicy">
@@ -1060,51 +1197,6 @@ color: rgb(255, 255, 255);</string>
            </widget>
           </item>
          </layout>
-        </widget>
-       </widget>
-      </item>
-      <item>
-       <widget class="QTabWidget" name="tabWidget_info_classification">
-        <property name="currentIndex">
-         <number>0</number>
-        </property>
-        <widget class="QWidget" name="tab_legend">
-         <attribute name="title">
-          <string>Info</string>
-         </attribute>
-         <layout class="QVBoxLayout" name="verticalLayout_10">
-          <item>
-           <layout class="QFormLayout" name="formLayout_Info"/>
-          </item>
-          <item>
-           <spacer name="verticalSpacer">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>20</width>
-              <height>40</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-          <item>
-           <widget class="QFrame" name="frame_legend">
-            <property name="frameShape">
-             <enum>QFrame::StyledPanel</enum>
-            </property>
-            <property name="frameShadow">
-             <enum>QFrame::Raised</enum>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </widget>
-        <widget class="QWidget" name="tab_statistics">
-         <attribute name="title">
-          <string>Statistics</string>
-         </attribute>
         </widget>
        </widget>
       </item>

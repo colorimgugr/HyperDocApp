@@ -1222,11 +1222,12 @@ class Hypercube:
         BW[image >= mean_p * (1 - k)] = 0
         return BW
 
-    def get_binary_from_best_band(self, algorithm="Bradley",param={}):
+    def get_binary_from_best_band(self, algorithm="Bradley",param={},idx=None):
         """
         return a binary map from
         """
-        idx = self.get_best_band()
+        if idx is None:
+            idx = self.get_best_band()
         image = self.data[:, :, idx]
 
         if algorithm.lower() == "niblack":
