@@ -130,10 +130,11 @@ class IlluminationWidget(QWidget, Ui_IlluminationWidget):
         ])
 
         self.comboBox_Illuminant.addItems(self.illuminants_dict.keys())
-        self.comboBox_Illuminant.setCurrentText("Philips_LED")
+        self.comboBox_Illuminant.setCurrentText("D65")
 
         self.comboBox_Illuminant.currentIndexChanged.connect(self.update_image)
         self.doubleSpinBox_Gamma.valueChanged.connect(self.update_image)
+        self.doubleSpinBox_D.valueChanged.connect(self.update_image)
 
         # Connect widget signals
         self.load_btn.clicked.connect(lambda : self.on_load_cube())
@@ -141,12 +142,16 @@ class IlluminationWidget(QWidget, Ui_IlluminationWidget):
         # Layout and label inside frame_viewer
         self._replace_placeholder('frame_viewer', ZoomableGraphicsView)
 
+        self.pushButton_save.clicked.connect(self.save_image)
 
         self.cube = None
         self.data = None
         self.wl =None
 
         self.image_rgb=None
+
+        self.comparison_windows = []
+        self.pushButton_add.clicked.connect(self.open_comparison_window)
 
     def load_illuminants(self, filename):
         try:
@@ -166,6 +171,13 @@ class IlluminationWidget(QWidget, Ui_IlluminationWidget):
 
     def on_load_cube(self):
         self.load_cube()
+        if self.cube is None:
+            return
+        if self.wl[0] > 400 or self.wl[-1] < 780:
+            QMessageBox.warning(self, "Error", "The reflectance range must include 400–780 nm")
+            self.cube = None
+            self.image_rgb = None
+            return
         self.rgb_from_illuminant()
         self.show_image()
 
@@ -184,12 +196,8 @@ class IlluminationWidget(QWidget, Ui_IlluminationWidget):
         selected_illuminant = self.comboBox_Illuminant.currentText()
         illuminant_spectra = self.illuminants_dict.get(selected_illuminant, [])
         gamma = self.doubleSpinBox_Gamma.value()
-        D = self.doubleSpinBox.value()
+        D = self.doubleSpinBox_D.value()
         working_range = np.arange(400, 781, 5)
-
-        if self.wl[0] > working_range[0] or self.wl[-1] < working_range[-1]:
-            QMessageBox.warning(self, "Error", "The reflectance range must include 400–780 nm")
-            return
 
         height, width, channels = self.data.shape
         reflectance_cube_reshaped = self.data.reshape(-1, channels)
@@ -368,15 +376,63 @@ class IlluminationWidget(QWidget, Ui_IlluminationWidget):
                           QImage.Format_RGB888)
         return QPixmap.fromImage(qimg).copy()
 
+    def save_image(self):
+        if not hasattr(self, "image_rgb") or self.image_rgb is None:
+            return
+
+        file_path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Save image",
+            "",
+            "PNG (*.png);;JPEG (*.jpg *.jpeg);;BMP (*.bmp)"
+        )
+
+        if file_path:
+            img = self.image_rgb[..., ::-1]
+            if img.dtype != np.uint8:
+                img = (255 * np.clip(img, 0, 1)).astype(np.uint8)
+
+            height, width, channels = img.shape
+            if channels == 3:
+                qimg = QImage(img.tobytes(), width, height, width * 3, QImage.Format_RGB888)
+            elif channels == 4:
+                qimg = QImage(img.tobytes(), width, height, width * 4, QImage.Format_RGBA8888)
+            else:
+                QMessageBox.warning(self, "Error", "Unsupported image format.")
+                return
+
+            if not qimg.save(file_path):
+                QMessageBox.warning(self, "Failed to save image.")
+
+    def open_comparison_window(self):
+        if self.cube is None:
+            return
+
+        # Crear una nueva instancia de IlluminationWidget
+        new_window = IlluminationWidget()
+
+        # Pasar el mismo cubo y datos
+        new_window.cube = self.cube
+        new_window.image_rgb = self.image_rgb
+        new_window.data = self.data
+        new_window.wl = self.wl
+
+        # Generar la imagen inicial con los parámetros actuales
+        new_window.rgb_from_illuminant()
+        new_window.show()
+        new_window.show_image()
+
+        # Guardar referencia para que no se cierre automáticamente
+        self.comparison_windows.append(new_window)
+
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     w = IlluminationWidget()
     w.show()
-    # tesmodification
-    filepath=r'C:\Users\Usuario\Documents\Test/01644-VNIR-genealogies.h5'
-    w.load_cube(filepath=filepath)
-    image_rgb_temp = w.cube.get_rgb_image([10, 50, 90])
-    w.image_rgb=(image_rgb_temp*255).astype(np.uint8)
-    w.show_image()
+    #filepath=r'C:\Users\Usuario\Documents\Test/01644-VNIR-genealogies.h5'
+    #w.load_cube(filepath=filepath)
+    #image_rgb_temp = w.cube.get_rgb_image([10, 50, 90])
+    #w.image_rgb=(image_rgb_temp*255).astype(np.uint8)
+    #w.show_image()
 
     sys.exit(app.exec_())
