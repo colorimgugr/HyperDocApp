@@ -21,14 +21,14 @@ from typing import List, Optional, Dict
 import time
 import traceback
 
-# from tensorflow.python.framework.auto_control_deps import automatic_control_dependencies
-
 from identification.identification_window import Ui_IdentificationWidget
 from hypercubes.hypercube import Hypercube
 from interface.some_widget_for_interface  import ZoomableGraphicsView
 from identification.load_cube_dialog import Ui_Dialog
 
 # todo : check all workflow of substrate classification and implement retraining and load from disk like ink classification
+# todo : fixed rectangle desaparition (and look also on binary map ?)
+# todo : on open new cube : dialog box to propose to save classification maps.
 
 def _safe_name_from(cube) -> str:
     md = getattr(cube, "metadata", {}) or {}
@@ -373,7 +373,7 @@ class ClassificationJob:
     binary_algo= None           # binary algo
     binary_param = None         # binary param
     spectral_range_used = None  # to save
-    substrate_name = 'Unknown'
+    substrate_name = 'Unknown Substrate'
 
     def reinit(self):
         if self.trained:
@@ -781,10 +781,10 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         self.data = None
         self.wl = None
         self.binary_map = None
-        self.binary_rec= None
+        self.saved_rec= None
         self.binary_algo = None
         self.binary_param = None
-        self.substrate_label= 'Unknown'
+        self.substrate_label= 'Unknown Substrate'
         self.alpha = self.horizontalSlider_overlay_transparency.value() / 100.0
 
         self.train_wl=np.arange(400, 1705, 5)
@@ -870,6 +870,10 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
             2: 'CC',
             1: 'NCC'
         }
+
+        self.tabWidget_Process.setCurrentIndex(0)
+        self.tabWidget_info_classification.setCurrentIndex(0)
+        self.tabWidget_Image.setCurrentIndex(1)
 
     def bgr_to_rgb(self, bgr):
         return (bgr[2], bgr[1], bgr[0])
@@ -1099,30 +1103,39 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
             'padding': self.comboBox_padding_mode.currentText()
         }
 
-        if self.radioButton_band_selection_manual.isChecked:
+        if self.radioButton_band_selection_manual.isChecked():
             val_slid=self.horizontalSlider_blue_channel.value()
             idx = np.argmin(np.abs(val_slid - self.wl))
         else:
             idx=None
 
         try:
+            self.saved_rec = None
+            self.binary_map = self.cube.get_binary_from_best_band(algorithm, param, idx)
             rect = self._get_selected_rect()
-            if rect is None:
-                self.binary_rec=None
-                self.binary_map = self.cube.get_binary_from_best_band(algorithm, param,idx)
-            else:
+            if rect is not None:
                 y, x, h, w = rect
-                self.binary_rec = rect
-                sub_data = self.data[y:y + h, x:x + w, :]
-                # -> on a besoin d'un petit helper côté Hypercube si tu n'en as pas déjà
-                #    (ici on réutilise "best_band" mais en local)
-                sub_cube = Hypercube(data=sub_data, wl=self.wl, cube_info=self.cube.cube_info)
-                sub_binary = sub_cube.get_binary_from_best_band(algorithm, param,idx)
+                self.saved_rec = rect
 
-                # Recompose une carte binaire pleine taille, remplie de 0 ailleurs
-                full_bin = np.zeros(self.data.shape[:2], dtype=sub_binary.dtype)
-                full_bin[y:y + h, x:x + w] = sub_binary
-                self.binary_map = full_bin
+            ### Uncomment if want to binarize only selected zone
+
+            # rect = self._get_selected_rect()
+            # if rect is None:
+            #     self.saved_rec=None
+            #     self.binary_map = self.cube.get_binary_from_best_band(algorithm, param,idx)
+            # else:
+            #     y, x, h, w = rect
+            #     self.saved_rec = rect
+            #     sub_data = self.data[y:y + h, x:x + w, :]
+            #     # -> on a besoin d'un petit helper côté Hypercube si tu n'en as pas déjà
+            #     #    (ici on réutilise "best_band" mais en local)
+            #     sub_cube = Hypercube(data=sub_data, wl=self.wl, cube_info=self.cube.cube_info)
+            #     sub_binary = sub_cube.get_binary_from_best_band(algorithm, param,idx)
+            #
+            #     # Recompose une carte binaire pleine taille, remplie de 0 ailleurs
+            #     full_bin = np.zeros(self.data.shape[:2], dtype=sub_binary.dtype)
+            #     full_bin[y:y + h, x:x + w] = sub_binary
+            #     self.binary_map = full_bin
 
         except Exception as e:
             QMessageBox.warning(self, "Error", f"Binarization failed: {e}")
@@ -1135,7 +1148,7 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         self.viewer_right.fitImage()
         self._refresh_clean_sources_list()
 
-    def show_binary_result(self):
+    def show_binary_result(self,only_images=False):
         if self.binary_map is None or not hasattr(self, "rgb_image"):
             return
 
@@ -1158,15 +1171,17 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         self.viewer_left.setImage(self._np2pixmap(overlay))
         self._draw_current_rect(surface=False)
 
-        # Mettre à jour la légende (tu gères déjà Binary/Classification dedans)
+        if only_images:
+            return
+
         self.update_legend()
         self._set_info_rows()
 
     def update_overlay(self):
         if self.radioButton_overlay_binary.isChecked():
-            self.show_binary_result()
+            self.show_binary_result(only_images=True)
         elif self.radioButton_overlay_identification.isChecked():
-            self.show_classification_result()
+            self.show_classification_result(only_images=True)
 
     def update_alpha(self, value):
         self.alpha = value / 100.0
@@ -1399,7 +1414,7 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
 
         else:
             y, x, h, w = rect
-            self.binary_rec = rect
+            self.saved_rec = rect
             sub_data = self.data[y:y + h, x:x + w, :]
             sub_map=self.binary_map[y:y + h, x:x + w]
 
@@ -1431,8 +1446,7 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
             x_mean = X.mean(axis=0, keepdims=True)
             pred = int(self.classifier.predict(x_mean)[0])
             self.substrate_label = SUBSTRATE_LABEL_DIC[pred]
-            print(f'[SUBSTRATE IDENT] FAST : {self.substrate_label}')
-
+            QMessageBox.information(self, "Substrate (fast)", f'Substrate result of classification : {self.substrate_label}')
         else :
             '''Make the classification of all sub_data where sub_map is 0 and get %of each label classified'''
             try:
@@ -1469,7 +1483,6 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
                         pred = int(np.argmax(counts))
 
                         self.substrate_label=SUBSTRATE_LABEL_DIC[pred]
-                        print(f'[SUBSTRATE IDENT] SLOW : {self.substrate_label}')
 
                     QMessageBox.information(self, "Substrate (full)", s)
 
@@ -1482,6 +1495,11 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
 
             except Exception as e:
                 QMessageBox.critical(self, "Substrate classification", f"Unexpected error:\n{e}")
+
+        for key in self.jobs:
+            self.jobs[key].substrate_name=self.substrate_label
+
+        self.update_overlay()
 
     def _on_classif_progress(self, value):
         try:
@@ -1562,7 +1580,7 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         # 5) Pousser le contenu vers le haut
         layout.addStretch(1)
 
-    def show_classification_result(self):
+    def show_classification_result(self,only_images=False):
         # Récupère le job actuellement sélectionné (ou abandonne s'il n'y en a pas)
         job = getattr(self, "_current_job", None)
         job = job() if callable(job) else self._current_job()
@@ -1637,6 +1655,10 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
                 self.viewer_left.setImage(self._np2pixmap(rgb_map))
 
             self._draw_current_rect(use_job=True, surface=False)
+
+
+        if only_images:
+            return
 
         # Légende + infos (inchangés)
         self.labels[0] = job.substrate_name
@@ -2029,6 +2051,10 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
             job.duration_s = None
             self._update_row_from_job(name)
 
+        rec = self._get_selected_rect()
+        self.saved_rec = rec
+        job.rect = rec
+
         self._running_idx = row
         self._stop_all = False
         self._skip_done_on_run = False
@@ -2060,6 +2086,11 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         self._stop_all = False
         self._skip_done_on_run = False
         self.only_selected=False
+
+        rec=self._get_selected_rect()
+        self.saved_rec=rec
+        for key in self.jobs:
+            self.jobs[key].rect=rec
 
         """Start the queue of jobs, with confirmation if some are already Done."""
         done_exists = any(self.jobs.get(n) and self.jobs[n].status == "Done" for n in self.job_order)
@@ -2183,7 +2214,6 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
             job.status = "Running"
             job.progress = 0
             job._t0 = time.time()
-            job.rect=self.binary_rec
 
             self._update_row_from_job(name)
 
@@ -2192,6 +2222,14 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
             self.load_classifier(job.trained_path)
 
             mask = self.binary_map.astype(bool)
+
+            if job.rect is not None:
+                x, y, w, h = job.rect
+                print('[JOB INIT] rectanle : ',x,y,w,h)
+                roi_mask = np.zeros_like(mask, dtype=bool)
+                roi_mask[x:(x+w), y:(y+h)] = True
+                mask &= roi_mask
+
             job._mask_indices = np.flatnonzero(mask.ravel())  # indices plats des pixels True
             job._shape = mask.shape
             job.class_map = np.zeros(mask.shape, dtype=np.uint8)
@@ -2534,9 +2572,7 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         coords = rc()
         if coords is None:
             return None
-        # get_rect_coords() => [x_min, y_min, width, height]
         x_min, y_min, w, h = coords
-        # pour slicing numpy: [rows, cols] = [y:y+h, x:x+w]
         return (y_min, x_min, h, w)
 
     def _rect_to_qrectf(self, rect_tuple):
@@ -2549,7 +2585,7 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         """
         Dessine le rectangle de sélection sur les deux viewers.
         - use_job=True : prend le rect du job actuellement sélectionné dans la combo.
-        - sinon : prend self.binary_rec.
+        - sinon : prend self.saved_rec.
         - surface=False : seulement le contour (plus discret pour l’overlay).
         """
         rect_tuple = None
@@ -2562,7 +2598,7 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
                 if job:
                     rect_tuple = job.rect
         if rect_tuple is None and not use_job:
-            rect_tuple = self.binary_rec
+            rect_tuple = self.saved_rec
 
         qrect = self._rect_to_qrectf(rect_tuple)
         if qrect is None:

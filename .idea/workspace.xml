@@ -4,12 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="[IDENTIFICATION] : learning process with croped features and save_load model OK">
+    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="[IDENTIFICATION] : Substrate double implementation (fast and slow) added and propagated to save file.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hypercubes/hypercube.py" beforeDir="false" afterPath="$PROJECT_DIR$/hypercubes/hypercube.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/identification/checkh5.py" beforeDir="false" afterPath="$PROJECT_DIR$/identification/checkh5.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/identification/identification_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/identification/identification_tool.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/identification/identification_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/identification/identification_window.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/identification/identification_window.ui" beforeDir="false" afterPath="$PROJECT_DIR$/identification/identification_window.ui" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -138,14 +136,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1744020944801</updated>
-    </task>
-    <task id="LOCAL-00039" summary="Supression of .ui previous try of class assignment">
-      <option name="closed" value="true" />
-      <created>1748618728900</created>
-      <option name="number" value="00039" />
-      <option name="presentableId" value="LOCAL-00039" />
-      <option name="project" value="LOCAL" />
-      <updated>1748618728900</updated>
     </task>
     <task id="LOCAL-00040" summary="Connection table and GT tools. &#10;right click interaction added on table.">
       <option name="closed" value="true" />
@@ -531,7 +521,15 @@
       <option name="project" value="LOCAL" />
       <updated>1758039279445</updated>
     </task>
-    <option name="localTasksCounter" value="88" />
+    <task id="LOCAL-00088" summary="[IDENTIFICATION] : Substrate double implementation (fast and slow) added and propagated to save file.">
+      <option name="closed" value="true" />
+      <created>1758113545422</created>
+      <option name="number" value="00088" />
+      <option name="presentableId" value="LOCAL-00088" />
+      <option name="project" value="LOCAL" />
+      <updated>1758113545423</updated>
+    </task>
+    <option name="localTasksCounter" value="89" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -583,7 +581,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Lot of things but most of all matlab.engine" />
     <MESSAGE value="Ground Truth Features fixed.&#10;- cursor cross interference fixed,&#10;- updating spectra fixed&#10;- max R fixed &#10;- groups of widgets in tabs to have more space&#10;- add check box for live toggle&#10;- all made again because of a fucking error of merging :-/" />
     <MESSAGE value="[Register]ui + [Main] save on exit + [GT] keep GT_label_map in metadata y png with palette" />
     <MESSAGE value="[Hypercube] matlab files with browser OK for v7.3 and v old without hypercube.&#10;Load and save envie." />
@@ -608,6 +605,7 @@
     <MESSAGE value="[IDENTIFICATION] : Gestion of uncomplete spectral range -&gt; crop and interp. &#10;started implementation of learning with shorter spectral range." />
     <MESSAGE value="[IDENTIFICATION] : Dilog ofr opening saved model ok" />
     <MESSAGE value="[IDENTIFICATION] : learning process with croped features and save_load model OK" />
-    <option name="LAST_COMMIT_MESSAGE" value="[IDENTIFICATION] : learning process with croped features and save_load model OK" />
+    <MESSAGE value="[IDENTIFICATION] : Substrate double implementation (fast and slow) added and propagated to save file." />
+    <option name="LAST_COMMIT_MESSAGE" value="[IDENTIFICATION] : Substrate double implementation (fast and slow) added and propagated to save file." />
   </component>
 </project>

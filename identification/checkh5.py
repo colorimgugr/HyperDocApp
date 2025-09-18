@@ -232,6 +232,6 @@ def preview(path, title=None):
         print("Rien à afficher (ni class_map, ni DataCube).")
 
 if __name__ == "__main__":
-    path = r"C:\Users\Usuario\Documents\DOC_Yannick\HYPERDOC Database_TEST\identification\saved/01644-VNIR-genealogies-01677-SWIR-genealogies_LDA_map.h5"
+    path = r"C:\Users\Usuario\Documents\DOC_Yannick\HYPERDOC Database_TEST\identification\saved/Test_Substrate_LDA_map.h5"
     overview(path)
     preview(path)
