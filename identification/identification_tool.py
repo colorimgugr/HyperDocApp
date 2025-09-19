@@ -29,9 +29,7 @@ from identification.load_cube_dialog import Ui_Dialog
 # todo : check all workflow of substrate classification and implement retraining and load from disk like ink classification
 # todo : on open new cube : dialog box to propose to save classification maps.
 # todo : no rectangle selections on viewer_right
-# todo : check refresh info
 # todo : in training phase, status "Training..."
-# todo : Crop before/after if only VNIR or SWIR as input ?
 
 def _safe_name_from(cube) -> str:
     md = getattr(cube, "metadata", {}) or {}
@@ -809,6 +807,7 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
 
         # Connections
         self.pushButton_load.clicked.connect(self.open_load_cube_dialog)
+        self.pushButton_reset.clicked.connect(self.reset_all)
         self.pushButton_launch_bin.clicked.connect(self.launch_binarization)
         self.pushButton_reset_bin.clicked.connect(self.reset_binary)
         self.horizontalSlider_overlay_transparency.valueChanged.connect(self.update_alpha)
@@ -892,6 +891,52 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         self.tabWidget_info_classification.setCurrentIndex(0)
         self.tabWidget_Image.setCurrentIndex(1)
 
+    def reset_all(self):
+
+        reply = QMessageBox.question(
+            self, "Reset all ?",
+            f"Are you sure to reset all current jobs ?",
+            QMessageBox.Yes | QMessageBox.No
+        )
+        if reply == QMessageBox.No:
+            return
+
+        # Réinit internes
+        self.job_order = []
+        self.jobs = {}
+        self._init_classification_table(self.tableWidget_classificationList)
+        self._init_cleaning_list()
+
+        self.threadpool = QThreadPool()
+        self._running_idx = -1
+        self._current_worker = None
+        self._stop_all = False
+        self.only_selected = False
+
+        self.comboBox_clas_show_model.clear()
+        self._refresh_show_model_combo()
+
+        self._last_vnir = None
+        self._last_swir = None
+        self.cube = None
+        self.data = None
+        self.wl = None
+        self.binary_map = None
+        self.saved_rec = None
+        self.binary_algo = None
+        self.binary_param = None
+        self.substrate_label = 'Unknown Substrate'
+        self.whole_range = None
+
+        # Vider les viewers
+        if hasattr(self, "viewer_left"):
+            self.viewer_left.setImage(QPixmap())  # plus d’image à gauche
+        if hasattr(self, "viewer_right"):
+            self.viewer_right.setImage(QPixmap())  # plus d’image à droite
+
+        self.update_legend()
+        self._set_info_rows()
+
     def bgr_to_rgb(self, bgr):
         return (bgr[2], bgr[1], bgr[0])
 
@@ -903,28 +948,6 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
             wl_best=int(self.wl[best_band])
             self.horizontalSlider_blue_channel.setValue(wl_best)
         self.update_rgb_controls()
-
-    def open_load_cube_dialog(self):
-        dlg = LoadCubeDialog(self, vnir_cube=self._last_vnir, swir_cube=self._last_swir)
-        if dlg.exec_() == QDialog.Accepted:
-            # Prefer fusing VNIR+SWIR if both available; otherwise passthrough a single cube
-            vnir = dlg.cubes.get("VNIR")
-            swir = dlg.cubes.get("SWIR")
-
-            self._last_vnir = vnir
-            self._last_swir = swir
-
-            if vnir is not None or swir is not None:
-                self.cube = fused_cube(vnir, swir) if (vnir is not None and swir is not None) else (vnir or swir)
-            else:
-                QMessageBox.warning(self, "Error", "No cube loaded.")
-                return
-
-            # Ensure UI buffers are in sync
-            self.data = self.cube.data
-            self.wl = self.cube.wl
-            self.update_rgb_controls()
-            self.show_rgb_image()
 
     def _replace_placeholder(self, name, widget_cls, **kwargs):
         placeholder = getattr(self, name)
@@ -975,7 +998,7 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
             element.setMaximum(max_wl)
             element.setSingleStep(wl_step)
             if default:
-                element.setValue(self.default_rgb_channels()[i])
+                element.setValue(int(self.default_rgb_channels()[i]))
                 element.setEnabled(False)
             elif self.radioButton_grayscale.isChecked():
                 element.setEnabled(i == 2)
@@ -987,7 +1010,7 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
             element.setMaximum(max_wl)
             element.setSingleStep(wl_step)
             if default :
-                element.setValue(self.default_rgb_channels()[i])
+                element.setValue(int(self.default_rgb_channels()[i]))
                 element.setEnabled(False)
             elif self.radioButton_grayscale.isChecked():
                 element.setEnabled(i == 2)
@@ -1000,11 +1023,16 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         """Renvoie les canaux RGB par défaut selon plage spectrale"""
         if self.wl[-1] < 1100 and self.wl[0] > 350:
             return [610, 540, 435]
-        elif self.wl[-1] >= 1100:
+        elif self.wl[-1] >= 1100 and self.wl[0] > 800:
             return [1605, 1205, 1005]
         else:
-            mid = int(len(self.wl) / 2)
-            return [self.wl[0], self.wl[mid], self.wl[-1]]
+            if len(self.wl)>7:
+                sixieme=len(self.wl) // 6
+                idx1,idx2,idx3=sixieme,3*sixieme,5*sixieme
+                return [self.wl[idx3], self.wl[idx2], self.wl[idx1]]
+            else:
+                mid = int(len(self.wl) / 2)
+                return [self.wl[-1], self.wl[mid], self.wl[0]]
 
     def transform(self, trans_type):
         """Rotation / Flip du cube"""
@@ -1038,6 +1066,28 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         self.show_rgb_image()
         self.update_overlay()
 
+    def open_load_cube_dialog(self):
+        dlg = LoadCubeDialog(self, vnir_cube=self._last_vnir, swir_cube=self._last_swir)
+        if dlg.exec_() == QDialog.Accepted:
+            # Prefer fusing VNIR+SWIR if both available; otherwise passthrough a single cube
+            vnir = dlg.cubes.get("VNIR")
+            swir = dlg.cubes.get("SWIR")
+
+            self._last_vnir = vnir
+            self._last_swir = swir
+
+            if vnir is not None or swir is not None:
+                self.cube = fused_cube(vnir, swir)
+            else:
+                QMessageBox.warning(self, "Error", "No cube loaded.")
+                return
+
+            # Ensure UI buffers are in sync
+            self.data = self.cube.data
+            self.wl = self.cube.wl
+            self.update_rgb_controls()
+            self.update_overlay()
+
     def load_cube(self,filepath=None,cube=None,cube_info=None,range=None):
         flag_loaded=False
         if cube is not None:
@@ -1052,19 +1102,13 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
                     print('Range : ',range)
                     if range=='VNIR':
                         self._last_vnir=cube
-                        if self._last_swir is not None:
-                            self.cube = fused_cube(self._last_vnir, self._last_swir)
-                        else:
-                            self.cube=cube
+                        self.cube = fused_cube(self._last_vnir, self._last_swir)
 
                         flag_loaded=True
 
                     elif range=='SWIR':
                         self._last_swir=cube
-                        if self._last_vnir is not None:
-                            self.cube = fused_cube(self._last_vnir, self._last_swir)
-                        else:
-                            self.cube=cube
+                        self.cube = fused_cube(self._last_vnir, self._last_swir)
 
                         flag_loaded = True
 
@@ -1124,10 +1168,12 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         target = self.TRAIN_WL[mask]
 
         data_i, wl_i = self.cube.get_interpolate_cube(wl_interp=target, interp_kind='linear')
+        old_md = dict(getattr(self.cube, "metadata", {}) or {})
 
         self.data = data_i
         self.wl = wl_i
         self.cube = Hypercube(data=self.data, wl=self.wl, cube_info=self.cube.cube_info)
+        self.cube.metadata = dict(old_md)
         self.update_rgb_controls()
         self.show_rgb_image()
         self.update_overlay()
@@ -1739,7 +1785,10 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         if not job or job.class_map is None:
             self.update_legend()
             self._set_info_rows()
-            cm_clean= np.zeros((self.data.shape[0],self.data.shape[1]))
+            if self.data is not None:
+                cm_clean= np.zeros((self.data.shape[0],self.data.shape[1]))
+            else:
+                cm_clean=np.zeros((1,1))
             rgb_right = _colorize(cm_clean)
             self.viewer_right.setImage(self._np2pixmap(rgb_right))
             self.label_viewer_right.setText("RAW map ")
