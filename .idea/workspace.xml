@@ -4,10 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="[IDENTIFICATION] : Inserted in the MainWindow Correctly">
+    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="[IDENTIFICATION] : Fixed loading parameters, icon, fusion, and defauts rgb parameters">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/identification/identification_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/identification/identification_tool.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/interface/icons/all_icon.svg" beforeDir="false" afterPath="$PROJECT_DIR$/interface/icons/all_icon.svg" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/interface/some_widget_for_interface.py" beforeDir="false" afterPath="$PROJECT_DIR$/interface/some_widget_for_interface.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/interface/test.py" beforeDir="false" afterPath="$PROJECT_DIR$/interface/test.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -136,14 +137,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1744020944801</updated>
-    </task>
-    <task id="LOCAL-00044" summary="pixel_averaged added + saving GT started">
-      <option name="closed" value="true" />
-      <created>1749819042738</created>
-      <option name="number" value="00044" />
-      <option name="presentableId" value="LOCAL-00044" />
-      <option name="project" value="LOCAL" />
-      <updated>1749819042738</updated>
     </task>
     <task id="LOCAL-00045" summary="Bugg of metadata loading finally fixed :-p">
       <option name="closed" value="true" />
@@ -529,7 +522,15 @@
       <option name="project" value="LOCAL" />
       <updated>1758275492539</updated>
     </task>
-    <option name="localTasksCounter" value="93" />
+    <task id="LOCAL-00093" summary="[IDENTIFICATION] : Fixed loading parameters, icon, fusion, and defauts rgb parameters">
+      <option name="closed" value="true" />
+      <created>1758283799871</created>
+      <option name="number" value="00093" />
+      <option name="presentableId" value="LOCAL-00093" />
+      <option name="project" value="LOCAL" />
+      <updated>1758283799872</updated>
+    </task>
+    <option name="localTasksCounter" value="94" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -581,7 +582,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Cube_info.pathS homogene pour tous les outils -&gt; mise en memoire choix browser&#10;Envi files ok for reading" />
     <MESSAGE value="[Hypercube] -&gt; Calibration window OK.&#10;Add : white from norway and load file .txt" />
     <MESSAGE value="[Main]+[Hypercube]&#10;Gestion du cache a priori sans nouveau bugg - cubeLoaded.emit(Hyeprcube)&#10;Calibration white OK with graph to vizualize." />
     <MESSAGE value="[Data Viz] : one or three iamges + transorm" />
@@ -606,6 +606,7 @@
     <MESSAGE value="[IDENTIFICATION] : ROI selection, add from disk, traint/predict with reduces channels cube OK FOR INK AND SUBSTRATE" />
     <MESSAGE value="[IDENTIFICATION] : Loading Dialog prefilled with current value (if opened with dialog)" />
     <MESSAGE value="[IDENTIFICATION] : Inserted in the MainWindow Correctly" />
-    <option name="LAST_COMMIT_MESSAGE" value="[IDENTIFICATION] : Inserted in the MainWindow Correctly" />
+    <MESSAGE value="[IDENTIFICATION] : Fixed loading parameters, icon, fusion, and defauts rgb parameters" />
+    <option name="LAST_COMMIT_MESSAGE" value="[IDENTIFICATION] : Fixed loading parameters, icon, fusion, and defauts rgb parameters" />
   </component>
 </project>

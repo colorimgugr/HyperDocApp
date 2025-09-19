@@ -38,6 +38,7 @@ class ZoomableGraphicsView(QGraphicsView):
         self.pixmap_item = None  # check if image loaded
 
         # Rubber band selection
+        self.enable_rect_selection = True
         self.origin = QPoint()
         self.rubber_band = QRubberBand(QRubberBand.Rectangle, self)
         self._selecting = False
@@ -72,7 +73,7 @@ class ZoomableGraphicsView(QGraphicsView):
         self.scale(zoom, zoom)
 
     def mousePressEvent(self, event):
-        if event.button() == Qt.RightButton and self.pixmap_item: # rectangle selection
+        if (event.button() == Qt.RightButton and self.pixmap_item and self.enable_rect_selection): # rectangle selection
             self.viewport().setCursor(Qt.CrossCursor)
             self.origin = event.pos()
             self.rubber_band.setGeometry(QRect(self.origin, QSize()))

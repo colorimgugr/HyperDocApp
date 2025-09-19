@@ -14,5 +14,3 @@ for path in glob.glob(r"C:\Users\Usuario\Documents\GitHub\Hypertool\identificati
     # print(path)
     # model=joblib.load(path)
     # print(len(model['train_wl']))
-
-

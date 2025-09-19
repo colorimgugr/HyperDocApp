@@ -26,11 +26,6 @@ from hypercubes.hypercube import Hypercube
 from interface.some_widget_for_interface  import ZoomableGraphicsView
 from identification.load_cube_dialog import Ui_Dialog
 
-# todo : check all workflow of substrate classification and implement retraining and load from disk like ink classification
-# todo : on open new cube : dialog box to propose to save classification maps.
-# todo : no rectangle selections on viewer_right
-# todo : in training phase, status "Training..."
-
 def _safe_name_from(cube) -> str:
     md = getattr(cube, "metadata", {}) or {}
     if isinstance(md, dict):
@@ -277,7 +272,7 @@ class TrainWorker(QRunnable):
     @pyqtSlot()
     def run(self):
         try:
-            import os, joblib, numpy as np
+            import joblib
             # ---- Load training data, following your classifier_train.py ----
             # Adjust paths to your repo layout if needed
             from pathlib import Path
@@ -361,7 +356,7 @@ class ClassificationJob:
     name: str                 # unique key shown in table (e.g., "SVM (RBF)")
     clf_type: str             # "knn" | "cnn" | "svm" etc...
     kind: str                 # e.g., ["Substrate","Ink 3 classes" ...]
-    status: str = "Queued"    # "Queued" | "Running" | "Done" | "Canceled" | "Error" | "To train"
+    status: str = "Queued"    # "Queued" | "Running" | "Done" | "Canceled" | "Error" | "To train" | "Training..."
     trained = True
     trained_path = 'Default'
     progress: int = 0         # 0..100
@@ -789,6 +784,8 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         # Remplacer placeholders par ZoomableGraphicsView
         self._replace_placeholder('viewer_left', ZoomableGraphicsView)
         self._replace_placeholder('viewer_right', ZoomableGraphicsView)
+        self.viewer_left.enable_rect_selection = True
+        self.viewer_right.enable_rect_selection = False # no rectangle selection for right view
 
         self._last_vnir = None
         self._last_swir = None
@@ -816,7 +813,7 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
             lambda: self.add_job(self.comboBox_clas_ink_model.currentText()))
         self.pushButton_clas_classify_substrate.clicked.connect(self.classify_substrate)
         self.pushButton_clas_remove.clicked.connect(self.remove_selected_job)
-        self.pushButton_clas_remove_all.clicked.connect(self.remove_all_jobs)
+        self.pushButton_clas_remove_all.clicked.connect(lambda:self.remove_all_jobs())
         self.pushButton_clas_up.clicked.connect(self.move_selected_job_up)
         self.pushButton_clas_down.clicked.connect(self.move_selected_job_down)
         self.pushButton_clas_start.clicked.connect(self.start_queue)
@@ -1066,9 +1063,29 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         self.show_rgb_image()
         self.update_overlay()
 
+    def no_reset_jobs_on_new_cube(self):
+        for job in self.jobs:
+            if self.jobs[job].status in ['Done', 'Running']:
+                reply = QMessageBox.question(
+                    self, "Reset Jobs ?",
+                    f"Some jobs have been done and will be loosed.\n Are you sure to continue ? ",
+                    QMessageBox.Yes | QMessageBox.Cancel
+                )
+                if reply == QMessageBox.Cancel:
+                    return True
+
+                self.remove_all_jobs(ask_confirm=False)
+                return False
+
+        return False
+
     def open_load_cube_dialog(self):
-        dlg = LoadCubeDialog(self, vnir_cube=self._last_vnir, swir_cube=self._last_swir)
-        if dlg.exec_() == QDialog.Accepted:
+
+       if self.no_reset_jobs_on_new_cube():
+           return
+
+       dlg = LoadCubeDialog(self, vnir_cube=self._last_vnir, swir_cube=self._last_swir)
+       if dlg.exec_() == QDialog.Accepted:
             # Prefer fusing VNIR+SWIR if both available; otherwise passthrough a single cube
             vnir = dlg.cubes.get("VNIR")
             swir = dlg.cubes.get("SWIR")
@@ -1089,6 +1106,10 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
             self.update_overlay()
 
     def load_cube(self,filepath=None,cube=None,cube_info=None,range=None):
+
+        if self.no_reset_jobs_on_new_cube():
+            return
+
         flag_loaded=False
         if cube is not None:
             try:
@@ -2166,14 +2187,20 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         self._refresh_table()
         self._refresh_show_model_combo()
 
-    def remove_all_jobs(self):
-        done_count = sum(1 for n in self.job_order if self.jobs.get(n) and self.jobs[n].status == "Done")
-        if done_count > 0:
-            if not self._confirm(
-                    "Confirm removing completed jobs",
-                    f"{done_count} job(s) are DONE.\nRemove ALL anyway?"
-            ):
-                return
+    def remove_all_jobs(self,ask_confirm=True):
+
+        print('[Ask remove confirm : ]',ask_confirm)
+        if ask_confirm:
+            for job in self.jobs:
+                if self.jobs[job].status in ['Done', 'Running']:
+                    reply = QMessageBox.question(
+                        self, "Reset Jobs ?",
+                        f"Some jobs have been done and will be loosed.\n Are you sure to continue ? ",
+                        QMessageBox.Yes | QMessageBox.Cancel
+                    )
+                    if reply == QMessageBox.Cancel:
+                        return
+                    break
 
         table = self.tableWidget_classificationList
         for row in range(table.rowCount()):
@@ -2232,6 +2259,7 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         # Refresh any dependent UI
         self._refresh_show_model_combo()
         self._refresh_table()
+        self.update_overlay()
 
     def remove_selected_job(self):
         table = self.tableWidget_classificationList
@@ -2375,7 +2403,7 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
 
             if job.status == "To Train":
                 # flip to running (training)
-                job.status = "Running"
+                job.status = "Training..."
                 job.progress = 0
                 job._t0 = time.time()
                 self._update_row_from_job(name)
