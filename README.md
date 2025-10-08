@@ -23,11 +23,11 @@ Upon launching the app (`python MainWindow.py` or via the packaged executable):
 ### Main Tools
 | Tool | Description |
 |------|--------------|
-| <img src="/interface/icons/metadata_icon.svg" width="32" /> **Metadata** | View and edit metadata associated with hyperspectral cubes. |
+| <img src="/interface/icons/metadata_icon.svg" width="26" /> **Metadata** | View and edit metadata associated with hyperspectral cubes. |
 | <img src="/interface/icons/icon_data_viz.svg" width="32" /> **Data Visualization** | Display RGB composites, spectra, and Ground Truth overlays. |
 | <img src="/interface/icons/registration_icon.svg" width="32" /> **Registration** | Align VNIR and SWIR cubes spatially. |
 | <img src="/interface/icons/GT_icon_1.png" width="32" /> **Ground Truth** | Create and manage labeled maps for supervised learning. |
-| <img src="/interface/icons/metadata_icon.svg" width="32" /> **Minicube Extract** | Select and extract subcubes from a larger hyperspectral cube. |
+| <img src="/interface/icons/minicube_icon.svg" width="32" /> **Minicube Extract** | Select and extract subcubes from a larger hyperspectral cube. |
 | <img src="/interface/icons/Ident_icon.png" width="32" /> **Identification** | Classify pixels using ML models (KNN, SVM, CNN, etc.). |
 | <img src="/interface/icons/illumination_icon.png" width="32" /> **Illumination** | Visualize reflectance under different light sources. |
 
@@ -35,7 +35,7 @@ All modules interact through the shared **HypercubeManager**, ensuring synchroni
 
 ---
 
-## 🧩 1. Metadata Tool
+ ## <img src="/interface/icons/metadata_icon.svg" width="26" />  1. Metadata Tool
 
 **Purpose:** Inspect, edit, and generate metadata for a loaded cube.
 
@@ -48,7 +48,7 @@ All modules interact through the shared **HypercubeManager**, ensuring synchroni
 
 ---
 
-## 🎨 2. Data Visualization Tool
+## <img src="/interface/icons/icon_data_viz.svg" width="32" /> 2. Data Visualization Tool
 
 **Purpose:** Display hyperspectral cubes and explore their spectral or spatial properties.
 
@@ -68,7 +68,7 @@ All modules interact through the shared **HypercubeManager**, ensuring synchroni
 
 ---
 
-## 🔍 3. Registration Tool
+## <img src="/interface/icons/registration_icon.svg" width="32" /> 3. Registration Tool
 
 **Purpose:** Align two hyperspectral cubes (e.g., VNIR and SWIR) spatially.
 
@@ -86,7 +86,7 @@ All modules interact through the shared **HypercubeManager**, ensuring synchroni
 
 ---
 
-## 🧪 4. Ground Truth Tool
+## <img src="/interface/icons/GT_icon_1.png" width="32" /> 4. Ground Truth Tool
 
 **Purpose:** Create or edit pixel-level classification maps used for supervised training.
 
@@ -104,7 +104,7 @@ All modules interact through the shared **HypercubeManager**, ensuring synchroni
 
 ---
 
-## 🧊 5. Minicube Extract Tool
+## <img src="/interface/icons/minicube_icon.svg" width="32" /> 5. Minicube Extract Tool
 
 **Purpose:** Select and extract smaller subcubes (regions of interest) from a full hyperspectral cube.
 
@@ -117,7 +117,7 @@ All modules interact through the shared **HypercubeManager**, ensuring synchroni
 
 ---
 
-## 🧠 6. Identification Tool
+## <img src="/interface/icons/Ident_icon.png" width="32" /> 6. Identification Tool
 
 **Purpose:** Perform spectral classification using trained machine learning models.
 
@@ -137,7 +137,7 @@ All modules interact through the shared **HypercubeManager**, ensuring synchroni
 
 ---
 
-## 💡 7. Illumination Tool
+## <img src="/interface/icons/illumination_icon.png" width="32" /> 7. Illumination Tool
 
 **Purpose:** Convert reflectance cubes to RGB appearance under chosen illuminants.
 
@@ -150,7 +150,7 @@ All modules interact through the shared **HypercubeManager**, ensuring synchroni
 
 ---
 
-## 🗂️ 8. HDF5 / File Browser
+## <img src="/interface/icons/file_browser_icon.png" width="32" /> 8. HDF5 / File Browser
 
 **Purpose:** Inspect unknown HDF5 or MATLAB files and manually select the paths for data, wavelengths, and metadata.
 
@@ -193,6 +193,7 @@ All modules interact through the shared **HypercubeManager**, ensuring synchroni
 ---
 
 ## 🧑‍💻 Launching the Application
+
 
 ```bash
 # From your project root
