@@ -4,9 +4,19 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="Todo out">
+    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="[identification] : &#10;- drag rectangle offset fixed. &#10;- sources name cut if path&#10;-">
+      <change afterPath="$PROJECT_DIR$/unmixing/unmixing_backend.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/unmixing/unmixing_tool.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/unmixing/unmixing_window.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/unmixing/unmixing_window.ui" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/Hypertool.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/Hypertool.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/interface/icons/illumination_icon.png" beforeDir="false" afterPath="$PROJECT_DIR$/interface/icons/illumination_icon.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/MainWindow.py" beforeDir="false" afterPath="$PROJECT_DIR$/MainWindow.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ground_truth/ground_truth_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/ground_truth/ground_truth_tool.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/identification/identification_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/identification/identification_tool.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/identification/identification_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/identification/identification_window.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/identification/identification_window.ui" beforeDir="false" afterPath="$PROJECT_DIR$/identification/identification_window.ui" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/interface/some_widget_for_interface.py" beforeDir="false" afterPath="$PROJECT_DIR$/interface/some_widget_for_interface.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -135,14 +145,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1744020944801</updated>
-    </task>
-    <task id="LOCAL-00050" summary="fixed bugg meta wl with register cube&#10;fixed rgb save bugg register">
-      <option name="closed" value="true" />
-      <created>1750844767242</created>
-      <option name="number" value="00050" />
-      <option name="presentableId" value="LOCAL-00050" />
-      <option name="project" value="LOCAL" />
-      <updated>1750844767242</updated>
     </task>
     <task id="LOCAL-00051" summary="plein de trucs :-p">
       <option name="closed" value="true" />
@@ -528,7 +530,15 @@
       <option name="project" value="LOCAL" />
       <updated>1759491318157</updated>
     </task>
-    <option name="localTasksCounter" value="99" />
+    <task id="LOCAL-00099" summary="Icon_illumination">
+      <option name="closed" value="true" />
+      <created>1759831965939</created>
+      <option name="number" value="00099" />
+      <option name="presentableId" value="LOCAL-00099" />
+      <option name="project" value="LOCAL" />
+      <updated>1759831965940</updated>
+    </task>
+    <option name="localTasksCounter" value="100" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -580,7 +590,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="path problems with .splt('/') fixed with os.path" />
     <MESSAGE value="check if loaded GT good size" />
     <MESSAGE value="[registration] -&gt; individual transforms OK" />
     <MESSAGE value="[Minicube] : v1 finished" />
@@ -605,6 +614,7 @@
     <MESSAGE value="[GROUND TRUTH] :&#10;-&gt; Gestion of diminution of class numbers : erase or reassign with choice. &#10;-&gt; Save last label choice when selecting" />
     <MESSAGE value="[GROUND TRUTH] :&#10;-&gt; Gestion of diminution of class numbers : erase or reassign with choice. &#10;-&gt; Save last label choice when selecting&#10;-&gt; Fixed except si les numeros de classes ne se suivent pas." />
     <MESSAGE value="[HYPERCUBE] : Calibration -&gt; added than user can load ref reflectance file" />
-    <option name="LAST_COMMIT_MESSAGE" value="[HYPERCUBE] : Calibration -&gt; added than user can load ref reflectance file" />
+    <MESSAGE value="Icon_illumination" />
+    <option name="LAST_COMMIT_MESSAGE" value="Icon_illumination" />
   </component>
 </project>

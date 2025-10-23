@@ -236,7 +236,7 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
     cubeLoaded = QtCore.pyqtSignal(Hypercube)
     cube_saved = QtCore.pyqtSignal(CubeInfoTemp)
 
-    def __init__(self, parent=None,cubeInfo=None):
+    def __init__(self, parent=None):
         super().__init__(parent)
         # Set up UI from compiled .py
         self.setupUi(self)

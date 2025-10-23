@@ -242,7 +242,6 @@ class MainApp(QtWidgets.QMainWindow):
         self.tabifyDockWidget(self.reg_dock, self.identification_dock)
         self.tabifyDockWidget(self.reg_dock, self.illumination_dock)
 
-
         self.gt_dock.raise_()
 
         # Tool menu
@@ -897,10 +896,10 @@ if __name__ == "__main__":
     main = MainApp()
     main.show()
 
-    # folder = r'C:\Users\Usuario\Documents\DOC_Yannick\HYPERDOC Database_TEST\Samples\minicubes/'
-    # fname = '00189-VNIR-mock-up.h5'
-    # filepath = os.path.join(folder, fname)
-    # main._on_add_cube([filepath,filepath.replace('189','191')])
+    folder = r'C:\Users\Usuario\Documents\DOC_Yannick\HYPERDOC Database_TEST\Samples\minicubes/'
+    fname = '00189-VNIR-mock-up.h5'
+    filepath = os.path.join(folder, fname)
+    main._on_add_cube([filepath,filepath.replace('189','191')])
 
     try:
         import matlab.engine

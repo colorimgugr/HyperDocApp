@@ -40,7 +40,7 @@ class ZoomableGraphicsView(QGraphicsView):
         # Rubber band selection
         self.enable_rect_selection = True
         self.origin = QPoint()
-        self.rubber_band = QRubberBand(QRubberBand.Rectangle, self)
+        self.rubber_band = QRubberBand(QRubberBand.Rectangle, self.viewport())
         self._selecting = False
         self.last_rect_item = None
         self.rect_coords = None

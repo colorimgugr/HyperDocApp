@@ -7,13 +7,13 @@ import cv2
 from PIL import Image
 import h5py
 
-from PyQt5.QtWidgets import (QApplication, QSizePolicy, QSplitter,QTableWidgetItem,QHeaderView,QProgressBar,
+from PyQt5.QtWidgets import (QApplication, QSizePolicy, QSplitter,QHeaderView,QProgressBar,
                             QDialog, QVBoxLayout, QHBoxLayout, QFormLayout, QLabel, QLineEdit, QPushButton,
                              QDialogButtonBox, QCheckBox, QScrollArea, QWidget, QFileDialog, QMessageBox,
-                             QRadioButton,QInputDialog
+                             QRadioButton,QInputDialog,QTableWidget, QTableWidgetItem,QHeaderView,
                              )
 
-from PyQt5.QtGui import QPixmap, QImage,QGuiApplication,QStandardItemModel, QStandardItem
+from PyQt5.QtGui import QPixmap, QImage,QGuiApplication,QStandardItemModel, QStandardItem,QColor
 from PyQt5.QtCore import Qt,QObject, pyqtSignal, QRunnable, QThreadPool, pyqtSlot, QRectF
 
 from dataclasses import dataclass, field
@@ -40,7 +40,9 @@ def _safe_name_from(cube) -> str:
             return str(name)
     fp = getattr(ci, "filepath", "") if ci else ""
     if fp:
-        return os.path.splitext(os.path.basename(fp))[0]
+        path=os.path.splitext(os.path.basename(fp))[0]
+        name=path.split('/')[-1]
+        return name
     return "unknown"
 
 def _safe_filename_from(cube) -> str:
@@ -2954,16 +2956,6 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         self.viewer_left.add_selection_overlay(qrect, surface=surface)
         self.viewer_right.add_selection_overlay(qrect, surface=surface)
 
-    def _clear_formlayout(self, fl):
-        """Remove all rows/widgets from a QFormLayout cleanly."""
-        if fl is None:
-            return
-        while fl.count():
-            item = fl.takeAt(0)
-            w = item.widget()
-            if w:
-                w.deleteLater()
-
     def _current_job(self):
         """Return the job currently selected in comboBox_clas_show_model (or None)."""
         idx = self.comboBox_clas_show_model.currentIndex()
@@ -2981,18 +2973,16 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         return f"{y}:{x}:{h}:{w}"
 
     def _set_info_rows(self):
-        """
-        (Re)build formLayout_Info with:
-          - Job name (bold)
-          - clf_type
-          - kind
-          - rect
-          - metadata source_names (from cube)
-        Called together with legend update.
-        """
+
         fl = self.formLayout_Info
         # 1) clear previous content
-        self._clear_formlayout(fl)
+        if fl is None:
+            return
+        while fl.count():
+            item = fl.takeAt(0)
+            w = item.widget()
+            if w:
+                w.deleteLater()
 
         # 2) collect data depending on mode
         is_binary = self.radioButton_overlay_binary.isChecked()

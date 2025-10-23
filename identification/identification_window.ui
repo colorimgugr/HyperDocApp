@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1472</width>
-    <height>1176</height>
+    <height>0</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -19,7 +19,7 @@
   <property name="styleSheet">
    <string notr="true">background-color: rgb(181, 181, 181);</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout" stretch="0,6">
+  <layout class="QVBoxLayout" name="verticalLayout" stretch="1,8">
    <item>
     <widget class="QFrame" name="frame">
      <property name="autoFillBackground">
@@ -31,18 +31,11 @@
      <property name="frameShadow">
       <enum>QFrame::Raised</enum>
      </property>
-     <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="1,5,1,3">
-      <item>
-       <widget class="Line" name="line_4">
-        <property name="orientation">
-         <enum>Qt::Vertical</enum>
-        </property>
-       </widget>
-      </item>
+     <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="5,1,3">
       <item>
        <widget class="QTabWidget" name="tabWidget_Process">
         <property name="currentIndex">
-         <number>1</number>
+         <number>0</number>
         </property>
         <widget class="QWidget" name="tabWidgetPage2">
          <attribute name="title">
@@ -1047,6 +1040,13 @@ color: rgb(255, 255, 255);</string>
          </widget>
         </item>
         <item>
+         <widget class="QPushButton" name="pushButton_load_map">
+          <property name="text">
+           <string>Load map</string>
+          </property>
+         </widget>
+        </item>
+        <item>
          <widget class="QTabWidget" name="tabWidget_info_classification">
           <property name="currentIndex">
            <number>0</number>
@@ -1114,7 +1114,7 @@ color: rgb(255, 255, 255);</string>
          <enum>Qt::Horizontal</enum>
         </property>
         <widget class="QFrame" name="verticalFrame">
-         <layout class="QHBoxLayout" name="horizontalLayout_9" stretch="9">
+         <layout class="QHBoxLayout" name="horizontalLayout_9" stretch="0">
           <item>
            <widget class="QSplitter" name="splitter_2">
             <property name="layoutDirection">
