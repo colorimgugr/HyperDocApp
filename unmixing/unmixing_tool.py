@@ -17,6 +17,13 @@ from PyQt5.QtWidgets import (QApplication, QSizePolicy, QSplitter,QHeaderView,QP
 from PyQt5.QtGui import QPixmap, QImage,QGuiApplication,QStandardItemModel, QStandardItem,QColor
 from PyQt5.QtCore import Qt,QObject, pyqtSignal, QRunnable, QThreadPool, pyqtSlot, QRectF
 
+# Graphs
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.figure import Figure
+from matplotlib.widgets import SpanSelector
+from matplotlib import colormaps
+from matplotlib.path import Path
+
 from dataclasses import dataclass, field
 from typing import List, Optional, Dict
 import time
@@ -27,6 +34,9 @@ from unmixing.unmixing_window import Ui_GroundTruthWidget
 from hypercubes.hypercube import Hypercube
 from interface.some_widget_for_interface import ZoomableGraphicsView
 from identification.load_cube_dialog import Ui_Dialog
+
+# todo: show endmembers spectra at the end of endmembers extraction
+# todo : add manual selection of endmembers
 
 class LoadCubeDialog(QDialog):
     """
@@ -473,6 +483,12 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         self._replace_placeholder('viewer_right', ZoomableGraphicsView)
         self.viewer_left.enable_rect_selection = True
         self.viewer_right.enable_rect_selection = False # no rectangle selection for right view
+        self._promote_canvas('spec_canvas', FigureCanvas)
+        # Promote spec_canvas placeholder to FigureCanvas
+        self.spec_canvas_layout = self.spec_canvas.layout() if hasattr(self.spec_canvas, 'layout') else None
+        self.init_spectrum_canvas()
+        self.show_selection = True
+
 
         # for manual selection
         self.selecting_pixels = False  # mode selection ref activated
@@ -806,6 +822,279 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
     def update_alpha(self, value):
         self.alpha = value / 100.0
         self.update_overlay(only_images=True)
+
+    def _promote_canvas(self, name, canvas_cls):
+        placeholder = getattr(self, name)
+        parent = placeholder.parent()
+        from PyQt5.QtWidgets import QSplitter
+
+        # Crée le nouveau canvas
+        canvas = canvas_cls()
+        # Supprime l’ancien placeholder
+        placeholder.deleteLater()
+
+        if isinstance(parent, QSplitter):
+            # cas splitter : insère au même emplacement
+            idx = parent.indexOf(placeholder)
+            parent.insertWidget(idx, canvas)
+        else:
+            # cas layout classique
+            layout = parent.layout() or self.verticalLayout
+            layout.addWidget(canvas)
+
+        # Conserve refs pour live spectrum
+        self.spec_canvas = canvas
+        self.spec_fig = getattr(canvas, 'figure', None) or Figure()
+        self.spec_ax = self.spec_fig.add_subplot(111)
+        self.spec_ax.set_title('Spectrum')
+        canvas.setVisible(False)
+
+    def init_spectrum_canvas(self):
+        placeholder = getattr(self, 'spec_canvas')
+        parent = placeholder.parent()
+
+        # Crée le canvas
+        self.spec_fig = Figure(facecolor=(1, 1, 1, 0.1))
+        self.spec_canvas = FigureCanvas(self.spec_fig)
+        self.spec_ax = self.spec_fig.add_subplot(111)
+        self.spec_ax.set_facecolor((0.7,0.7,0.7,1))
+        self.spec_ax.set_title('Spectra')
+        self.spec_ax.grid()
+
+
+        self.span_selector = SpanSelector(
+            ax=self.spec_ax,  # votre axe “Spectrum”
+            onselect=self._on_bandselect,  # callback
+            direction="horizontal",  # sélection horizontale
+            useblit=True,  # activer le “blitting”
+            minspan=1.0,  # au moins 1 unité sur l’axe λ
+            props=dict(alpha=0.3, facecolor='tab:blue')
+        )
+
+        self.span_selector.set_active(False)
+
+        # Remplace dans le splitter ou dans le layout
+        if isinstance(parent, QSplitter):
+            idx = parent.indexOf(placeholder)
+            placeholder.deleteLater()
+            parent.insertWidget(idx, self.spec_canvas)
+        elif parent.layout() is not None:
+            layout = parent.layout()
+            idx = layout.indexOf(placeholder)
+            layout.removeWidget(placeholder)
+            placeholder.deleteLater()
+            layout.insertWidget(idx, self.spec_canvas)
+        else:
+            placeholder.deleteLater()
+            self.verticalLayout.addWidget(self.spec_canvas)
+
+    def update_spectra(self,x=None,y=None):
+        self.spec_ax.clear()
+        x_graph = self.wl
+        maxR=1
+
+        if self.data is None:
+            return
+
+        if x is not None and y is not None:
+            if 0 <= x < self.data.shape[1] and 0 <= y < self.data.shape[0]:
+                spectrum = self.data[y, x, :]
+                # Spectre du pixel
+                self.spec_ax.plot(x_graph, spectrum, label='Pixel')
+                if np.max(spectrum) > maxR: maxR= np.max(spectrum)
+
+        # Spectres GT moyens ± std
+        if self.checkBox_seeGTspectra.isChecked() and hasattr(self, 'class_means'):
+            for c, mu in self.class_means.items():
+                std = self.class_stds[c]
+                b, g, r = self.class_colors[c]
+                col = (r/255.0, g/255.0, b/255.0)
+                self.spec_ax.fill_between(
+                    x_graph, mu - std, mu + std,
+                    color=col, alpha=0.3, linewidth=0
+                )
+                self.spec_ax.plot(
+                    x_graph, mu, '--',
+                    color=col, label=f"Class {c}"
+                )
+                if np.max(mu + std) > maxR: maxR = np.max(mu + std)
+
+            if self.spec_ax.get_legend_handles_labels()[1]:
+                self.spec_ax.legend(loc='upper right', fontsize='small')
+            self.spec_ax.set_title(f"Spectra")
+            self.spec_ax.grid(color='black')
+            self.spec_ax.set_ylim(0,maxR+0.05)
+            self.spec_ax.set_xlim(x_graph[0],x_graph[-1])
+            self.spec_ax.set_xlabel("wavelength (nm)")
+            self.spec_ax.set_ylabel("Reflectance (a.u.)")
+
+        for patch in self.selected_span_patch:
+            # patch est un PolyCollection produit par axvspan()
+            # On le remet dans l’axe courant :
+            self.spec_ax.add_patch(patch)
+
+            # 4) On rafraîchit le canvas
+        self.spec_canvas.draw_idle()
+
+    # </editor-fold>
+
+    # <editor-fold desc="Manual Selection">
+    def _on_bandselect(self, lambda_min, lambda_max):
+        """
+        Callback  SpanSelector
+        """
+
+        if self._band_action is None:
+            return
+
+        # 1) S’assurer que lambda_min < lambda_max
+        if lambda_min > lambda_max:
+            lambda_min, lambda_max = lambda_max, lambda_min
+
+        # 2) Conversion en indices d’onde
+        idx_min = int(np.argmin(np.abs(self.wl - lambda_min)))
+        idx_max = int(np.argmin(np.abs(self.wl - lambda_max)))
+
+        # 3) update self.selected_bands
+        if self._band_action == 'add':
+            for idx in range(idx_min,idx_max+1):
+                if idx not in self.selected_bands:
+                    self.selected_bands.append(idx)
+
+            print(f"Selected band : [{idx_min} → {idx_max}] "
+                  f"({self.wl[idx_min]:.1f} → {self.wl[idx_max]:.1f} nm)")
+
+            patch=self.spec_ax.axvspan(
+                lambda_min, lambda_max,
+                alpha=0.2, color='tab:blue'
+            )
+
+            self.selected_span_patch.append(patch)
+
+        elif self._band_action == 'del':
+
+            for idx in range(idx_min,idx_max+1):
+                if idx in self.selected_bands:
+                    self.selected_bands.remove(idx)
+
+            self.selected_bands=sorted(self.selected_bands)
+
+            for patch in self.selected_span_patch:  # reset all patch
+                patch.remove()
+                self.selected_span_patch = []
+
+            bands={}
+            i_band=0
+            for i in range(len(self.selected_bands)-1): # get bands from index
+                if (self.selected_bands[i+1] -self.selected_bands[i]) ==1:
+                    try:
+                        bands[i_band].append(self.selected_bands[i])
+                    except:
+                        bands[i_band]=[self.selected_bands[i]]
+                else:
+                    try:
+                        bands[i_band].append(self.selected_bands[i])
+                    except:
+                        bands[i_band]=[self.selected_bands[i]]
+
+                    i_band+=1
+
+
+            # recreate patches
+            for i_band in bands:
+                lambda_min, lambda_max=self.wl[bands[i_band][0]],self.wl[bands[i_band][-1]]
+
+                patch = self.spec_ax.axvspan(
+                    lambda_min, lambda_max,
+                    alpha=0.2, color='tab:blue'
+                )
+
+                self.selected_span_patch.append(patch)
+
+        self.spec_canvas.draw_idle()
+
+    def _handle_selection(self, coords):
+        """Prompt for class and store spectra of the given coordinates."""
+        n = self.nclass_box.value() - 1
+        labels = [str(i) for i in range(n + 1)]
+
+        default_label = max(0, min(self._last_label, n)) if n > 0 else 0
+
+        # 2) Ouvrir un QInputDialog.getItem() au lieu de getInt()
+        #    - on force l’édition à se faire via la liste déroulante
+        cls_str, ok = QInputDialog.getItem(
+            self,
+            "Class",
+            "Choose class label:",
+            labels,
+            default_label,  # index initial (par défaut on sélectionne “0”)
+            False  # False = l’utilisateur ne peut pas taper autre chose que la liste
+        )
+
+        if not ok:
+            return
+
+        cls = int(cls_str)
+        self._last_label = cls
+        if cls not in self.class_colors:
+            self._assign_initial_colors(cls)
+
+        # append spectra
+
+        for x, y in coords:
+            if not (0 <= x < self.data.shape[1] and 0 <= y < self.data.shape[0]):
+                continue
+
+            # A) s’il appartenait déjà à une autre classe, on l’enlève
+            old = self.selection_mask_map[y, x]
+            if old >= 0 and old != cls:
+                # retirer coord de sample_coords[old] et de samples[old]
+                if (x, y) in self.sample_coords.get(old, set()):
+                    self.sample_coords[old].remove((x, y))
+                # reconstruire la liste des spectres pour old
+                self.samples[old] = [
+                    self.data[yy, xx, :]
+                    for (xx, yy) in self.sample_coords.get(old, ())
+                ]
+
+            # B) on (ré)assigne le pixel à la classe cls
+            self.selection_mask_map[y, x] = cls
+            # ajouter dans sample_coords et samples si pas déjà présent
+            if (x, y) not in self.sample_coords.setdefault(cls, set()):
+                self.sample_coords.setdefault(cls, set()).add((x, y))
+                self.samples.setdefault(cls, []).append(self.data[y, x, :])
+
+            # 3) rafraîchir l’affichage
+        self.update_counts()
+        self.show_image()
+        self.update_legend()
+
+    def _handle_erasure(self, coords):
+
+        for x, y in coords:
+            cls = self.selection_mask_map[y, x]
+            if cls >= 0:
+                # enlève du mask
+                self.selection_mask_map[y, x] = -1
+                # enlève des sets et listes
+                if (x, y) in self.sample_coords.get(cls, set()):
+                    self.sample_coords[cls].remove((x, y))
+                # reconstruit self.samples[cls]
+                self.samples[cls] = [
+                    self.data[yy, xx, :]
+                    for (xx, yy) in self.sample_coords.get(cls, [])
+                ]
+                if len(self.sample_coords.get(cls, [])) == 0:
+                    # on supprime tous les attributs relatifs à cette classe
+                    self.sample_coords.pop(cls, None)
+                    self.samples.pop(cls, None)
+                    self.class_colors.pop(cls, None)
+                    self.class_means.pop(cls, None)
+                    self.class_stds.pop(cls, None)
+
+        self.prune_unused_classes()
+        self.show_image()
+        self.update_legend()
     # </editor-fold>
 
     # <editor-fold desc="cube">
