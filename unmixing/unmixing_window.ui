@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1460</width>
-    <height>787</height>
+    <width>1464</width>
+    <height>796</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -85,7 +85,7 @@
          <attribute name="title">
           <string>Endmembers select</string>
          </attribute>
-         <layout class="QHBoxLayout" name="horizontalLayout_5">
+         <layout class="QHBoxLayout" name="horizontalLayout_5" stretch="2,1">
           <item>
            <layout class="QGridLayout" name="gridLayout">
             <item row="2" column="2" colspan="2">
@@ -124,12 +124,7 @@
               </item>
               <item>
                <property name="text">
-                <string>ATGP</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>N-FINDR</string>
+                <string>Auto</string>
                </property>
               </item>
              </widget>
@@ -214,48 +209,7 @@
              </layout>
             </widget>
             <widget class="QWidget" name="Manual">
-             <layout class="QGridLayout" name="gridLayout_4">
-              <item row="1" column="1">
-               <widget class="QComboBox" name="comboBox_pixel_selection_mode">
-                <property name="toolTip">
-                 <string>Shape used for pixel selection.</string>
-                </property>
-                <item>
-                 <property name="text">
-                  <string>rectangle</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>ellipse</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>pixel</string>
-                 </property>
-                </item>
-               </widget>
-              </item>
-              <item row="0" column="0">
-               <widget class="QPushButton" name="pushButton_class_selection">
-                <property name="enabled">
-                 <bool>true</bool>
-                </property>
-                <property name="toolTip">
-                 <string>Start selection for supervised mode or manual correction using RIGHT CLICK.</string>
-                </property>
-                <property name="styleSheet">
-                 <string notr="true">background-color: rgba(186, 255, 112, 125);</string>
-                </property>
-                <property name="text">
-                 <string>Start selection</string>
-                </property>
-                <property name="checkable">
-                 <bool>true</bool>
-                </property>
-               </widget>
-              </item>
+             <layout class="QGridLayout" name="gridLayout_4" columnminimumwidth="1,1">
               <item row="0" column="1">
                <widget class="QPushButton" name="pushButton_erase_selected_pix">
                 <property name="toolTip">
@@ -288,10 +242,68 @@
                 </property>
                </widget>
               </item>
+              <item row="0" column="0">
+               <widget class="QPushButton" name="pushButton_class_selection">
+                <property name="enabled">
+                 <bool>true</bool>
+                </property>
+                <property name="toolTip">
+                 <string>Start selection for supervised mode or manual correction using RIGHT CLICK.</string>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true">background-color: rgba(186, 255, 112, 125);</string>
+                </property>
+                <property name="text">
+                 <string>Start selection</string>
+                </property>
+                <property name="checkable">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="1">
+               <widget class="QComboBox" name="comboBox_pixel_selection_mode">
+                <property name="toolTip">
+                 <string>Shape used for pixel selection.</string>
+                </property>
+                <item>
+                 <property name="text">
+                  <string>rectangle</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>ellipse</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>pixel</string>
+                 </property>
+                </item>
+               </widget>
+              </item>
+              <item row="2" column="1">
+               <widget class="QPushButton" name="pushButton_save_EM_manual">
+                <property name="text">
+                 <string>Save manual endmembers</string>
+                </property>
+               </widget>
+              </item>
              </layout>
             </widget>
             <widget class="QWidget" name="Automatic">
              <layout class="QGridLayout" name="gridLayout_5">
+              <item row="2" column="1">
+               <widget class="QLabel" name="label_n_iteration">
+                <property name="text">
+                 <string># iterations :</string>
+                </property>
+                <property name="alignment">
+                 <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                </property>
+               </widget>
+              </item>
               <item row="0" column="1" colspan="2">
                <widget class="QPushButton" name="run_btn">
                 <property name="toolTip">
@@ -305,7 +317,7 @@
                 </property>
                </widget>
               </item>
-              <item row="1" column="2">
+              <item row="2" column="2">
                <widget class="QSpinBox" name="niter_box">
                 <property name="toolTip">
                  <string>Number of class to segment. Another class will be added in supervised mode if threashold not at maximum.</string>
@@ -321,10 +333,34 @@
                 </property>
                </widget>
               </item>
-              <item row="1" column="1">
-               <widget class="QLabel" name="n_iteration">
+              <item row="3" column="2">
+               <widget class="QPushButton" name="pushButton_save_EM_auto">
                 <property name="text">
-                 <string># iterations :</string>
+                 <string>Save automatic endmembers</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="2">
+               <widget class="QComboBox" name="comboBox_endmembers_auto_algo">
+                <property name="toolTip">
+                 <string>Choose between supervised segmentation (need selection first) or Unsupervised (Clusterisation)</string>
+                </property>
+                <item>
+                 <property name="text">
+                  <string>N-FINDR</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>ATGP</string>
+                 </property>
+                </item>
+               </widget>
+              </item>
+              <item row="1" column="1">
+               <widget class="QLabel" name="label_auto_algo">
+                <property name="text">
+                 <string>Algorithm :</string>
                 </property>
                 <property name="alignment">
                  <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -642,7 +678,7 @@ color: rgb(255, 255, 255);</string>
       <item>
        <widget class="QTabWidget" name="tabWidget_Image">
         <property name="currentIndex">
-         <number>0</number>
+         <number>2</number>
         </property>
         <widget class="QWidget" name="tabWidgetPage1_2">
          <attribute name="title">
@@ -971,16 +1007,25 @@ color: rgb(255, 255, 255);</string>
          </attribute>
          <layout class="QVBoxLayout" name="verticalLayout_5">
           <item>
-           <widget class="QCheckBox" name="checkBox_seeGTspectra">
+           <widget class="QComboBox" name="comboBox_endmembers_spectra">
             <property name="toolTip">
-             <string>Check to see mean spectra of the segmented classes.</string>
+             <string>Choose between supervised segmentation (need selection first) or Unsupervised (Clusterisation)</string>
             </property>
-            <property name="text">
-             <string>See EM spectra</string>
-            </property>
-            <property name="checked">
-             <bool>true</bool>
-            </property>
+            <item>
+             <property name="text">
+              <string>From library</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Manual</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Auto</string>
+             </property>
+            </item>
            </widget>
           </item>
           <item>
@@ -1014,56 +1059,15 @@ color: rgb(255, 255, 255);</string>
      <property name="lineWidth">
       <number>0</number>
      </property>
-     <layout class="QHBoxLayout" name="horizontalLayout_4">
+     <layout class="QHBoxLayout" name="horizontalLayout_3">
       <item>
        <widget class="QSplitter" name="splitter">
-        <property name="styleSheet">
-         <string notr="true">border-color: rgb(100, 100, 100);</string>
-        </property>
-        <property name="frameShape">
-         <enum>QFrame::NoFrame</enum>
-        </property>
-        <property name="frameShadow">
-         <enum>QFrame::Raised</enum>
-        </property>
-        <property name="lineWidth">
-         <number>2</number>
-        </property>
-        <property name="midLineWidth">
-         <number>2</number>
-        </property>
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
         </property>
-        <widget class="QFrame" name="verticalFrame">
-         <layout class="QVBoxLayout" name="verticalLayout_2">
-          <item>
-           <widget class="QSplitter" name="splitter_2">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
-            <widget class="QWidget" name="viewer_left" native="true">
-             <property name="toolTip">
-              <string>Promote to ZoomableGraphicsView</string>
-             </property>
-            </widget>
-            <widget class="QWidget" name="viewer_right" native="true">
-             <property name="toolTip">
-              <string>Promote to ZoomableGraphicsView</string>
-             </property>
-            </widget>
-           </widget>
-          </item>
-         </layout>
-        </widget>
-        <widget class="QWidget" name="spec_canvas" native="true">
-         <property name="toolTip">
-          <string>Promote to FigureCanvas</string>
-         </property>
-         <property name="autoFillBackground">
-          <bool>false</bool>
-         </property>
-        </widget>
+        <widget class="QWidget" name="viewer_left" native="true"/>
+        <widget class="QWidget" name="viewer_right" native="true"/>
+        <widget class="QWidget" name="spec_canvas" native="true"/>
        </widget>
       </item>
      </layout>

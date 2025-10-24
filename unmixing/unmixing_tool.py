@@ -36,7 +36,8 @@ from hypercubes.hypercube import Hypercube
 from interface.some_widget_for_interface import ZoomableGraphicsView
 from identification.load_cube_dialog import Ui_Dialog
 
-# todo : manual selection of endmembers -> continue
+#todo : from librarie -> gerer les wl_lib et wl (cube)
+#todo : unmixing -> select endmmebers AND if merge
 
 class LoadCubeDialog(QDialog):
     """
@@ -518,9 +519,15 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         self.wl = None
         self.whole_range = None
         self.saved_rec = None
+        self.horizontalSlider_overlay_transparency.setValue(70)
         self.alpha = self.horizontalSlider_overlay_transparency.value() / 100.0
 
-        self.E : Dict[str,np.ndarray]  # {EN_i : (L,pi)}
+        self.E = {} # {EN_i : (L,pi)}
+        self.E_manual= {}
+        self.regions = {}  # dict: classe -> [ {'coords': set[(x,y)], 'mean': np.ndarray}, ... ]
+        self.E_lib=Dict[str,np.ndarray]
+        self.wl_lib=None
+        self.E_auto=Dict[str,np.ndarray]
         self.class_means = {}  # for spectra of classe
         self.class_stds = {}  # for spectra of classe
         self.class_ncount = {}  # for npixels classified
@@ -570,6 +577,9 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         self.pushButton_class_selection.toggled.connect(self.on_toggle_selection)
         self.pushButton_erase_selected_pix.toggled.connect(self.on_toggle_erase)
 
+        # Spectra window
+        self.comboBox_endmembers_spectra.currentIndexChanged.connect(self.on_changes_EM_spectra_viz)
+
         # Defaults values algorithm
         self.comboBox_unmix_algorithm.setCurrentText('SUnSAL')
         self.doubleSpinBox_unmix_lambda_3.setValue(-3.0)  # log10 lambda
@@ -580,6 +590,10 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
 
         self.comboBox_endmembers_get.currentIndexChanged.connect(self.on_algo_endmember_change)
         self.on_algo_endmember_change()
+
+        self.splitter.setStretchFactor(0, 5)
+        self.splitter.setStretchFactor(2, 5)
+        self.splitter.setStretchFactor(1, 2)
 
     # <editor-fold desc="Visual elements">
 
@@ -829,10 +843,8 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
 
         self.rgb_image = rgb
 
-
     def show_rgb_image(self):
         self.update_overlay(recompute_rgb=True, preview=False)
-
 
     def update_overlay(self, recompute_rgb: bool = False, preview: bool = False):
         """
@@ -884,7 +896,7 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
 
     def update_alpha(self, value):
         self.alpha = value / 100.0
-        self.update_overlay(only_images=True)
+        self.update_overlay()
 
     def _promote_canvas(self, name, canvas_cls):
         placeholder = getattr(self, name)
@@ -977,7 +989,7 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
             placeholder.deleteLater()
             self.verticalLayout.addWidget(self.spec_canvas)
 
-    def update_spectra(self,x=None,y=None,maxR=1):
+    def update_spectra(self,x=None,y=None,maxR=0):
         self.spec_ax.clear()
         x_graph = self.wl
 
@@ -992,7 +1004,7 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
                 if np.max(spectrum) > maxR: maxR= np.max(spectrum)
 
         # Spectres GT moyens ± std
-        if self.checkBox_seeGTspectra.isChecked() and hasattr(self, 'class_means'):
+        if hasattr(self, 'class_means'):
             for c, mu in self.class_means.items():
                 std = self.class_stds[c]
                 b, g, r = self.class_colors[c]
@@ -1023,6 +1035,17 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
 
             # 4) On rafraîchit le canvas
         self.spec_canvas.draw_idle()
+
+    def on_changes_EM_spectra_viz(self):
+        txt = self.comboBox_endmembers_spectra.currentText()
+        if 'library' in txt:
+            self._activate_endmembers('lib')
+        elif 'Manual' in txt:
+            self._activate_endmembers('manual')
+        else:
+            self._activate_endmembers('auto')
+
+        self.update_spectra()
 
     def _assign_initial_colors(self,c=None):
 
@@ -1059,11 +1082,9 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
             return False      ## to dont block drag
 
         if event.type() == QEvent.MouseButtonPress and event.button() == Qt.RightButton and (self.selecting_pixels or self.erase_selection):
-            print('[MANUAL SELECTION] Right Click taken in account')
 
             if not (self.selecting_pixels or self.erase_selection):
                 return False
-            print('Clicked OK')
             pos = self.viewer_left.mapToScene(event.pos())
             x0, y0 = int(pos.x()), int(pos.y())
             if mode == 'pixel':
@@ -1341,13 +1362,7 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
                 self.samples.clear()
 
         self.selecting_pixels = True
-        self.viewer_left.setDragMode(QGraphicsView.NoDrag)
-        self.show_rgb_image()
-        self.update_overlay()
-
-    def toggle_show_selection(self):
-
-        self.show_selection = self.checkBox_see_selection_overlay.isChecked()
+        # self.viewer_left.setDragMode(QGraphicsView.NoDrag)
         self.show_rgb_image()
         self.update_overlay()
 
@@ -1368,33 +1383,13 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         # enfin, on affiche l'image normale (sans preview ni sélection en cours)
         self.show_rgb_image()
         self.update_overlay()
+        print(f'[MANUAL SELECTION] E shape : {len(self.samples)}')
+        for key in self.E_manual:
+            print(self.E_manual[key].shape)
 
-    def on_toggle_erase(self, checked):
-        self.erase_selection = checked
-
-        if checked:
-            self._pixel_selecting = False
-            self.stop_pixel_selection()
-
-            self.show_selection = True
-
-            self.pushButton_erase_selected_pix.setText("Stop Erasing")
-            self.pushButton_class_selection.setChecked(False)
-            # self.viewer_left.setDragMode(QGraphicsView.NoDrag)
-
-        else:
-            self.pushButton_erase_selected_pix.setText("Erase Pixels")
-            self.viewer_left.setDragMode(QGraphicsView.ScrollHandDrag)
-
-    def on_toggle_selection(self, checked: bool):
-        if checked:
-            self.erase_selection = False
-            self.start_pixel_selection()
-            self.update_legend()
-
-        else:
-            # fin du mode sélection
-            self.stop_pixel_selection()
+        self._activate_endmembers('manual')
+        self.update_spectra(maxR=0)
+        self.comboBox_endmembers_spectra.setCurrentText('Manual')
 
     def _handle_selection(self, coords):
         """Prompt for class and store spectra of the given coordinates."""
@@ -1447,38 +1442,153 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
                 self.sample_coords.setdefault(cls, set()).add((x, y))
                 self.samples.setdefault(cls, []).append(self.data[y, x, :])
 
-            # 3) rafraîchir l’affichage
+        self._add_region(cls, coords)
+        self._activate_endmembers('manual')
+        self.update_spectra(maxR=0)
+        self.comboBox_endmembers_spectra.setCurrentText('Manual')
+
+        # 3) rafraîchir l’affichage
         self.show_rgb_image()
         self.update_overlay()
         self.update_legend()
 
     def _handle_erasure(self, coords):
+        if self.selection_mask_map is None or self.data is None:
+            return
+        H, W = self.selection_mask_map.shape
 
+        # 1) masque des pixels à effacer
+        erase_mask = np.zeros((H, W), dtype=bool)
         for x, y in coords:
-            cls = self.selection_mask_map[y, x]
-            if cls >= 0:
-                # enlève du mask
-                self.selection_mask_map[y, x] = -1
-                # enlève des sets et listes
-                if (x, y) in self.sample_coords.get(cls, set()):
-                    self.sample_coords[cls].remove((x, y))
-                # reconstruit self.samples[cls]
-                self.samples[cls] = [
-                    self.data[yy, xx, :]
-                    for (xx, yy) in self.sample_coords.get(cls, [])
-                ]
-                if len(self.sample_coords.get(cls, [])) == 0:
-                    # on supprime tous les attributs relatifs à cette classe
-                    self.sample_coords.pop(cls, None)
-                    self.samples.pop(cls, None)
-                    self.class_colors.pop(cls, None)
-                    self.class_means.pop(cls, None)
-                    self.class_stds.pop(cls, None)
+            if 0 <= x < W and 0 <= y < H:
+                erase_mask[y, x] = True
 
-        self.prune_unused_classes()
-        self.show_rgb_image()
+        # 2) applique à la carte
+        self.selection_mask_map[erase_mask] = -1
+
+        # 3) rebuild samples/sample_coords propres depuis la carte
+        new_sample_coords = {}
+        ys, xs = np.where(self.selection_mask_map >= 0)
+        for y, x in zip(ys, xs):
+            c = int(self.selection_mask_map[y, x])
+            new_sample_coords.setdefault(c, set()).add((x, y))
+        new_samples = {}
+        for c, pts in new_sample_coords.items():
+            new_samples[c] = [self.data[yy, xx, :] for (xx, yy) in pts]
+        self.sample_coords = new_sample_coords
+        self.samples = new_samples
+
+        # 4) retirer ces coords des régions et mettre à jour E_manual
+        self._erase_from_regions(coords)
+
+        # 5) nettoyer couleurs/means/std SEULEMENT si la classe est totalement vide
+        alive = set(self.sample_coords.keys())
+        for c in list(self.class_means.keys()):
+            if c not in alive:
+                self.class_means.pop(c, None)
+                self.class_stds.pop(c, None)
+                self.class_colors.pop(c, None)
+
+        self._activate_endmembers('manual')
+        self.update_spectra(maxR=0)
+        self.comboBox_endmembers_spectra.setCurrentText('Manual')
+
         self.update_overlay()
         self.update_legend()
+
+    def toggle_show_selection(self):
+
+        self.show_selection = self.checkBox_see_selection_overlay.isChecked()
+        self.show_rgb_image()
+        self.update_overlay()
+
+    def on_toggle_erase(self, checked):
+        self.erase_selection = checked
+
+        if checked:
+            self._pixel_selecting = False
+            self.stop_pixel_selection()
+
+            self.show_selection = True
+
+            self.pushButton_erase_selected_pix.setText("Stop Erasing")
+            self.pushButton_class_selection.setChecked(False)
+            # self.viewer_left.setDragMode(QGraphicsView.NoDrag)
+
+        else:
+            self.pushButton_erase_selected_pix.setText("Erase Pixels")
+            self.viewer_left.setDragMode(QGraphicsView.ScrollHandDrag)
+
+    def on_toggle_selection(self, checked: bool):
+        if checked:
+            self.erase_selection = False
+            self.start_pixel_selection()
+            self.update_legend()
+
+        else:
+            # fin du mode sélection
+            self.stop_pixel_selection()
+
+    def _recompute_E_manual_for_class(self, cls: int):
+        """Recalcule self.E_manual[cls] à partir des régions existantes de la classe."""
+        regs = self.regions.get(cls, [])
+        mats = []
+        for reg in regs:
+            if not reg.get('coords'):
+                continue
+            # moyenne de la région
+            spectra = np.array([self.data[y, x, :] for (x, y) in reg['coords']])
+            reg['mean'] = spectra.mean(axis=0)
+            mats.append(reg['mean'][None, :])  # (1, L)
+        if mats:
+            self.E_manual[cls] = np.vstack(mats)  # (n_regions, L)
+        else:
+            self.E_manual.pop(cls, None)
+
+    def _union_coords_of_class(self, cls: int):
+        """Ensemble de tous les pixels déjà pris par des régions de cette classe."""
+        s = set()
+        for reg in self.regions.get(cls, []):
+            s |= reg.get('coords', set())
+        return s
+
+    def _add_region(self, cls: int, coords):
+        """Crée une nouvelle région (coords uniques vs régions existantes) et met à jour E_manual."""
+        if cls not in self.regions:
+            self.regions[cls] = []
+        # éviter les doublons: ne garde que les pixels non déjà présents dans d'autres régions de la classe
+        used = self._union_coords_of_class(cls)
+        coords_unique = [(x, y) for (x, y) in coords if (x, y) not in used]
+        if not coords_unique:
+            # rien de nouveau pour cette classe -> juste recomposer E_manual au cas où
+            self._recompute_E_manual_for_class(cls)
+            return
+        reg = {'coords': set(coords_unique), 'mean': None}
+        self.regions[cls].append(reg)
+        self._recompute_E_manual_for_class(cls)
+
+    def _erase_from_regions(self, coords):
+        """Retire coords des régions de toutes classes, supprime régions vides, et met à jour E_manual."""
+        to_erase = set(coords)
+        affected = set()
+        for c, rlist in list(self.regions.items()):
+            new_list = []
+            for reg in rlist:
+                n_before = len(reg['coords'])
+                reg['coords'].difference_update(to_erase)
+                if len(reg['coords']) > 0:
+                    new_list.append(reg)
+                if len(reg['coords']) != n_before:
+                    affected.add(c)
+            if new_list:
+                self.regions[c] = new_list
+            else:
+                self.regions.pop(c, None)
+                # si plus de régions => on enlèvera aussi E_manual[c] ci-dessous
+                affected.add(c)
+        for c in affected:
+            self._recompute_E_manual_for_class(c)
+
     # </editor-fold>
 
     # <editor-fold desc="Cube">
@@ -1642,7 +1752,7 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         if self.cube is None:
             QMessageBox.warning(self, 'Unmixing', 'Load a cube first.')
             return
-        method = self.comboBox_endmembers_get.currentText()
+        method = self.comboBox_endmembers_auto_algo.currentText()
         print('[ENDMEMBERS] algorithm : ',method)
         p = int(self.nclass_box.value())
         niter = int(self.niter_box.value())
@@ -1665,34 +1775,126 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         self.labels, self.index_map = labels, index_map
         self.comboBox_viz_show_EM.clear()
         n=E.shape[1]
-        self.E={}
+        self.E_auto={}
         for key in range(n):
             spec=E[:,key]
-            self.E[key]=spec
+            self.E_auto[key]=spec
             self.comboBox_viz_show_EM.addItem(f"EM {key:02d}")
         # If you also have groups (labels), you can populate comboBox_viz_show_model too
         print('[ENDMEMBERS]',
-            f"Endmembers ready: E shape {len(self.E)},{len(self.E[0])}, groups: {len(np.unique(labels)) if labels is not None else 0}")
+            f"Endmembers ready: E shape {len(self.E_auto)},{len(self.E_auto[0])}, groups: {len(np.unique(labels)) if labels is not None else 0}")
 
-        for key, spec in self.E.items():  # spec shape (L,)
-            spec = np.asarray(spec)
-            self.class_means[key] = spec  # pas de moyenne scalaire !
-            self.class_stds[key] = np.zeros_like(spec)
+        self._activate_endmembers('auto')
 
         self._assign_initial_colors()
         self.update_spectra(maxR=0)
+        self.comboBox_endmembers_spectra.setCurrentText('Auto')
         # self.update_legend()
 
     def _on_load_library_clicked(self):
-        # Expect host app to set self.library_groups from a file dialog elsewhere
-        if not getattr(self, 'library_groups', None):
-            QMessageBox.information(self, 'Library', 'No library groups loaded in tool instance.')
-        else:
-            QMessageBox.information(self, 'Library', f"Library groups found: {list(self.library_groups.keys())}")
+        """
+        Load a spectral library from a CSV file (wavelength + endmember columns).
+        Expected format:
+            Wavelength, Material1, Material2, ...
+            400, 0.12, 0.18, ...
+            ...
+        Each column (after wavelength) becomes an endmember spectrum.
+        """
+        import pandas as pd
+
+        # 1) Sélection du fichier CSV
+        filepath, _ = QFileDialog.getOpenFileName(
+            self,
+            "Open spectral library",
+            "",
+            "Spectral libraries (*.csv *.txt)"
+        )
+        if not filepath:
+            return
+
+        try:
+            # 2) Lecture du fichier CSV
+            df = pd.read_csv(filepath)
+
+            # Vérifie qu’il y a au moins deux colonnes (λ + 1 matériau)
+            if df.shape[1] < 2:
+                QMessageBox.warning(self, "Library error",
+                                    "Invalid library format (need wavelength + ≥1 spectrum column).")
+                return
+
+            # 3) Extraction des longueurs d’onde et des spectres
+            wl = df.iloc[:, 0].to_numpy(dtype=float)
+            names = list(df.columns[1:])
+            E = df.iloc[:, 1:].to_numpy(dtype=float)  # shape (L, p)
+
+            # 4) Stockage dans l'objet
+            self.library_path = filepath
+            self.wl_lib = wl
+            self.E_lib = {i: E[:, i] for i in range(E.shape[1])}
+            self.library_groups = {name: E[:, i:i + 1] for i, name in enumerate(names)}
+
+            # 5) Renseigne la combo des endmembers (si présente)
+            self.comboBox_viz_show_EM.clear()
+            for i, name in enumerate(names):
+                self.comboBox_viz_show_EM.addItem(name)
+
+            # 6) Appelle la pipeline d’activation / affichage
+            self._activate_endmembers('lib')
+
+            QMessageBox.information(
+                self,
+                "Library loaded",
+                f"Loaded {len(names)} spectra from:\n{os.path.basename(filepath)}"
+            )
+
+        except Exception as e:
+            import traceback
+            tb = traceback.format_exc()
+            QMessageBox.warning(
+                self,
+                "Load error",
+                f"Failed to read library:\n{e}\n\n{tb}"
+            )
+            print('[LIBRARY ERROR]', e)
 
     def _on_error(self, msg: str):
         self.signals.error.emit(msg)
         print('[ERROR] : ',msg)
+
+    def _activate_endmembers(self, source: str):
+        """
+        Construit self.E à partir de la source ('manual'|'auto'|'lib'),
+        puis met à jour les moyennes/std et rafraîchit le graphe.
+        """
+        if source == 'manual':
+            # E_manual[c] : (n_regions_c, L)  ->  E[c] : (L, n_regions_c)
+            self.E = {c: arr.T for c, arr in self.E_manual.items()} if self.E_manual else {}
+        elif source == 'auto':
+            # E_auto[c] : (L,) -> E[c] : (L,1)
+            try :
+                self.E = {c: np.asarray(v, dtype=float).reshape(-1, 1) for c, v in
+                          self.E_auto.items()} if self.E_auto else {}
+            except:
+                self.E={}
+        elif source == 'lib':
+            try:
+                self.E = {c: np.asarray(v, dtype=float).reshape(-1, 1) for c, v in
+                      self.E_lib.items()} if self.E_auto else {}
+            except:
+                self.E = {}
+        else:
+            self.E = {}
+
+        if not self.E:
+            # Rien à afficher
+            self.class_means, self.class_stds = {}, {}
+            self.update_spectra()
+            return
+
+        # Met à jour moyennes/écarts-types par classe -> update_spectra les trace
+        self.fill_means_std_classes()  # utilise self.E pour calculer mu/std par classe. :contentReference[oaicite:0]{index=0}
+        self._assign_initial_colors()  # garde tes couleurs cohérentes
+        self.update_spectra(maxR=0)  # rafraîchit la figure spectra. :contentReference[oaicite:1]{index=1}
 
     # </editor-fold>
 
@@ -1713,6 +1915,21 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
             full_stds[key] = self.E[key].std(axis=1)
         self.class_means = full_means
         self.class_stds = full_stds
+
+    def prune_unused_classes(self):
+        """
+        Supprime de self.class_colors et self.class_info
+        tous les labels qui ne figurent plus dans self.cls_map.
+        """
+        if self.class_colors is None:
+            return
+
+        labels_in_map = set(np.unique(self.cls_map))
+        for d in (self.class_colors, self.class_info):
+            for cls in list(d.keys()):
+                if cls not in labels_in_map:
+                    del d[cls]
+
     # </editor-fold>
 
 if __name__ == "__main__":
