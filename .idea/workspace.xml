@@ -4,7 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="[unmixing] : &#10;- manual selection implemented. Few buggs of vizualisation to fix.">
+    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="[unmixing] : &#10;- manual selection implemented&#10;- auto selection implemented&#10;- from lib selection implemented">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/unmixing/unmixing_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/unmixing/unmixing_tool.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/unmixing/unmixing_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/unmixing/unmixing_window.py" afterDir="false" />
@@ -137,14 +137,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1744020944801</updated>
-    </task>
-    <task id="LOCAL-00056" summary="Main added all tools and open cube with dialog">
-      <option name="closed" value="true" />
-      <created>1751621833902</created>
-      <option name="number" value="00056" />
-      <option name="presentableId" value="LOCAL-00056" />
-      <option name="project" value="LOCAL" />
-      <updated>1751621833902</updated>
     </task>
     <task id="LOCAL-00057" summary="Metadata tool with generate meta first step.&#10;Much robust for lokking at changes keep save etc...">
       <option name="closed" value="true" />
@@ -530,7 +522,15 @@
       <option name="project" value="LOCAL" />
       <updated>1761274875805</updated>
     </task>
-    <option name="localTasksCounter" value="105" />
+    <task id="LOCAL-00105" summary="[unmixing] : &#10;- manual selection implemented&#10;- auto selection implemented&#10;- from lib selection implemented">
+      <option name="closed" value="true" />
+      <created>1761307532687</created>
+      <option name="number" value="00105" />
+      <option name="presentableId" value="LOCAL-00105" />
+      <option name="project" value="LOCAL" />
+      <updated>1761307532687</updated>
+    </task>
+    <option name="localTasksCounter" value="106" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -582,7 +582,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="[Identification] : Queue of classifier. OK if all queue." />
     <MESSAGE value="[Identification] : Queue of classifier. Probleme with done jobs fixed" />
     <MESSAGE value="[Identification] : Added streaming, all images, false rgb sliders fixed, reinit and lauch selected" />
     <MESSAGE value="[Identification] : Added saving in h5 and png &#10;with dialog options." />
@@ -607,6 +606,7 @@
     <MESSAGE value="[unmixing] : &#10;- changing menu with endmemebers methos" />
     <MESSAGE value="[unmixing] : &#10;- changing menu with endmemebers method" />
     <MESSAGE value="[unmixing] : &#10;- manual selection implemented. Few buggs of vizualisation to fix." />
-    <option name="LAST_COMMIT_MESSAGE" value="[unmixing] : &#10;- manual selection implemented. Few buggs of vizualisation to fix." />
+    <MESSAGE value="[unmixing] : &#10;- manual selection implemented&#10;- auto selection implemented&#10;- from lib selection implemented" />
+    <option name="LAST_COMMIT_MESSAGE" value="[unmixing] : &#10;- manual selection implemented&#10;- auto selection implemented&#10;- from lib selection implemented" />
   </component>
 </project>

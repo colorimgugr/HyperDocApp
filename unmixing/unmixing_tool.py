@@ -36,8 +36,16 @@ from hypercubes.hypercube import Hypercube
 from interface.some_widget_for_interface import ZoomableGraphicsView
 from identification.load_cube_dialog import Ui_Dialog
 
+# <editor-fold desc="To do">
 #todo : from librarie -> gerer les wl_lib et wl (cube)
-#todo : unmixing -> select endmmebers AND if merge
+#todo : unmixing -> select endmmembers AND if merge
+#todo : viz spectra -> show/hide by clicking line or title (or ctrl+click)
+#todo : save manual or auto EM selection
+#todo : add ban selection widget
+#todo : add ROI
+#todo : add one pixel fusion
+
+# </editor-fold>
 
 class LoadCubeDialog(QDialog):
     """
@@ -466,9 +474,6 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         # Queue structures
         self.job_order: List[str] = []  # only job names in execution order
         self.jobs: Dict[str, UnmixJob] = {}  # name -> job
-
-        # Table init
-        # self._init_classification_table(self.tableWidget_classificationList)
         # self._init_cleaning_list()
 
         # Unmix as thread init
@@ -488,8 +493,8 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         self.viewer_left.viewport().setMouseTracking(True)
         self.viewer_left.setDragMode(QGraphicsView.ScrollHandDrag)
 
-        self._promote_canvas('spec_canvas', FigureCanvas)
         # Promote spec_canvas placeholder to FigureCanvas
+        self._promote_canvas('spec_canvas', FigureCanvas)
         self.spec_canvas_layout = self.spec_canvas.layout() if hasattr(self.spec_canvas, 'layout') else None
         self.init_spectrum_canvas()
         self.show_selection = True
@@ -522,12 +527,19 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         self.horizontalSlider_overlay_transparency.setValue(70)
         self.alpha = self.horizontalSlider_overlay_transparency.value() / 100.0
 
+        #endmembers
         self.E = {} # {EN_i : (L,pi)}
-        self.E_manual= {}
         self.regions = {}  # dict: classe -> [ {'coords': set[(x,y)], 'mean': np.ndarray}, ... ]
+
+        self.E_manual= {}
+        self.wl_manual=None
+
         self.E_lib=Dict[str,np.ndarray]
         self.wl_lib=None
+
         self.E_auto=Dict[str,np.ndarray]
+        self.wl_auto=None
+
         self.class_means = {}  # for spectra of classe
         self.class_stds = {}  # for spectra of classe
         self.class_ncount = {}  # for npixels classified
@@ -535,6 +547,7 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
 
         self.cls_map = None
         self.index_map: Optional[Dict[str, np.ndarray]] = None
+
         self.A: Optional[np.ndarray] = None  # (p, N)
         self.maps_by_group: Dict[str, np.ndarray] = {}
 
@@ -579,6 +592,10 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
 
         # Spectra window
         self.comboBox_endmembers_spectra.currentIndexChanged.connect(self.on_changes_EM_spectra_viz)
+        self.checkBox_showLegend.toggled.connect(self.update_spectra)
+
+        # Unmix window
+
 
         # Defaults values algorithm
         self.comboBox_unmix_algorithm.setCurrentText('SUnSAL')
@@ -588,8 +605,28 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         self.checkBox_unmix_ANC.setChecked(True)
         self.checkBox_unmix_ASC.setChecked(False)
 
+        self._sunsal_last = {
+            'anc': self.checkBox_unmix_ANC.isChecked(),
+            'asc': self.checkBox_unmix_ASC.isChecked(),
+            'merge': self.checkBox_unmix_merge_EM_groups.isChecked()
+        }
+        self.checkBox_unmix_ANC.toggled.connect(self._remember_sunsal)
+        self.checkBox_unmix_ASC.toggled.connect(self._remember_sunsal)
+        self.checkBox_unmix_merge_EM_groups.toggled.connect(self._remember_sunsal)
+
+        self.comboBox_unmix_algorithm.currentIndexChanged.connect(self.on_unmix_algo_change)
+        self.on_unmix_algo_change()
+
         self.comboBox_endmembers_get.currentIndexChanged.connect(self.on_algo_endmember_change)
         self.on_algo_endmember_change()
+
+        # Job Queue
+        self._init_classification_table(self.tableWidget_classificationList)
+        self.pushButton_launch_unmixing.clicked.connect(self._on_add_unmix_job)
+        self.pushButton_clas_remove.clicked.connect(self.remove_selected_job)
+        self.pushButton_clas_remove_all.clicked.connect(self.remove_all_jobs)
+        self.pushButton_clas_up.clicked.connect(lambda: self._move_job(-1))
+        self.pushButton_clas_down.clicked.connect(lambda: self._move_job(+1))
 
         self.splitter.setStretchFactor(0, 5)
         self.splitter.setStretchFactor(2, 5)
@@ -636,7 +673,6 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         if hasattr(self, "viewer_right"):
             self.viewer_right.setImage(QPixmap())  # plus d’image à droite
 
-        self.update_legend()
         self._set_info_rows()
 
     def bgr_to_rgb(self, bgr):
@@ -727,6 +763,93 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
             else:
                 mid = int(len(self.wl) / 2)
                 return [self.wl[-1], self.wl[mid], self.wl[0]]
+
+    def _remember_sunsal(self):
+        if self.comboBox_unmix_algorithm.currentText().upper() == 'SUNSAL':
+            self._sunsal_last['anc'] = self.checkBox_unmix_ANC.isChecked()
+            self._sunsal_last['asc'] = self.checkBox_unmix_ASC.isChecked()
+            self._sunsal_last['merge'] = self.checkBox_unmix_merge_EM_groups.isChecked()
+
+    def on_unmix_algo_change(self):
+        algo = self.comboBox_unmix_algorithm.currentText().upper()
+
+        # Raccourcis
+        anc = self.checkBox_unmix_ANC
+        asc = self.checkBox_unmix_ASC
+        mrg = self.checkBox_unmix_merge_EM_groups
+
+        # Paramètres numériques (SUnSAL uniquement)
+        lam3 = self.doubleSpinBox_unmix_lambda_3
+        lam2 = self.doubleSpinBox_unmix_lambda_2
+        lam4 = self.doubleSpinBox_unmix_lambda_4
+        maxit = self.spinBox
+
+        # Bloquer les signaux pendant le changement
+        for w in (anc, asc, mrg, lam3, lam2, lam4, maxit):
+            w.blockSignals(True)
+
+        try:
+            if algo == 'UCLS':
+                # UCLS = unconstrained least squares
+                anc.setChecked(False)
+                asc.setChecked(False)
+                anc.setEnabled(False)
+                asc.setEnabled(False)
+
+                # Merge option libre
+                mrg.setEnabled(True)
+
+                # Paramètres SUnSAL désactivés
+                for w in (lam3, lam2, lam4, maxit):
+                    w.setEnabled(False)
+
+            elif algo == 'NNLS':
+                # NNLS = ANC uniquement
+                anc.setChecked(True)
+                asc.setChecked(False)
+                anc.setEnabled(False)
+                asc.setEnabled(False)
+                mrg.setEnabled(True)
+
+                for w in (lam3, lam2, lam4, maxit):
+                    w.setEnabled(False)
+
+            elif algo == 'FCLS':
+                # FCLS = ANC + ASC
+                anc.setChecked(True)
+                asc.setChecked(True)
+                anc.setEnabled(False)
+                asc.setEnabled(False)
+                mrg.setEnabled(True)
+
+                for w in (lam3, lam2, lam4, maxit):
+                    w.setEnabled(False)
+
+            elif algo == 'SUNSAL':
+                # SUnSAL : ANC/ASC libres + paramètres activés
+                anc.setEnabled(True)
+                asc.setEnabled(True)
+                mrg.setEnabled(True)
+
+                # Restaurer les derniers choix utilisateur
+                anc.setChecked(bool(self._sunsal_last.get('anc', True)))
+                asc.setChecked(bool(self._sunsal_last.get('asc', False)))
+                mrg.setChecked(bool(self._sunsal_last.get('merge', mrg.isChecked())))
+
+                for w in (lam3, lam2, lam4, maxit):
+                    w.setEnabled(True)
+
+            else:
+                # Cas inattendu
+                anc.setEnabled(False)
+                asc.setEnabled(False)
+                mrg.setEnabled(True)
+                for w in (lam3, lam2, lam4, maxit):
+                    w.setEnabled(False)
+
+        finally:
+            for w in (anc, asc, mrg, lam3, lam2, lam4, maxit):
+                w.blockSignals(False)
 
     def transform(self, trans_type):
         """Rotation / Flip du cube"""
@@ -924,32 +1047,6 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         self.spec_ax.set_title('Spectrum')
         canvas.setVisible(False)
 
-    def update_legend(self):
-
-        if len(self.class_ncount)!=0:
-
-            for i in reversed(range(self.frame_legend.layout().count())):
-                w = self.frame_legend.layout().itemAt(i).widget()
-                self.frame_legend.layout().removeWidget(w)
-                w.deleteLater()
-
-            for c in sorted(self.class_colors):
-                b, g, r = self.class_colors[c]
-                txt=str(c)
-                if self.class_ncount is not None :
-                    txt += '-' + str(self.class_ncount.get(c, 0)) + 'px'
-
-                lbl = QLabel(txt)
-                # lbl.setFixedSize(30, 20)
-                lbl.setAlignment(Qt.AlignCenter)
-                lbl.setStyleSheet(
-                    f"background-color: rgb({r},{g},{b});"
-                    "color: white;"
-                    "border-radius: 3px;"
-                    "font-weight: bold;"
-                )
-                self.frame_legend.layout().addWidget(lbl)
-
     def init_spectrum_canvas(self):
         placeholder = getattr(self, 'spec_canvas')
         parent = placeholder.parent()
@@ -1015,12 +1112,36 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
                 )
                 self.spec_ax.plot(
                     x_graph, mu, '--',
-                    color=col, label=f"Class {c}"
+                    color=col, label=self.get_class_name(c)
                 )
                 if np.max(mu + std) > maxR: maxR = np.max(mu + std)
 
-            if self.spec_ax.get_legend_handles_labels()[1]:
-                self.spec_ax.legend(loc='upper right', fontsize='small')
+            if self.checkBox_showLegend.isChecked():
+
+                handles, labels = self.spec_ax.get_legend_handles_labels()
+                if labels:
+                    # jusqu’à 4 colonnes, ~8 items par colonne
+                    ncol = min(4, max(1, (len(labels) // 8 +1)))
+                    leg = self.spec_ax.legend(
+                        handles, labels,
+                        loc='upper left',
+                        borderaxespad=0.,
+                        frameon=True,
+                        fontsize='small',
+                        ncol=ncol
+                    )
+                    leg.set_draggable(True)  # tu peux la déplacer à la souris
+                    self.spec_fig.subplots_adjust(right=0.95)  # laisse de la place à droite
+
+            else:
+                leg = self.spec_ax.get_legend()
+                if leg is not None:
+                    leg.remove()
+                self.spec_fig.subplots_adjust(right=0.95)  # récupère l’espace
+
+            # if self.spec_ax.get_legend_handles_labels()[1]:
+            #     self.spec_ax.legend(loc='upper right', fontsize='small')
+
             self.spec_ax.set_title(f"Spectra")
             self.spec_ax.grid(color='black')
             self.spec_ax.set_ylim(0,maxR+0.05)
@@ -1045,8 +1166,6 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         else:
             self._activate_endmembers('auto')
 
-        self.update_spectra()
-
     def _assign_initial_colors(self,c=None):
 
         if c is not None :
@@ -1056,19 +1175,365 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         else:
             return
 
-        cmap = colormaps.get_cmap('tab10')
+        if len(unique_labels) <= 10:
+            cmap = colormaps.get_cmap('tab10')
+        else:
+            cmap = colormaps.get_cmap('tab20')
+
+        n_colors = cmap.N
 
         for cls in unique_labels:
             if cls not in self.class_colors:
                 # cmap renvoie un tuple RGBA avec floats 0..1
-                r_f, g_f, b_f, _ = cmap(cls)
+                color_idx = cls % n_colors
+                r_f, g_f, b_f, _ = cmap(color_idx)
                 # on convertit en entiers 0..255
                 r, g, b = int(255 * r_f), int(255 * g_f), int(255 * b_f)
                 # MAIS OpenCV attend BGR, donc on stocke (b,g,r)
                 self.class_colors[cls] = (b, g, r)
                 if cls not in self.class_info:
-                    self.class_info[cls] = [None,None,(0,0,0)]
+                    self.class_info[cls] = [cls,f"Class {cls}",(r, g, b)]
                 self.class_info[cls][2]=(r,g,b)
+
+    # </editor-fold>
+
+    # <editor-fold desc="Cube">
+    def open_load_cube_dialog(self):
+
+        if self.no_reset_jobs_on_new_cube():
+            return
+
+        dlg = LoadCubeDialog(self, vnir_cube=self._last_vnir, swir_cube=self._last_swir)
+        if dlg.exec_() == QDialog.Accepted:
+            # Prefer fusing VNIR+SWIR if both available; otherwise passthrough a single cube
+            vnir = dlg.cubes.get("VNIR")
+            swir = dlg.cubes.get("SWIR")
+
+            self._last_vnir = vnir
+            self._last_swir = swir
+
+            if vnir is not None or swir is not None:
+                self.cube = fused_cube(vnir, swir)
+            else:
+                QMessageBox.warning(self, "Error", "No cube loaded.")
+                return
+
+            # try:
+            #     self.cube.normalize_spectral(self.TRAIN_WL, min_wl=400, max_wl=1700, interp_kind="linear",
+            #                                  in_place=True)
+            # except ValueError as e:
+            #     QMessageBox.warning(self, "Spectral error", str(e))
+            #     return
+
+            # Ensure UI buffers are in sync
+            self.data = self.cube.data
+            self.wl = self.cube.wl
+            H, W = self.data.shape[:2]
+            self.selection_mask_map = np.full((H, W), -1, dtype=int)
+            self.samples = {}
+            self.sample_coords = {}
+            self.class_means = {}
+            self.class_stds = {}
+            self.update_rgb_controls()
+            self.update_overlay()
+
+    def load_cube(self, filepath=None, cube=None, cube_info=None, range=None):
+
+        if self.no_reset_jobs_on_new_cube():
+            return
+
+        flag_loaded = False
+        if cube is not None:
+            try:
+                if cube_info is not None:
+                    cube.metadata = cube.cube_info.metadata_temp
+
+                if range is None:
+                    self.cube = cube
+                    flag_loaded = True
+                else:
+                    print('Range : ', range)
+                    if range == 'VNIR':
+                        self._last_vnir = cube
+                        self.cube = fused_cube(self._last_vnir, self._last_swir)
+
+                        flag_loaded = True
+
+                    elif range == 'SWIR':
+                        self._last_swir = cube
+                        self.cube = fused_cube(self._last_vnir, self._last_swir)
+
+                        flag_loaded = True
+
+                    else:
+                        print('Problem with cube range in parameter')
+
+            except:
+                print('Problem with cube in parameter')
+
+        if not flag_loaded:
+            if not filepath:
+                filepath, _ = QFileDialog.getOpenFileName(
+                    self, "Open Hypercube", "", "Hypercube files (*.mat *.h5 *.hdr)"
+                )
+                if not filepath:
+                    return
+            try:
+                cube = Hypercube(filepath=filepath, load_init=True)
+
+                try:
+                    if cube_info is not None:
+                        cube.metadata = cube.cube_info.metadata_temp
+
+                    if range is None:
+                        self.cube = cube
+                    else:
+                        if range == 'VNIR':
+                            self._last_vnir = cube
+                            if self._last_swir is not None:
+                                self.cube = fused_cube(self._last_vnir, self._last_swir)
+                            else:
+                                self.cube = cube
+
+                        elif range == 'SWIR':
+                            self._last_swir = cube
+                            if self._last_vnir is not None:
+                                self.cube = fused_cube(self._last_vnir, self._last_swir)
+                            else:
+                                self.cube = cube
+
+                        else:
+                            print('Problem with cube range in parameter')
+
+                except:
+                    print('Problem with cube in parameter')
+
+            except Exception as e:
+                QMessageBox.warning(self, "Error", f"Failed to load cube: {e}")
+                return
+
+        # test spectral range
+
+        self.data = self.cube.data
+        self.wl = self.cube.wl
+        H, W = self.data.shape[:2]
+        self.selection_mask_map = np.full((H, W), -1, dtype=int)
+        self.samples = {}
+        self.sample_coords = {}
+        self.class_means = {}
+        self.class_stds = {}
+        self.update_rgb_controls()
+        self.show_rgb_image()
+        self.update_overlay()
+
+    def no_reset_jobs_on_new_cube(self):
+        for job in self.jobs:
+            if self.jobs[job].status in ['Done', 'Running']:
+                reply = QMessageBox.question(
+                    self, "Reset Jobs ?",
+                    f"Some jobs have been done and will be loosed.\n Are you sure to continue ? ",
+                    QMessageBox.Yes | QMessageBox.Cancel
+                )
+                if reply == QMessageBox.Cancel:
+                    return True
+
+                self.remove_all_jobs(ask_confirm=False)
+                return False
+
+        return False
+    # </editor-fold>
+
+    # <editor-fold desc="Endmembers">
+    def on_algo_endmember_change(self):
+        txt=self.comboBox_endmembers_get.currentText()
+        if 'library' in txt:
+            self.stackedWidget.setCurrentIndex(0)
+            self._activate_endmembers('lib')
+        elif 'Manual' in txt:
+            self.stackedWidget.setCurrentIndex(1)
+            self._activate_endmembers('manual')
+        else:
+            self.stackedWidget.setCurrentIndex(2)
+            self._activate_endmembers('auto')
+
+    def _on_extract_endmembers(self):
+        if self.cube is None:
+            QMessageBox.warning(self, 'Unmixing', 'Load a cube first.')
+            return
+        method = self.comboBox_endmembers_auto_algo.currentText()
+        print('[ENDMEMBERS] algorithm : ',method)
+        p = int(self.nclass_box.value())
+        niter = int(self.niter_box.value())
+        norm = self._current_normalization()
+
+        # Gather manual/library groups from host (signals or attributes)
+        manual_groups = getattr(self, 'manual_groups', None)
+        library_groups = getattr(self, 'library_groups', None)
+
+        job = EndmemberJob(method=method, p=p, niter=niter, normalization=norm,
+                           manual_groups=manual_groups,
+                           library_groups=library_groups)
+
+        worker = EndmemberWorker(job,self.cube)
+        worker.signals.em_ready.connect(self._on_em_ready)
+        worker.signals.error.connect(self._on_error)
+        self.threadpool.start(worker)
+
+    def _on_em_ready(self, E: np.ndarray, labels: np.ndarray, index_map: Dict[str, np.ndarray]):
+        self.labels, self.index_map = labels, index_map
+        for i, lab in enumerate(labels):
+            name = str(lab)
+            self.set_class_name(i, name)
+
+        self.comboBox_viz_show_EM.clear()
+        n=E.shape[1]
+        self.E_auto={}
+        for key in range(n):
+            spec=E[:,key]
+            self.E_auto[key]=spec
+            name = self.get_class_name(key)
+            self.comboBox_viz_show_EM.addItem(name)
+        # If you also have groups (labels), you can populate comboBox_viz_show_model too
+        print('[ENDMEMBERS]',
+            f"Endmembers ready: E shape {len(self.E_auto)},{len(self.E_auto[0])}, groups: {len(np.unique(labels)) if labels is not None else 0}")
+
+        self._activate_endmembers('auto')
+
+        self._assign_initial_colors()
+        self.update_spectra(maxR=0)
+        self.comboBox_endmembers_spectra.setCurrentText('Auto')
+
+    def _on_load_library_clicked(self):
+        """
+        Load a spectral library from a CSV file (wavelength + endmember columns).
+        Expected format:
+            Wavelength, Material1, Material2, ...
+            400, 0.12, 0.18, ...
+            ...
+        Each column (after wavelength) becomes an endmember spectrum.
+        """
+        import pandas as pd
+
+        if getattr(sys, 'frozen', False):
+            BASE_DIR = sys._MEIPASS
+        else:
+            BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+
+        open_dir=os.path.join(BASE_DIR, "unmixing", "data")
+
+        # 1) Sélection du fichier CSV
+        filepath, _ = QFileDialog.getOpenFileName(
+            self,
+            "Open spectral library",
+            open_dir,
+            "Spectral libraries (*.csv *.txt)"
+        )
+        if not filepath:
+            return
+
+        try:
+            # 2) Lecture du fichier CSV
+            df = pd.read_csv(filepath)
+
+            # Vérifie qu’il y a au moins deux colonnes (λ + 1 matériau)
+            if df.shape[1] < 2:
+                QMessageBox.warning(self, "Library error",
+                                    "Invalid library format (need wavelength + ≥1 spectrum column).")
+                return
+
+            # 3) Extraction des longueurs d’onde et des spectres
+            wl = df.iloc[:, 0].to_numpy(dtype=float)
+            names = list(df.columns[1:])
+            E = df.iloc[:, 1:].to_numpy(dtype=float)  # shape (L, p)
+
+            for i, name in enumerate(names):
+                self.set_class_name(i, name)
+
+            # 4) Stockage dans l'objet
+            self.library_path = filepath
+            self.wl_lib = wl
+            self.E_lib = {i: E[:, i] for i in range(E.shape[1])}
+            self.library_groups = {name: E[:, i:i + 1] for i, name in enumerate(names)}
+
+            # 5) Renseigne la combo des endmembers (si présente)
+            self.comboBox_viz_show_EM.clear()
+            for i, name in enumerate(names):
+                self.comboBox_viz_show_EM.addItem(name)
+
+            # 6) Appelle la pipeline d’activation / affichage
+            self._activate_endmembers('lib')
+
+            QMessageBox.information(
+                self,
+                "Library loaded",
+                f"Loaded {len(names)} spectra from:\n{os.path.basename(filepath)}"
+            )
+
+        except Exception as e:
+            import traceback
+            tb = traceback.format_exc()
+            QMessageBox.warning(
+                self,
+                "Load error",
+                f"Failed to read library:\n{e}\n\n{tb}"
+            )
+            print('[LIBRARY ERROR]', e)
+
+    def _on_error(self, msg: str):
+        self.signals.error.emit(msg)
+        print('[ERROR] : ',msg)
+
+    def _activate_endmembers(self, source: str):
+        """
+        Construit self.E à partir de la source ('manual'|'auto'|'lib'),
+        puis met à jour les moyennes/std et rafraîchit le graphe.
+        """
+        if source == 'manual':
+            # E_manual[c] : (n_regions_c, L)  ->  E[c] : (L, n_regions_c)
+            self.E = {c: arr.T for c, arr in self.E_manual.items()} if self.E_manual else {}
+        elif source == 'auto':
+            # E_auto[c] : (L,) -> E[c] : (L,1)
+            try :
+                self.E = {c: np.asarray(v, dtype=float).reshape(-1, 1) for c, v in
+                          self.E_auto.items()} if self.E_auto else {}
+            except:
+                self.E={}
+        elif source == 'lib':
+            try:
+                self.E = {c: np.asarray(v, dtype=float).reshape(-1, 1) for c, v in
+                      self.E_lib.items()} if self.E_auto else {}
+            except:
+                self.E = {}
+        else:
+            self.E = {}
+
+        if not self.E:
+            # Rien à afficher
+            self.class_means, self.class_stds = {}, {}
+            self.update_spectra()
+            return
+
+        # Met à jour moyennes/écarts-types par classe -> update_spectra les trace
+        self.fill_means_std_classes()  # utilise self.E pour calculer mu/std par classe. :contentReference[oaicite:0]{index=0}
+        self._assign_initial_colors()  # garde tes couleurs cohérentes
+        self.update_spectra(maxR=0)  # rafraîchit la figure spectra. :contentReference[oaicite:1]{index=1}
+
+    def get_class_name(self, cls: int) -> str:
+        """Return human-readable name for class id."""
+        if cls in self.class_info and len(self.class_info[cls]) > 1:
+            name = self.class_info[cls][1]
+            if name and name.strip():
+                return name
+        return f"Class {cls}"
+
+    def set_class_name(self, cls: int, name: str):
+        """Update or create readable name for a class."""
+        if cls not in self.class_info:
+            self.class_info[cls] = [cls, name, (0, 0, 0)]
+        else:
+            while len(self.class_info[cls]) < 3:
+                self.class_info[cls].append(None)
+            self.class_info[cls][1] = name
 
     # </editor-fold>
 
@@ -1414,6 +1879,8 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
 
         cls = int(cls_str)
         self._last_label = cls
+        if cls not in self.class_info or not self.class_info[cls][1]:
+            self.set_class_name(cls, f"Manual_{cls}")
         if cls not in self.class_colors:
             self._assign_initial_colors(cls)
 
@@ -1450,7 +1917,6 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         # 3) rafraîchir l’affichage
         self.show_rgb_image()
         self.update_overlay()
-        self.update_legend()
 
     def _handle_erasure(self, coords):
         if self.selection_mask_map is None or self.data is None:
@@ -1494,7 +1960,6 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         self.comboBox_endmembers_spectra.setCurrentText('Manual')
 
         self.update_overlay()
-        self.update_legend()
 
     def toggle_show_selection(self):
 
@@ -1523,7 +1988,6 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         if checked:
             self.erase_selection = False
             self.start_pixel_selection()
-            self.update_legend()
 
         else:
             # fin du mode sélection
@@ -1591,313 +2055,6 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
 
     # </editor-fold>
 
-    # <editor-fold desc="Cube">
-    def open_load_cube_dialog(self):
-
-        if self.no_reset_jobs_on_new_cube():
-            return
-
-        dlg = LoadCubeDialog(self, vnir_cube=self._last_vnir, swir_cube=self._last_swir)
-        if dlg.exec_() == QDialog.Accepted:
-            # Prefer fusing VNIR+SWIR if both available; otherwise passthrough a single cube
-            vnir = dlg.cubes.get("VNIR")
-            swir = dlg.cubes.get("SWIR")
-
-            self._last_vnir = vnir
-            self._last_swir = swir
-
-            if vnir is not None or swir is not None:
-                self.cube = fused_cube(vnir, swir)
-            else:
-                QMessageBox.warning(self, "Error", "No cube loaded.")
-                return
-
-            # try:
-            #     self.cube.normalize_spectral(self.TRAIN_WL, min_wl=400, max_wl=1700, interp_kind="linear",
-            #                                  in_place=True)
-            # except ValueError as e:
-            #     QMessageBox.warning(self, "Spectral error", str(e))
-            #     return
-
-            # Ensure UI buffers are in sync
-            self.data = self.cube.data
-            self.wl = self.cube.wl
-            H, W = self.data.shape[:2]
-            self.selection_mask_map = np.full((H, W), -1, dtype=int)
-            self.samples = {}
-            self.sample_coords = {}
-            self.class_means = {}
-            self.class_stds = {}
-            self.update_rgb_controls()
-            self.update_overlay()
-
-    def load_cube(self, filepath=None, cube=None, cube_info=None, range=None):
-
-        if self.no_reset_jobs_on_new_cube():
-            return
-
-        flag_loaded = False
-        if cube is not None:
-            try:
-                if cube_info is not None:
-                    cube.metadata = cube.cube_info.metadata_temp
-
-                if range is None:
-                    self.cube = cube
-                    flag_loaded = True
-                else:
-                    print('Range : ', range)
-                    if range == 'VNIR':
-                        self._last_vnir = cube
-                        self.cube = fused_cube(self._last_vnir, self._last_swir)
-
-                        flag_loaded = True
-
-                    elif range == 'SWIR':
-                        self._last_swir = cube
-                        self.cube = fused_cube(self._last_vnir, self._last_swir)
-
-                        flag_loaded = True
-
-                    else:
-                        print('Problem with cube range in parameter')
-
-            except:
-                print('Problem with cube in parameter')
-
-        if not flag_loaded:
-            if not filepath:
-                filepath, _ = QFileDialog.getOpenFileName(
-                    self, "Open Hypercube", "", "Hypercube files (*.mat *.h5 *.hdr)"
-                )
-                if not filepath:
-                    return
-            try:
-                cube = Hypercube(filepath=filepath, load_init=True)
-
-                try:
-                    if cube_info is not None:
-                        cube.metadata = cube.cube_info.metadata_temp
-
-                    if range is None:
-                        self.cube = cube
-                    else:
-                        if range == 'VNIR':
-                            self._last_vnir = cube
-                            if self._last_swir is not None:
-                                self.cube = fused_cube(self._last_vnir, self._last_swir)
-                            else:
-                                self.cube = cube
-
-                        elif range == 'SWIR':
-                            self._last_swir = cube
-                            if self._last_vnir is not None:
-                                self.cube = fused_cube(self._last_vnir, self._last_swir)
-                            else:
-                                self.cube = cube
-
-                        else:
-                            print('Problem with cube range in parameter')
-
-                except:
-                    print('Problem with cube in parameter')
-
-            except Exception as e:
-                QMessageBox.warning(self, "Error", f"Failed to load cube: {e}")
-                return
-
-        # test spectral range
-
-        self.data = self.cube.data
-        self.wl = self.cube.wl
-        H, W = self.data.shape[:2]
-        self.selection_mask_map = np.full((H, W), -1, dtype=int)
-        self.samples = {}
-        self.sample_coords = {}
-        self.class_means = {}
-        self.class_stds = {}
-        self.update_rgb_controls()
-        self.show_rgb_image()
-        self.update_overlay()
-
-    def no_reset_jobs_on_new_cube(self):
-        for job in self.jobs:
-            if self.jobs[job].status in ['Done', 'Running']:
-                reply = QMessageBox.question(
-                    self, "Reset Jobs ?",
-                    f"Some jobs have been done and will be loosed.\n Are you sure to continue ? ",
-                    QMessageBox.Yes | QMessageBox.Cancel
-                )
-                if reply == QMessageBox.Cancel:
-                    return True
-
-                self.remove_all_jobs(ask_confirm=False)
-                return False
-
-        return False
-    # </editor-fold>
-
-    # <editor-fold desc="Endmembers">
-
-    def on_algo_endmember_change(self):
-        txt=self.comboBox_endmembers_get.currentText()
-        if 'library' in txt:
-            self.stackedWidget.setCurrentIndex(0)
-        elif 'Manual' in txt:
-            self.stackedWidget.setCurrentIndex(1)
-        else:
-            self.stackedWidget.setCurrentIndex(2)
-
-    def _on_extract_endmembers(self):
-        if self.cube is None:
-            QMessageBox.warning(self, 'Unmixing', 'Load a cube first.')
-            return
-        method = self.comboBox_endmembers_auto_algo.currentText()
-        print('[ENDMEMBERS] algorithm : ',method)
-        p = int(self.nclass_box.value())
-        niter = int(self.niter_box.value())
-        norm = self._current_normalization()
-
-        # Gather manual/library groups from host (signals or attributes)
-        manual_groups = getattr(self, 'manual_groups', None)
-        library_groups = getattr(self, 'library_groups', None)
-
-        job = EndmemberJob(method=method, p=p, niter=niter, normalization=norm,
-                           manual_groups=manual_groups,
-                           library_groups=library_groups)
-
-        worker = EndmemberWorker(job,self.cube)
-        worker.signals.em_ready.connect(self._on_em_ready)
-        worker.signals.error.connect(self._on_error)
-        self.threadpool.start(worker)
-
-    def _on_em_ready(self, E: np.ndarray, labels: np.ndarray, index_map: Dict[str, np.ndarray]):
-        self.labels, self.index_map = labels, index_map
-        self.comboBox_viz_show_EM.clear()
-        n=E.shape[1]
-        self.E_auto={}
-        for key in range(n):
-            spec=E[:,key]
-            self.E_auto[key]=spec
-            self.comboBox_viz_show_EM.addItem(f"EM {key:02d}")
-        # If you also have groups (labels), you can populate comboBox_viz_show_model too
-        print('[ENDMEMBERS]',
-            f"Endmembers ready: E shape {len(self.E_auto)},{len(self.E_auto[0])}, groups: {len(np.unique(labels)) if labels is not None else 0}")
-
-        self._activate_endmembers('auto')
-
-        self._assign_initial_colors()
-        self.update_spectra(maxR=0)
-        self.comboBox_endmembers_spectra.setCurrentText('Auto')
-        # self.update_legend()
-
-    def _on_load_library_clicked(self):
-        """
-        Load a spectral library from a CSV file (wavelength + endmember columns).
-        Expected format:
-            Wavelength, Material1, Material2, ...
-            400, 0.12, 0.18, ...
-            ...
-        Each column (after wavelength) becomes an endmember spectrum.
-        """
-        import pandas as pd
-
-        # 1) Sélection du fichier CSV
-        filepath, _ = QFileDialog.getOpenFileName(
-            self,
-            "Open spectral library",
-            "",
-            "Spectral libraries (*.csv *.txt)"
-        )
-        if not filepath:
-            return
-
-        try:
-            # 2) Lecture du fichier CSV
-            df = pd.read_csv(filepath)
-
-            # Vérifie qu’il y a au moins deux colonnes (λ + 1 matériau)
-            if df.shape[1] < 2:
-                QMessageBox.warning(self, "Library error",
-                                    "Invalid library format (need wavelength + ≥1 spectrum column).")
-                return
-
-            # 3) Extraction des longueurs d’onde et des spectres
-            wl = df.iloc[:, 0].to_numpy(dtype=float)
-            names = list(df.columns[1:])
-            E = df.iloc[:, 1:].to_numpy(dtype=float)  # shape (L, p)
-
-            # 4) Stockage dans l'objet
-            self.library_path = filepath
-            self.wl_lib = wl
-            self.E_lib = {i: E[:, i] for i in range(E.shape[1])}
-            self.library_groups = {name: E[:, i:i + 1] for i, name in enumerate(names)}
-
-            # 5) Renseigne la combo des endmembers (si présente)
-            self.comboBox_viz_show_EM.clear()
-            for i, name in enumerate(names):
-                self.comboBox_viz_show_EM.addItem(name)
-
-            # 6) Appelle la pipeline d’activation / affichage
-            self._activate_endmembers('lib')
-
-            QMessageBox.information(
-                self,
-                "Library loaded",
-                f"Loaded {len(names)} spectra from:\n{os.path.basename(filepath)}"
-            )
-
-        except Exception as e:
-            import traceback
-            tb = traceback.format_exc()
-            QMessageBox.warning(
-                self,
-                "Load error",
-                f"Failed to read library:\n{e}\n\n{tb}"
-            )
-            print('[LIBRARY ERROR]', e)
-
-    def _on_error(self, msg: str):
-        self.signals.error.emit(msg)
-        print('[ERROR] : ',msg)
-
-    def _activate_endmembers(self, source: str):
-        """
-        Construit self.E à partir de la source ('manual'|'auto'|'lib'),
-        puis met à jour les moyennes/std et rafraîchit le graphe.
-        """
-        if source == 'manual':
-            # E_manual[c] : (n_regions_c, L)  ->  E[c] : (L, n_regions_c)
-            self.E = {c: arr.T for c, arr in self.E_manual.items()} if self.E_manual else {}
-        elif source == 'auto':
-            # E_auto[c] : (L,) -> E[c] : (L,1)
-            try :
-                self.E = {c: np.asarray(v, dtype=float).reshape(-1, 1) for c, v in
-                          self.E_auto.items()} if self.E_auto else {}
-            except:
-                self.E={}
-        elif source == 'lib':
-            try:
-                self.E = {c: np.asarray(v, dtype=float).reshape(-1, 1) for c, v in
-                      self.E_lib.items()} if self.E_auto else {}
-            except:
-                self.E = {}
-        else:
-            self.E = {}
-
-        if not self.E:
-            # Rien à afficher
-            self.class_means, self.class_stds = {}, {}
-            self.update_spectra()
-            return
-
-        # Met à jour moyennes/écarts-types par classe -> update_spectra les trace
-        self.fill_means_std_classes()  # utilise self.E pour calculer mu/std par classe. :contentReference[oaicite:0]{index=0}
-        self._assign_initial_colors()  # garde tes couleurs cohérentes
-        self.update_spectra(maxR=0)  # rafraîchit la figure spectra. :contentReference[oaicite:1]{index=1}
-
-    # </editor-fold>
-
     # <editor-fold desc="Processing Data Helpers">
     def _current_normalization(self) -> str:
         txt = self.comboBox_normalisation.currentText().lower()
@@ -1929,6 +2086,227 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
             for cls in list(d.keys()):
                 if cls not in labels_in_map:
                     del d[cls]
+
+    # </editor-fold>
+
+    # <editor-fold desc="Unmixing Job Queue">
+    def _init_classification_table(self, table):
+        from PyQt5.QtWidgets import QTableWidgetItem
+        headers = ["Name", "Algo", "EM source", "Params", "Status", "Progress", "Duration"]
+        table.clear()
+        table.setColumnCount(len(headers))
+        table.setHorizontalHeaderLabels(headers)
+        table.setSortingEnabled(False)
+        table.setRowCount(0)
+        table.verticalHeader().setVisible(False)
+        table.setSelectionBehavior(table.SelectRows)
+        table.setSelectionMode(table.SingleSelection)
+        table.setEditTriggers(table.NoEditTriggers)
+        table.horizontalHeader().setStretchLastSection(True)
+        # largeur indicative
+        table.setColumnWidth(0, 140)
+        table.setColumnWidth(1, 90)
+        table.setColumnWidth(2, 110)
+        table.setColumnWidth(3, 320)
+        table.setColumnWidth(4, 90)
+        table.setColumnWidth(5, 120)
+
+    def _make_progress_bar(self):
+        from PyQt5.QtWidgets import QProgressBar
+        pb = QProgressBar()
+        pb.setRange(0, 100)
+        pb.setValue(0)
+        pb.setTextVisible(True)
+        return pb
+
+    def _ensure_unique_name(self, base: str) -> str:
+        name = base
+        i = 1
+        while name in self.jobs:
+            i += 1
+            name = f"{base} ({i})"
+        return name
+
+    def _current_normalization(self) -> str:
+        # UI: comboBox_normalisation -> "L2 (Euclidian)", "L1 (Sum=1)", "None"
+        txt = self.comboBox_normalisation.currentText()
+        if "L2" in txt: return "L2"
+        if "L1" in txt: return "L1"
+        return "None"
+
+    def _collect_unmix_params(self) -> dict:
+        # Widgets: voir unmixing_window.py (tol: 10^spin2, lam: 10^spin3, rho: spin4, max-iter: spinBox)
+        algo = self.comboBox_unmix_algorithm.currentText()
+        norm = self._current_normalization()
+        anc = self.checkBox_unmix_ANC.isChecked()
+        asc = self.checkBox_unmix_ASC.isChecked()
+        tol = 10.0 ** float(self.doubleSpinBox_unmix_lambda_2.value())
+        lam = 10.0 ** float(self.doubleSpinBox_unmix_lambda_3.value())
+        rho = float(self.doubleSpinBox_unmix_lambda_4.value())
+        max_iter = int(self.spinBox.value())  # label "Maximum iterations" dans l’UI
+
+        em_src = self.comboBox_endmembers_use_for_unmixing.currentText()  # "From library" | "Manual" | "Auto"
+        em_merge = self.checkBox_unmix_merge_EM_groups.isChecked()
+        p = int(self.nclass_box.value())
+
+        return dict(
+            algo=algo, norm=norm, anc=anc, asc=asc, tol=tol, lam=lam, rho=rho,
+            max_iter=max_iter, em_src=em_src, em_merge=em_merge, p=p
+        )
+
+    def _format_params_summary(self, P: dict) -> str:
+        # court et lisible dans la table
+        bits = [f"norm={P['norm']}"]
+        if P["algo"] == "SUnSAL":
+            bits += [f"λ={P['lam']:.1e}", f"tol={P['tol']:.1e}", f"ρ={P['rho']:.3g}",
+                     f"ANC={'on' if P['anc'] else 'off'}", f"ASC={'on' if P['asc'] else 'off'}",
+                     f"maxit={P['max_iter']}"]
+        else:
+            # tol/max_iter peuvent servir pour FCLS/NNLS si tu les utilises en backend
+            bits += [f"tol={P['tol']:.1e}", f"maxit={P['max_iter']}"]
+        bits += [f"p={P['p']}"]
+        return " | ".join(bits)
+
+    def _on_add_unmix_job(self):
+        if getattr(self, "cube", None) is None:
+            QMessageBox.warning(self, "Unmixing", "Load a cube first.")
+            return
+
+        P = self._collect_unmix_params()
+        base = f"{P['algo']} ({P['em_src']})"
+        name = self._ensure_unique_name(base)
+
+        # Construire l’objet job (on ne calcule/attache pas encore E ici)
+        job = UnmixJob(
+            name=name,
+            model=P["algo"],
+            normalization=P["norm"],
+            max_iter=P["max_iter"],
+            tol=P["tol"],
+            lam=P["lam"],
+            rho=P["rho"],
+            anc=P["anc"],
+            asc=P["asc"],
+        )
+        # Tu pourras plus tard remplir job.E et/ou un tag sur la source EM au moment du run.
+
+        self.jobs[name] = job
+        self.job_order.append(name)
+
+        # Insère la ligne dans la table
+        self._insert_job_row(name, P)
+        # (si tu préfères recalculer tout : self._refresh_table())
+
+    def _insert_job_row(self, name: str, P: dict):
+        from PyQt5.QtWidgets import QTableWidgetItem
+        table = self.tableWidget_classificationList
+        row = table.rowCount()
+        table.insertRow(row)
+
+        # Col 0: Name
+        table.setItem(row, 0, QTableWidgetItem(name))
+        # Col 1: Algo
+        table.setItem(row, 1, QTableWidgetItem(P["algo"]))
+        # Col 2: EM source (+ merge)
+        em_txt = P["em_src"] + (" + merge" if P["em_merge"] else "")
+        table.setItem(row, 2, QTableWidgetItem(em_txt))
+        # Col 3: Params
+        table.setItem(row, 3, QTableWidgetItem(self._format_params_summary(P)))
+        # Col 4: Status
+        table.setItem(row, 4, QTableWidgetItem("Queued"))
+        # Col 5: Progress (widget)
+        pb = self._make_progress_bar()
+        table.setCellWidget(row, 5, pb)
+        # Col 6: Duration
+        table.setItem(row, 6, QTableWidgetItem("-"))
+
+    # 4) (Optionnel) Refresh complet si tu modifies des jobs ailleurs
+
+    def _refresh_table(self):
+        from PyQt5.QtWidgets import QTableWidgetItem
+        table = self.tableWidget_classificationList
+        sorting = table.isSortingEnabled()
+        if sorting: table.setSortingEnabled(False)
+        table.setRowCount(0)
+
+        for name in self.job_order:
+            job = self.jobs.get(name)
+            if not job: continue
+            # reconstruit un mini dict pour afficher les params
+            P = dict(
+                algo=job.model, norm=job.normalization,
+                anc=job.anc, asc=job.asc,
+                tol=job.tol, lam=job.lam, rho=job.rho,
+                max_iter=job.max_iter,
+                p=getattr(self, "nclass_box", None).value() if hasattr(self, "nclass_box") else None,
+                em_src=getattr(self, "comboBox_endmembers_use_for_unmixing", None).currentText() if hasattr(self,
+                                                                                                            "comboBox_endmembers_use_for_unmixing") else "?",
+                em_merge=getattr(self, "checkBox_unmix_merge_EM_groups", None).isChecked() if hasattr(self,
+                                                                                                      "checkBox_unmix_merge_EM_groups") else False
+            )
+            self._insert_job_row(name, P)
+
+        if sorting: table.setSortingEnabled(True)
+
+    def _update_row_from_job(self, name: str):
+        """Appelle ceci pendant l’exécution plus tard pour refléter status/progress/duration."""
+        table = self.tableWidget_classificationList
+        NAME_COL, STATUS_COL, PROG_COL, DUR_COL = 0, 4, 5, 6
+        # Retrouve la row par le texte de la 1re colonne
+        for row in range(table.rowCount()):
+            item = table.item(row, NAME_COL)
+            if not item or item.text() != name:
+                continue
+            job = self.jobs.get(name)
+            if not job: return
+            # Status
+            table.setItem(row, STATUS_COL, QTableWidgetItem(getattr(job, "status", "Queued")))
+            # Progress
+            w = table.cellWidget(row, PROG_COL)
+            if w:
+                try:
+                    w.setValue(int(job.progress))
+                except:
+                    pass
+            # Duration
+            dur_txt = "-" if job.duration_s is None else f"{job.duration_s:.1f}s"
+            table.setItem(row, DUR_COL, QTableWidgetItem(dur_txt))
+            break
+
+    def remove_selected_job(self):
+        row = self.tableWidget_classificationList.currentRow()
+        if row < 0: return
+        name = self.tableWidget_classificationList.item(row, 0).text()
+        self.jobs.pop(name, None)
+        try:
+            self.job_order.remove(name)
+        except ValueError:
+            pass
+        self.tableWidget_classificationList.removeRow(row)
+
+    def remove_all_jobs(self, ask_confirm=True):
+        if ask_confirm and any(getattr(self.jobs[n], "status", "") in ("Running", "Done") for n in self.job_order):
+            from PyQt5.QtWidgets import QMessageBox
+            if QMessageBox.question(self, "Reset Jobs ?",
+                                    "Some jobs may be running/done. Continue?",
+                                    QMessageBox.Yes | QMessageBox.Cancel) != QMessageBox.Yes:
+                return
+        self.jobs.clear()
+        self.job_order.clear()
+        self._init_classification_table(self.tableWidget_classificationList)
+
+    def _move_job(self, delta: int):
+        row = self.tableWidget_classificationList.currentRow()
+        if row < 0: return
+        new_row = max(0, min(self.tableWidget_classificationList.rowCount() - 1, row + delta))
+        if new_row == row: return
+        name = self.tableWidget_classificationList.item(row, 0).text()
+        # maj ordre
+        idx = self.job_order.index(name)
+        self.job_order.insert(idx + delta, self.job_order.pop(idx))
+        # Rebuild table (simple)
+        self._refresh_table()
+        self.tableWidget_classificationList.selectRow(new_row)
 
     # </editor-fold>
 
