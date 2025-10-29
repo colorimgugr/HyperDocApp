@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1464</width>
+    <width>1048</width>
     <height>796</height>
    </rect>
   </property>
@@ -15,6 +15,12 @@
     <horstretch>0</horstretch>
     <verstretch>0</verstretch>
    </sizepolicy>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>2000</width>
+    <height>16777215</height>
+   </size>
   </property>
   <property name="styleSheet">
    <string notr="true">background-color: rgb(181, 181, 181);</string>
@@ -31,7 +37,7 @@
      <property name="frameShadow">
       <enum>QFrame::Raised</enum>
      </property>
-     <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="1,12,3">
+     <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="1,8,3">
       <item>
        <layout class="QVBoxLayout" name="verticalLayout_7">
         <item>
@@ -88,26 +94,14 @@
          <layout class="QHBoxLayout" name="horizontalLayout_5" stretch="2,1">
           <item>
            <layout class="QGridLayout" name="gridLayout">
-            <item row="2" column="2" colspan="2">
-             <widget class="QLabel" name="label_normalisation">
-              <property name="maximumSize">
-               <size>
-                <width>16777215</width>
-                <height>20</height>
-               </size>
-              </property>
+            <item row="1" column="2">
+             <widget class="QLabel" name="label_n_EM">
               <property name="text">
-               <string>Normalisation</string>
-              </property>
-              <property name="alignment">
-               <set>Qt::AlignCenter</set>
+               <string># Endmembers:</string>
               </property>
              </widget>
             </item>
-            <item row="1" column="4">
-             <layout class="QVBoxLayout" name="verticalLayout_4"/>
-            </item>
-            <item row="1" column="2" colspan="2">
+            <item row="0" column="2" colspan="2">
              <widget class="QComboBox" name="comboBox_endmembers_get">
               <property name="toolTip">
                <string>Choose between supervised segmentation (need selection first) or Unsupervised (Clusterisation)</string>
@@ -129,42 +123,7 @@
               </item>
              </widget>
             </item>
-            <item row="3" column="2" colspan="2">
-             <widget class="QComboBox" name="comboBox_normalisation">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="toolTip">
-               <string>Choose distance for supervised classification</string>
-              </property>
-              <item>
-               <property name="text">
-                <string>L2 (Euclidian)</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>L1 (Sum=1)</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>None</string>
-               </property>
-              </item>
-             </widget>
-            </item>
-            <item row="4" column="2">
-             <widget class="QLabel" name="label_n_EM">
-              <property name="text">
-               <string># Endmembers:</string>
-              </property>
-             </widget>
-            </item>
-            <item row="4" column="3">
+            <item row="1" column="3">
              <widget class="QSpinBox" name="nclass_box">
               <property name="toolTip">
                <string>Number of class to segment. Another class will be added in supervised mode if threashold not at maximum.</string>
@@ -185,7 +144,7 @@
           <item>
            <widget class="QStackedWidget" name="stackedWidget">
             <property name="currentIndex">
-             <number>2</number>
+             <number>0</number>
             </property>
             <widget class="QWidget" name="From_Library">
              <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -375,11 +334,27 @@
         </widget>
         <widget class="QWidget" name="tab">
          <attribute name="title">
-          <string>Unmixing</string>
+          <string>Unmixing parameters</string>
          </attribute>
          <layout class="QHBoxLayout" name="horizontalLayout">
           <item>
-           <layout class="QGridLayout" name="gridLayout_3" rowstretch="0,0,0,0,0,0">
+           <layout class="QGridLayout" name="gridLayout_3" rowstretch="0,0,0,0,0,0,0">
+            <item row="2" column="2">
+             <widget class="QSpinBox" name="spinBox">
+              <property name="minimum">
+               <number>100</number>
+              </property>
+              <property name="maximum">
+               <number>3000</number>
+              </property>
+              <property name="singleStep">
+               <number>100</number>
+              </property>
+              <property name="value">
+               <number>1000</number>
+              </property>
+             </widget>
+            </item>
             <item row="3" column="2">
              <widget class="QDoubleSpinBox" name="doubleSpinBox_unmix_lambda_2">
               <property name="minimum">
@@ -412,6 +387,22 @@
               </property>
              </widget>
             </item>
+            <item row="2" column="1">
+             <widget class="QLabel" name="label_unmix_maxiter">
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>20</height>
+               </size>
+              </property>
+              <property name="text">
+               <string>Maximum iterations :</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+              </property>
+             </widget>
+            </item>
             <item row="3" column="1">
              <widget class="QLabel" name="label_unmx_tolerance">
               <property name="maximumSize">
@@ -428,34 +419,8 @@
               </property>
              </widget>
             </item>
-            <item row="2" column="2">
-             <widget class="QSpinBox" name="spinBox">
-              <property name="minimum">
-               <number>100</number>
-              </property>
-              <property name="maximum">
-               <number>3000</number>
-              </property>
-              <property name="singleStep">
-               <number>100</number>
-              </property>
-              <property name="value">
-               <number>1000</number>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="0" colspan="2">
-             <widget class="QLabel" name="label_unmix_algorithm_choice">
-              <property name="text">
-               <string>Unmixing algorithm :</string>
-              </property>
-              <property name="alignment">
-               <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-              </property>
-             </widget>
-            </item>
-            <item row="2" column="1">
-             <widget class="QLabel" name="label_unmix_maxiter">
+            <item row="6" column="1">
+             <widget class="QLabel" name="label_unmix_lambda_2">
               <property name="maximumSize">
                <size>
                 <width>16777215</width>
@@ -463,7 +428,17 @@
                </size>
               </property>
               <property name="text">
-               <string>Maximum iterations :</string>
+               <string>Rho : 10^</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QLabel" name="label_unmix_algorithm_choice">
+              <property name="text">
+               <string>Unmixing algorithm :</string>
               </property>
               <property name="alignment">
                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -510,23 +485,7 @@
               </property>
              </widget>
             </item>
-            <item row="5" column="1">
-             <widget class="QLabel" name="label_unmix_lambda_2">
-              <property name="maximumSize">
-               <size>
-                <width>16777215</width>
-                <height>20</height>
-               </size>
-              </property>
-              <property name="text">
-               <string>Rho : 10^</string>
-              </property>
-              <property name="alignment">
-               <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-              </property>
-             </widget>
-            </item>
-            <item row="5" column="2">
+            <item row="6" column="2">
              <widget class="QDoubleSpinBox" name="doubleSpinBox_unmix_lambda_4">
               <property name="minimum">
                <double>0.500000000000000</double>
@@ -542,17 +501,61 @@
               </property>
              </widget>
             </item>
-            <item row="5" column="3">
+            <item row="3" column="4">
+             <widget class="QLabel" name="label_normalisation">
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>20</height>
+               </size>
+              </property>
+              <property name="text">
+               <string>Normalisation</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="5">
+             <widget class="QComboBox" name="comboBox_normalisation">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="toolTip">
+               <string>Choose distance for supervised classification</string>
+              </property>
+              <item>
+               <property name="text">
+                <string>L2 (Euclidian)</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>L1 (Sum=1)</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>None</string>
+               </property>
+              </item>
+             </widget>
+            </item>
+            <item row="6" column="5">
              <widget class="QPushButton" name="pushButton_launch_unmixing">
               <property name="minimumSize">
                <size>
-                <width>40</width>
+                <width>100</width>
                 <height>0</height>
                </size>
               </property>
               <property name="maximumSize">
                <size>
-                <width>150</width>
+                <width>500</width>
                 <height>16777215</height>
                </size>
               </property>
@@ -564,21 +567,28 @@
               </property>
              </widget>
             </item>
-            <item row="4" column="3">
-             <widget class="QCheckBox" name="checkBox_unmix_ASC">
-              <property name="text">
-               <string>ASC</string>
-              </property>
-             </widget>
-            </item>
-            <item row="3" column="3">
+            <item row="4" column="5">
              <widget class="QCheckBox" name="checkBox_unmix_ANC">
               <property name="text">
                <string>ANC</string>
               </property>
              </widget>
             </item>
-            <item row="1" column="3">
+            <item row="4" column="4">
+             <widget class="QCheckBox" name="checkBox_unmix_ASC">
+              <property name="text">
+               <string>ASC</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="5">
+             <widget class="QCheckBox" name="checkBox_unmix_merge_EM_groups">
+              <property name="text">
+               <string>Merge EM groups</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="5">
              <widget class="QComboBox" name="comboBox_endmembers_use_for_unmixing">
               <property name="toolTip">
                <string>Choose between supervised segmentation (need selection first) or Unsupervised (Clusterisation)</string>
@@ -600,15 +610,37 @@
               </item>
              </widget>
             </item>
-            <item row="2" column="3">
-             <widget class="QCheckBox" name="checkBox_unmix_merge_EM_groups">
+            <item row="1" column="4">
+             <widget class="QLabel" name="label_EM_choose">
+              <property name="minimumSize">
+               <size>
+                <width>100</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>20</height>
+               </size>
+              </property>
               <property name="text">
-               <string>Merge EM groups</string>
+               <string>Endmembers :</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
               </property>
              </widget>
             </item>
            </layout>
           </item>
+         </layout>
+        </widget>
+        <widget class="QWidget" name="tab_3">
+         <attribute name="title">
+          <string>Unmixing queue</string>
+         </attribute>
+         <layout class="QHBoxLayout" name="horizontalLayout_4">
           <item>
            <widget class="QTableWidget" name="tableWidget_classificationList"/>
           </item>

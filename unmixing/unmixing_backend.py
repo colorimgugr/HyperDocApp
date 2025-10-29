@@ -25,7 +25,7 @@ Notes
 Example (blind pipeline)
 ------------------------
 >>> Y = vectorize_cube(cube)          # (L, N)
->>> E = extract_endmembers_nfindr(Y, p=5)
+>>> E,idx = extract_endmembers_nfindr(Y, p=5)
 >>> A = unmix_fcls(E, Y)              # classic ANC+ASC
 >>> A_maps = abundances_to_maps(A, H, W)
 
@@ -183,8 +183,10 @@ def extract_endmembers_atgp(data: np.ndarray, p: int) -> np.ndarray:
     X = data
     atgp = ATGP()
     E_list = atgp.extract(X, p, normalize=False)
+    indices_list=atgp.get_idx()
+    indices=np.asarray(indices_list, dtype=np.float64)
     E = np.asarray(E_list, dtype=np.float64).T  # to (L, p)
-    return E
+    return E,indices
 
 def extract_endmembers_nfindr(data: np.ndarray, p: int, maxit: int = 3) -> np.ndarray:
     """Extract endmembers with N-FINDR via pysptools.
@@ -204,8 +206,10 @@ def extract_endmembers_nfindr(data: np.ndarray, p: int, maxit: int = 3) -> np.nd
     X = data
     nf = NFINDR()
     E_list = nf.extract(X, p, maxit=maxit, normalize=False)
+    indices_list=nf.get_idx()
+    indices=np.asarray(indices_list, dtype=np.float64)
     E = np.asarray(E_list, dtype=np.float64).T
-    return E
+    return E,indices
 
 
 def unmix_ucls(E: np.ndarray, Y: np.ndarray) -> np.ndarray:

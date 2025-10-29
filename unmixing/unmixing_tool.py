@@ -327,7 +327,7 @@ class UnmixingSignals(QObject):
     info = pyqtSignal(str)
     progress = pyqtSignal(int)
     # Results
-    em_ready = pyqtSignal(np.ndarray, object, dict)  # E, labels, index_map
+    em_ready = pyqtSignal(np.ndarray,np.ndarray, object, dict)  # E, labels, index_map
     unmix_ready = pyqtSignal(np.ndarray, np.ndarray, dict)  # A, E, maps_by_group
 
 # ------------------------------- Workers --------------------------------------
@@ -355,17 +355,13 @@ class EndmemberWorker(QRunnable):
             data = normalize_cube(self.cube.data, mode=self.job.normalization)
             print('[ENDMEMBERS] work started with ',self.job.method)
 
-            if self.job.method == 'Manual' and self.job.manual_groups:
-                E, labels, index_map = build_dictionary_from_groups(self.job.manual_groups)
-            elif self.job.method == 'Library' and self.job.library_groups:
-                E, labels, index_map = build_dictionary_from_groups(self.job.library_groups)
-            elif self.job.method == 'ATGP':
-                E = extract_endmembers_atgp(data, self.job.p)
+            if self.job.method == 'ATGP':
+                E,em_idx = extract_endmembers_atgp(data, self.job.p)
                 labels = np.array([f"EM_{i:02d}" for i in range(E.shape[1])], dtype=object)
                 index_map = {str(lbl): np.array([i]) for i, lbl in enumerate(labels)}
             elif self.job.method == 'N-FINDR':
                 # In PySptools, `maxit` is a small integer; use job.niter
-                E = extract_endmembers_nfindr(data, self.job.p, maxit=max(1, int(self.job.niter)))
+                E,em_idx = extract_endmembers_nfindr(data, self.job.p, maxit=max(1, int(self.job.niter)))
                 labels = np.array([f"EM_{i:02d}" for i in range(E.shape[1])], dtype=object)
                 index_map = {str(lbl): np.array([i]) for i, lbl in enumerate(labels)}
             else:
@@ -377,7 +373,7 @@ class EndmemberWorker(QRunnable):
                 # When E came from ATGP/N-FINDR (from the normalized cube), it's fine.
                 pass
 
-            self.signals.em_ready.emit(E, labels, index_map)
+            self.signals.em_ready.emit(E,em_idx, labels, index_map)
         except Exception as e:
             tb = traceback.format_exc()
             self.signals.error.emit(f"Endmember extraction failed: {e}\n{tb}")
@@ -471,7 +467,7 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         super().__init__(parent)
         self.setupUi(self)
 
-        # Queue structures
+        # Queue structures pour unmixing
         self.job_order: List[str] = []  # only job names in execution order
         self.jobs: Dict[str, UnmixJob] = {}  # name -> job
         # self._init_cleaning_list()
@@ -533,12 +529,15 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
 
         self.E_manual= {}
         self.wl_manual=None
+        self.idx_manual = None
 
-        self.E_lib=Dict[str,np.ndarray]
+        self.E_lib= {}
         self.wl_lib=None
+        self.idx_lib = None
 
-        self.E_auto=Dict[str,np.ndarray]
+        self.E_auto={}
         self.wl_auto=None
+        self.idx_auto = None
 
         self.class_means = {}  # for spectra of classe
         self.class_stds = {}  # for spectra of classe
@@ -1379,7 +1378,7 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         worker.signals.error.connect(self._on_error)
         self.threadpool.start(worker)
 
-    def _on_em_ready(self, E: np.ndarray, labels: np.ndarray, index_map: Dict[str, np.ndarray]):
+    def _on_em_ready(self, E: np.ndarray,idx_em : np.ndarray, labels: np.ndarray, index_map: Dict[str, np.ndarray]):
         self.labels, self.index_map = labels, index_map
         for i, lab in enumerate(labels):
             name = str(lab)
@@ -2056,13 +2055,6 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
     # </editor-fold>
 
     # <editor-fold desc="Processing Data Helpers">
-    def _current_normalization(self) -> str:
-        txt = self.comboBox_normalisation.currentText().lower()
-        if 'l2' in txt:
-            return 'L2'
-        if 'l1' in txt:
-            return 'L1'
-        return 'none'
 
     def fill_means_std_classes(self):
         full_means = {}
@@ -2128,7 +2120,6 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         return name
 
     def _current_normalization(self) -> str:
-        # UI: comboBox_normalisation -> "L2 (Euclidian)", "L1 (Sum=1)", "None"
         txt = self.comboBox_normalisation.currentText()
         if "L2" in txt: return "L2"
         if "L1" in txt: return "L1"
@@ -2219,8 +2210,6 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         table.setCellWidget(row, 5, pb)
         # Col 6: Duration
         table.setItem(row, 6, QTableWidgetItem("-"))
-
-    # 4) (Optionnel) Refresh complet si tu modifies des jobs ailleurs
 
     def _refresh_table(self):
         from PyQt5.QtWidgets import QTableWidgetItem
