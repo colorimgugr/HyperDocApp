@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1052</width>
+    <width>1297</width>
     <height>805</height>
    </rect>
   </property>
@@ -37,30 +37,13 @@
      <property name="frameShadow">
       <enum>QFrame::Raised</enum>
      </property>
-     <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="1,8,3">
+     <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="1,8,0">
       <item>
        <layout class="QVBoxLayout" name="verticalLayout_7">
         <item>
          <widget class="QPushButton" name="load_btn">
           <property name="text">
            <string>Load Cube</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="pushButton_class_name_assign">
-          <property name="toolTip">
-           <string>To assign the good labels and index to the classes.</string>
-          </property>
-          <property name="text">
-           <string>Class name assign</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="pushButton_reset_transform">
-          <property name="text">
-           <string>Reset transforms</string>
           </property>
          </widget>
         </item>
@@ -91,60 +74,88 @@
          <attribute name="title">
           <string>Endmembers select</string>
          </attribute>
-         <layout class="QHBoxLayout" name="horizontalLayout_5" stretch="2,2">
+         <layout class="QHBoxLayout" name="horizontalLayout_5" stretch="0,2">
           <item>
-           <layout class="QGridLayout" name="gridLayout">
-            <item row="1" column="2">
-             <widget class="QLabel" name="label_n_EM">
-              <property name="text">
-               <string># Endmembers:</string>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="2" colspan="2">
-             <widget class="QComboBox" name="comboBox_endmembers_get">
-              <property name="toolTip">
-               <string>Choose between supervised segmentation (need selection first) or Unsupervised (Clusterisation)</string>
-              </property>
-              <item>
-               <property name="text">
-                <string>From library</string>
+           <widget class="QFrame" name="frame_3">
+            <property name="maximumSize">
+             <size>
+              <width>300</width>
+              <height>16777215</height>
+             </size>
+            </property>
+            <property name="frameShape">
+             <enum>QFrame::StyledPanel</enum>
+            </property>
+            <property name="frameShadow">
+             <enum>QFrame::Raised</enum>
+            </property>
+            <layout class="QVBoxLayout" name="verticalLayout_15">
+             <item>
+              <widget class="QComboBox" name="comboBox_endmembers_get">
+               <property name="toolTip">
+                <string>Choose between supervised segmentation (need selection first) or Unsupervised (Clusterisation)</string>
                </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>Manual</string>
+               <item>
+                <property name="text">
+                 <string>From library</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>Manual</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>Auto</string>
+                </property>
+               </item>
+              </widget>
+             </item>
+             <item>
+              <layout class="QHBoxLayout" name="horizontalLayout_11">
+               <item>
+                <widget class="QLabel" name="label_n_EM">
+                 <property name="text">
+                  <string># Endmembers:</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QSpinBox" name="nclass_box">
+                 <property name="toolTip">
+                  <string>Number of class to segment. Another class will be added in supervised mode if threashold not at maximum.</string>
+                 </property>
+                 <property name="minimum">
+                  <number>2</number>
+                 </property>
+                 <property name="maximum">
+                  <number>20</number>
+                 </property>
+                 <property name="value">
+                  <number>3</number>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </item>
+             <item>
+              <widget class="QPushButton" name="pushButton_class_name_assign">
+               <property name="toolTip">
+                <string>To assign the good labels and index to the classes.</string>
                </property>
-              </item>
-              <item>
                <property name="text">
-                <string>Auto</string>
+                <string>Class name assign</string>
                </property>
-              </item>
-             </widget>
-            </item>
-            <item row="1" column="3">
-             <widget class="QSpinBox" name="nclass_box">
-              <property name="toolTip">
-               <string>Number of class to segment. Another class will be added in supervised mode if threashold not at maximum.</string>
-              </property>
-              <property name="minimum">
-               <number>2</number>
-              </property>
-              <property name="maximum">
-               <number>20</number>
-              </property>
-              <property name="value">
-               <number>3</number>
-              </property>
-             </widget>
-            </item>
-           </layout>
+              </widget>
+             </item>
+            </layout>
+           </widget>
           </item>
           <item>
            <widget class="QStackedWidget" name="stackedWidget">
             <property name="currentIndex">
-             <number>0</number>
+             <number>2</number>
             </property>
             <widget class="QWidget" name="From_Library">
              <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -156,50 +167,31 @@
                </widget>
               </item>
               <item>
-               <layout class="QFormLayout" name="formLayout_em_lib"/>
+               <widget class="QScrollArea" name="scrollArea">
+                <property name="widgetResizable">
+                 <bool>true</bool>
+                </property>
+                <widget class="QWidget" name="scrollAreaWidgetContents">
+                 <property name="geometry">
+                  <rect>
+                   <x>0</x>
+                   <y>0</y>
+                   <width>503</width>
+                   <height>139</height>
+                  </rect>
+                 </property>
+                 <layout class="QVBoxLayout" name="verticalLayout_2">
+                  <item>
+                   <layout class="QFormLayout" name="formLayout_em_lib"/>
+                  </item>
+                 </layout>
+                </widget>
+               </widget>
               </item>
              </layout>
             </widget>
             <widget class="QWidget" name="Manual">
-             <layout class="QGridLayout" name="gridLayout_4" columnminimumwidth="1,1">
-              <item row="1" column="0">
-               <widget class="QLabel" name="label_selec_mode">
-                <property name="maximumSize">
-                 <size>
-                  <width>16777215</width>
-                  <height>20</height>
-                 </size>
-                </property>
-                <property name="text">
-                 <string>Select mode</string>
-                </property>
-                <property name="alignment">
-                 <set>Qt::AlignCenter</set>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="1">
-               <widget class="QComboBox" name="comboBox_pixel_selection_mode">
-                <property name="toolTip">
-                 <string>Shape used for pixel selection.</string>
-                </property>
-                <item>
-                 <property name="text">
-                  <string>rectangle</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>ellipse</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>pixel</string>
-                 </property>
-                </item>
-               </widget>
-              </item>
+             <layout class="QGridLayout" name="gridLayout_4">
               <item row="2" column="1">
                <widget class="QPushButton" name="pushButton_save_EM_manual">
                 <property name="text">
@@ -242,39 +234,70 @@
                 </property>
                </widget>
               </item>
+              <item row="1" column="0">
+               <widget class="QLabel" name="label_selec_mode">
+                <property name="maximumSize">
+                 <size>
+                  <width>16777215</width>
+                  <height>20</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string>Select mode</string>
+                </property>
+                <property name="alignment">
+                 <set>Qt::AlignCenter</set>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="1">
+               <widget class="QComboBox" name="comboBox_pixel_selection_mode">
+                <property name="toolTip">
+                 <string>Shape used for pixel selection.</string>
+                </property>
+                <item>
+                 <property name="text">
+                  <string>rectangle</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>ellipse</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>pixel</string>
+                 </property>
+                </item>
+               </widget>
+              </item>
               <item row="3" column="0" colspan="2">
-               <layout class="QFormLayout" name="formLayout_em_manual"/>
+               <widget class="QScrollArea" name="scrollArea_2">
+                <property name="widgetResizable">
+                 <bool>true</bool>
+                </property>
+                <widget class="QWidget" name="scrollAreaWidgetContents_2">
+                 <property name="geometry">
+                  <rect>
+                   <x>0</x>
+                   <y>0</y>
+                   <width>503</width>
+                   <height>79</height>
+                  </rect>
+                 </property>
+                 <layout class="QVBoxLayout" name="verticalLayout_4">
+                  <item>
+                   <layout class="QFormLayout" name="formLayout_em_manual"/>
+                  </item>
+                 </layout>
+                </widget>
+               </widget>
               </item>
              </layout>
             </widget>
             <widget class="QWidget" name="Automatic">
              <layout class="QGridLayout" name="gridLayout_5">
-              <item row="2" column="2">
-               <widget class="QSpinBox" name="niter_box">
-                <property name="toolTip">
-                 <string>Number of class to segment. Another class will be added in supervised mode if threashold not at maximum.</string>
-                </property>
-                <property name="minimum">
-                 <number>2</number>
-                </property>
-                <property name="maximum">
-                 <number>100</number>
-                </property>
-                <property name="value">
-                 <number>10</number>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="1">
-               <widget class="QLabel" name="label_auto_algo">
-                <property name="text">
-                 <string>Algorithm :</string>
-                </property>
-                <property name="alignment">
-                 <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-                </property>
-               </widget>
-              </item>
               <item row="1" column="2">
                <widget class="QComboBox" name="comboBox_endmembers_auto_algo">
                 <property name="toolTip">
@@ -292,6 +315,51 @@
                 </item>
                </widget>
               </item>
+              <item row="3" column="1">
+               <widget class="QLabel" name="label_normalisation">
+                <property name="maximumSize">
+                 <size>
+                  <width>16777215</width>
+                  <height>20</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string>Normalisation :</string>
+                </property>
+                <property name="alignment">
+                 <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                </property>
+               </widget>
+              </item>
+              <item row="4" column="1">
+               <widget class="QPushButton" name="run_btn">
+                <property name="toolTip">
+                 <string>Lauch segmentation with parameters</string>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true">background-color: rgba(186, 255, 112, 125);</string>
+                </property>
+                <property name="text">
+                 <string>End Members Extraction</string>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="2">
+               <widget class="QSpinBox" name="niter_box">
+                <property name="toolTip">
+                 <string>Number of class to segment. Another class will be added in supervised mode if threashold not at maximum.</string>
+                </property>
+                <property name="minimum">
+                 <number>2</number>
+                </property>
+                <property name="maximum">
+                 <number>100</number>
+                </property>
+                <property name="value">
+                 <number>10</number>
+                </property>
+               </widget>
+              </item>
               <item row="2" column="1">
                <widget class="QLabel" name="label_n_iteration">
                 <property name="text">
@@ -302,27 +370,77 @@
                 </property>
                </widget>
               </item>
-              <item row="3" column="2">
+              <item row="4" column="2">
                <widget class="QPushButton" name="pushButton_save_EM_auto">
                 <property name="text">
                  <string>Save automatic endmembers</string>
                 </property>
                </widget>
               </item>
-              <item row="4" column="1" colspan="2">
-               <layout class="QFormLayout" name="formLayout_em_auto"/>
-              </item>
-              <item row="3" column="1">
-               <widget class="QPushButton" name="run_btn">
-                <property name="toolTip">
-                 <string>Lauch segmentation with parameters</string>
-                </property>
-                <property name="styleSheet">
-                 <string notr="true">background-color: rgb(173, 173, 173);</string>
-                </property>
+              <item row="1" column="1">
+               <widget class="QLabel" name="label_auto_algo">
                 <property name="text">
-                 <string>End Members Extraction</string>
+                 <string>Algorithm :</string>
                 </property>
+                <property name="alignment">
+                 <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                </property>
+               </widget>
+              </item>
+              <item row="3" column="2">
+               <widget class="QComboBox" name="comboBox_normalisation">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="toolTip">
+                 <string>Choose distance for supervised classification</string>
+                </property>
+                <item>
+                 <property name="text">
+                  <string>L2 (Euclidian)</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>L1 (Sum=1)</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>None</string>
+                 </property>
+                </item>
+               </widget>
+              </item>
+              <item row="1" column="3" rowspan="4">
+               <widget class="QScrollArea" name="scrollArea_3">
+                <property name="minimumSize">
+                 <size>
+                  <width>200</width>
+                  <height>0</height>
+                 </size>
+                </property>
+                <property name="widgetResizable">
+                 <bool>true</bool>
+                </property>
+                <widget class="QWidget" name="scrollAreaWidgetContents_3">
+                 <property name="geometry">
+                  <rect>
+                   <x>0</x>
+                   <y>0</y>
+                   <width>198</width>
+                   <height>143</height>
+                  </rect>
+                 </property>
+                 <layout class="QVBoxLayout" name="verticalLayout_6">
+                  <item>
+                   <layout class="QFormLayout" name="formLayout_em_auto"/>
+                  </item>
+                 </layout>
+                </widget>
                </widget>
               </item>
              </layout>
@@ -500,50 +618,6 @@
               </property>
              </widget>
             </item>
-            <item row="3" column="4">
-             <widget class="QLabel" name="label_normalisation">
-              <property name="maximumSize">
-               <size>
-                <width>16777215</width>
-                <height>20</height>
-               </size>
-              </property>
-              <property name="text">
-               <string>Normalisation</string>
-              </property>
-              <property name="alignment">
-               <set>Qt::AlignCenter</set>
-              </property>
-             </widget>
-            </item>
-            <item row="3" column="5">
-             <widget class="QComboBox" name="comboBox_normalisation">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="toolTip">
-               <string>Choose distance for supervised classification</string>
-              </property>
-              <item>
-               <property name="text">
-                <string>L2 (Euclidian)</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>L1 (Sum=1)</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>None</string>
-               </property>
-              </item>
-             </widget>
-            </item>
             <item row="6" column="5">
              <widget class="QPushButton" name="pushButton_launch_unmixing">
               <property name="minimumSize">
@@ -629,6 +703,50 @@
               <property name="alignment">
                <set>Qt::AlignCenter</set>
               </property>
+             </widget>
+            </item>
+            <item row="3" column="4">
+             <widget class="QLabel" name="label_normalisation_unmix">
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>20</height>
+               </size>
+              </property>
+              <property name="text">
+               <string>Normalisation</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="5">
+             <widget class="QComboBox" name="comboBox_normalisation_unmix">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="toolTip">
+               <string>Choose distance for supervised classification</string>
+              </property>
+              <item>
+               <property name="text">
+                <string>L2 (Euclidian)</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>L1 (Sum=1)</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>None</string>
+               </property>
+              </item>
              </widget>
             </item>
            </layout>
@@ -727,7 +845,7 @@ color: rgb(255, 255, 255);</string>
       <item>
        <widget class="QTabWidget" name="tabWidget_Image">
         <property name="currentIndex">
-         <number>2</number>
+         <number>1</number>
         </property>
         <widget class="QWidget" name="tabWidgetPage1_2">
          <attribute name="title">
@@ -772,18 +890,8 @@ color: rgb(255, 255, 255);</string>
             </item>
             <item>
              <layout class="QGridLayout" name="gridLayout_RGBchannels_4">
-              <item row="1" column="1">
-               <widget class="QSpinBox" name="spinBox_green_channel">
-                <property name="maximum">
-                 <number>149</number>
-                </property>
-                <property name="value">
-                 <number>0</number>
-                </property>
-               </widget>
-              </item>
-              <item row="2" column="3">
-               <widget class="QSlider" name="horizontalSlider_blue_channel">
+              <item row="1" column="3">
+               <widget class="QSlider" name="horizontalSlider_green_channel">
                 <property name="maximum">
                  <number>149</number>
                 </property>
@@ -792,29 +900,6 @@ color: rgb(255, 255, 255);</string>
                 </property>
                 <property name="orientation">
                  <enum>Qt::Horizontal</enum>
-                </property>
-               </widget>
-              </item>
-              <item row="0" column="1">
-               <widget class="QSpinBox" name="spinBox_red_channel">
-                <property name="maximum">
-                 <number>149</number>
-                </property>
-                <property name="singleStep">
-                 <number>1</number>
-                </property>
-                <property name="value">
-                 <number>0</number>
-                </property>
-               </widget>
-              </item>
-              <item row="2" column="0">
-               <widget class="QLabel" name="label_blue_channel">
-                <property name="text">
-                 <string>Blue</string>
-                </property>
-                <property name="alignment">
-                 <set>Qt::AlignCenter</set>
                 </property>
                </widget>
               </item>
@@ -838,16 +923,13 @@ color: rgb(255, 255, 255);</string>
                 </property>
                </widget>
               </item>
-              <item row="1" column="3">
-               <widget class="QSlider" name="horizontalSlider_green_channel">
+              <item row="1" column="1">
+               <widget class="QSpinBox" name="spinBox_green_channel">
                 <property name="maximum">
                  <number>149</number>
                 </property>
                 <property name="value">
                  <number>0</number>
-                </property>
-                <property name="orientation">
-                 <enum>Qt::Horizontal</enum>
                 </property>
                </widget>
               </item>
@@ -877,6 +959,42 @@ color: rgb(255, 255, 255);</string>
                 </property>
                 <property name="orientation">
                  <enum>Qt::Horizontal</enum>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="3">
+               <widget class="QSlider" name="horizontalSlider_blue_channel">
+                <property name="maximum">
+                 <number>149</number>
+                </property>
+                <property name="value">
+                 <number>0</number>
+                </property>
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="0">
+               <widget class="QLabel" name="label_blue_channel">
+                <property name="text">
+                 <string>Blue</string>
+                </property>
+                <property name="alignment">
+                 <set>Qt::AlignCenter</set>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="1">
+               <widget class="QSpinBox" name="spinBox_red_channel">
+                <property name="maximum">
+                 <number>149</number>
+                </property>
+                <property name="singleStep">
+                 <number>1</number>
+                </property>
+                <property name="value">
+                 <number>0</number>
                 </property>
                </widget>
               </item>
@@ -936,6 +1054,13 @@ color: rgb(255, 255, 255);</string>
                  </property>
                 </widget>
                </item>
+               <item>
+                <widget class="QPushButton" name="pushButton_reset_transform">
+                 <property name="text">
+                  <string>Reset transforms</string>
+                 </property>
+                </widget>
+               </item>
               </layout>
              </widget>
             </item>
@@ -959,6 +1084,9 @@ color: rgb(255, 255, 255);</string>
                <property name="text">
                 <string>Endmembers</string>
                </property>
+               <property name="checked">
+                <bool>true</bool>
+               </property>
               </widget>
              </item>
              <item>
@@ -972,50 +1100,126 @@ color: rgb(255, 255, 255);</string>
            </widget>
           </item>
           <item>
-           <layout class="QGridLayout" name="gridLayout_2">
-            <item row="3" column="3" colspan="2">
-             <widget class="QPushButton" name="pushButton_save_map">
-              <property name="toolTip">
-               <string>Save segmented image and Ground Truth information in metadata of hypercube file</string>
-              </property>
-              <property name="text">
-               <string>Save map(s)</string>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="3" colspan="2">
-             <widget class="QLabel" name="label_viz_EM">
-              <property name="maximumSize">
-               <size>
-                <width>16777215</width>
-                <height>15</height>
-               </size>
-              </property>
-              <property name="text">
-               <string>Endmembers to show</string>
-              </property>
-              <property name="alignment">
-               <set>Qt::AlignCenter</set>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="0" colspan="2">
-             <widget class="QLabel" name="label_viz_model">
-              <property name="maximumSize">
-               <size>
-                <width>16777215</width>
-                <height>15</height>
-               </size>
-              </property>
-              <property name="text">
-               <string>Model to vizualize</string>
-              </property>
-              <property name="alignment">
-               <set>Qt::AlignCenter</set>
-              </property>
-             </widget>
-            </item>
-            <item row="2" column="0" colspan="2">
+           <widget class="QStackedWidget" name="stackedWidget_2">
+            <property name="currentIndex">
+             <number>1</number>
+            </property>
+            <widget class="QWidget" name="page_abundance_viz">
+             <layout class="QVBoxLayout" name="verticalLayout_9">
+              <item>
+               <layout class="QGridLayout" name="gridLayout_2">
+                <item row="3" column="1">
+                 <widget class="QPushButton" name="pushButton_show_all">
+                  <property name="text">
+                   <string>Show All</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="1" column="1">
+                 <widget class="QComboBox" name="comboBox_viz_show_model"/>
+                </item>
+                <item row="0" column="1">
+                 <widget class="QLabel" name="label_viz_model">
+                  <property name="maximumSize">
+                   <size>
+                    <width>16777215</width>
+                    <height>15</height>
+                   </size>
+                  </property>
+                  <property name="text">
+                   <string>Model to vizualize</string>
+                  </property>
+                  <property name="alignment">
+                   <set>Qt::AlignCenter</set>
+                  </property>
+                 </widget>
+                </item>
+                <item row="0" column="3">
+                 <widget class="QLabel" name="label_viz_EM">
+                  <property name="maximumSize">
+                   <size>
+                    <width>16777215</width>
+                    <height>15</height>
+                   </size>
+                  </property>
+                  <property name="text">
+                   <string>Endmembers to show</string>
+                  </property>
+                  <property name="alignment">
+                   <set>Qt::AlignCenter</set>
+                  </property>
+                 </widget>
+                </item>
+                <item row="1" column="3">
+                 <widget class="QComboBox" name="comboBox_viz_show_EM"/>
+                </item>
+                <item row="3" column="3">
+                 <widget class="QPushButton" name="pushButton_save_map">
+                  <property name="toolTip">
+                   <string>Save segmented image and Ground Truth information in metadata of hypercube file</string>
+                  </property>
+                  <property name="text">
+                   <string>Save map(s)</string>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </item>
+             </layout>
+            </widget>
+            <widget class="QWidget" name="page_endmember_viz">
+             <layout class="QHBoxLayout" name="horizontalLayout_10">
+              <item>
+               <widget class="QLabel" name="label_em_position_size">
+                <property name="maximumSize">
+                 <size>
+                  <width>16777215</width>
+                  <height>20</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string>Endmember position size :</string>
+                </property>
+                <property name="alignment">
+                 <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QSlider" name="horizontalSlider_em_position_size">
+                <property name="minimumSize">
+                 <size>
+                  <width>60</width>
+                  <height>0</height>
+                 </size>
+                </property>
+                <property name="toolTip">
+                 <string>Choose transparency of GT image overlay on cube representation.</string>
+                </property>
+                <property name="minimum">
+                 <number>0</number>
+                </property>
+                <property name="maximum">
+                 <number>50</number>
+                </property>
+                <property name="value">
+                 <number>2</number>
+                </property>
+                <property name="sliderPosition">
+                 <number>2</number>
+                </property>
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </widget>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayout_9">
+            <item>
              <widget class="QLabel" name="label_overlay_transparency">
               <property name="maximumSize">
                <size>
@@ -1024,27 +1228,14 @@ color: rgb(255, 255, 255);</string>
                </size>
               </property>
               <property name="text">
-               <string>Result map transparency</string>
+               <string>Result map transparency :</string>
               </property>
               <property name="alignment">
-               <set>Qt::AlignCenter</set>
+               <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
               </property>
              </widget>
             </item>
-            <item row="1" column="3" colspan="2">
-             <widget class="QComboBox" name="comboBox_viz_show_EM"/>
-            </item>
-            <item row="1" column="0" colspan="2">
-             <widget class="QComboBox" name="comboBox_viz_show_model"/>
-            </item>
-            <item row="2" column="3" colspan="2">
-             <widget class="QPushButton" name="pushButton_show_all">
-              <property name="text">
-               <string>Show All</string>
-              </property>
-             </widget>
-            </item>
-            <item row="3" column="0" colspan="2">
+            <item>
              <widget class="QSlider" name="horizontalSlider_overlay_transparency">
               <property name="minimumSize">
                <size>

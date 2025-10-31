@@ -17,7 +17,6 @@ from PyQt5.QtWidgets import (QApplication, QSizePolicy, QSplitter,QHeaderView,QP
 from PyQt5.QtGui import QPixmap, QImage,QGuiApplication,QStandardItemModel, QStandardItem,QColor
 from PyQt5.QtCore import Qt,QObject, pyqtSignal, QRunnable, QThreadPool, pyqtSlot, QRectF,QEvent,QRect, QPoint, QSize
 
-
 # Graphs
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
@@ -336,9 +335,6 @@ class EndmemberJob:
     p: int
     niter: int
     normalization: str  # 'None'|'L2'|'L1'
-    # inputs
-    manual_groups: Optional[Dict[str, np.ndarray]] = None  # {name: (L,p_g)}
-    library_groups: Optional[Dict[str, np.ndarray]] = None  # same shape
 
 class EndmemberWorker(QRunnable):
     def __init__(self, job: EndmemberJob,cube):
@@ -368,8 +364,6 @@ class EndmemberWorker(QRunnable):
 
             # Match normalization if any groups were given not already normalized
             if self.job.normalization and self.job.normalization.lower() != 'none':
-                # When E came from groups, assume caller already normalized consistently.
-                # When E came from ATGP/N-FINDR (from the normalized cube), it's fine.
                 pass
 
             self.signals.em_ready.emit(E,em_idx, labels, index_map)
@@ -524,17 +518,15 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
 
         self.E_manual= {}
         self.wl_manual=None
-        self.norm_manual=None
-
+        self.param_manual= {}
 
         self.E_lib= {}
         self.wl_lib=None
-        self.norm_lib=None
+        self.param_lib={}
 
         self.E_auto={}
         self.wl_auto=None
-        self.norm_auto=None
-
+        self.param_auto={}
 
         self.class_means = {}  # for spectra of classe
         self.class_stds = {}  # for spectra of classe
@@ -555,7 +547,6 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         # connection
         self.load_btn.clicked.connect(self.open_load_cube_dialog)
 
-        self.horizontalSlider_overlay_transparency.valueChanged.connect(self.update_alpha)
 
         self.sliders_rgb = [
             self.horizontalSlider_red_channel,
@@ -591,13 +582,16 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         self.pushButton_class_selection.toggled.connect(self.on_toggle_selection)
         self.pushButton_erase_selected_pix.toggled.connect(self.on_toggle_erase)
 
+
         # Spectra window
         self.comboBox_endmembers_spectra.currentIndexChanged.connect(self.on_changes_EM_spectra_viz)
         self.checkBox_showLegend.toggled.connect(self.update_spectra)
         self.checkBox_showGraph.toggled.connect(self.toggle_spectra)
 
         # Unmix window
-
+        self.radioButton_view_em.toggled.connect(self.toggle_em_viz_stacked)
+        self.horizontalSlider_em_position_size.valueChanged.connect(self.update_overlay)
+        self.horizontalSlider_overlay_transparency.valueChanged.connect(self.update_alpha)
 
         # Defaults values algorithm
         self.comboBox_unmix_algorithm.setCurrentText('SUnSAL')
@@ -689,6 +683,14 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
             self.mem_sizes = self.splitter.sizes()
             sizes=[self.mem_sizes[0],self.mem_sizes[1],0]
             self.splitter.setSizes(sizes)
+
+    def toggle_em_viz_stacked(self):
+        if self.radioButton_view_em.isChecked():
+            self.stackedWidget_2.setCurrentIndex(1)
+        else:
+            self.stackedWidget_2.setCurrentIndex(0)
+
+        self.update_overlay()
 
     def bgr_to_rgb(self, bgr):
         return (bgr[2], bgr[1], bgr[0])
@@ -873,15 +875,27 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
             self.cube.data = self.data
 
             # binary_map peut être None selon l’état de l’outil
-            if getattr(self, "binary_map", None) is not None:
-                bm = trans_type(self.binary_map)
-                # Garantir une carte 2D (H, W)
-                if bm.ndim == 3 and bm.shape[-1] == 1:
-                    bm = bm[..., 0]
-                self.binary_map = bm
 
-            if getattr(self, "class_map", None) is not None:
-                self.class_map = trans_type(self.class_map)
+            for attr in [
+                "selection_mask_map_manual",
+                "selection_mask_map_auto",
+                "selection_mask_map_lib",
+                "selection_mask_map",  # si elle existe
+                "class_map",
+                "_preview_mask",
+            ]:
+                if hasattr(self, attr):
+                    m = getattr(self, attr)
+                    if m is None:
+                        continue
+                    try:
+                        m_rot = trans_type(m)
+                        # si ça revient en (H,W,1), on squeeze
+                        if m_rot.ndim == 3 and m_rot.shape[-1] == 1:
+                            m_rot = m_rot[..., 0]
+                        setattr(self, attr, m_rot)
+                    except Exception as e:
+                        print(f"[TRANSFORM] could not rotate {attr}: {e}")
 
             for job in self.jobs.values():
                 if hasattr(job, "_mask_indices"):
@@ -985,54 +999,137 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         self.update_overlay(recompute_rgb=True, preview=False)
 
     def update_overlay(self, recompute_rgb: bool = False, preview: bool = False):
-        """
-        1) (optionnel) Recalcule self.rgb_image depuis le cube
-        2) Mélange les sélections (selection_mask_map) sur le RGB
-        3) Push viewer_left (composite) et viewer_right (carte couleurs)
-        """
         if self.data is None:
             return
 
-        # 1) Garantir un RGB prêt
+        # 1) Assurer le RGB à jour
         if recompute_rgb or getattr(self, "rgb_image", None) is None:
             self._make_rgb_from_cube()
 
         base = self.rgb_image.copy()
         H, W = base.shape[:2]
-        overlay = base
 
-        # 2) Overlay des classes sélectionnées
+        overlay_img = base.copy()
+
+        # On prépare aussi seg_img pour viewer_right
+        seg_img = np.zeros((H, W, 3), dtype=np.uint8)
+        if getattr(self, "selection_mask_map", None) is not None:
+            for cls, param in getattr(self, "class_info", {}).items():
+                b, g, r = param[2]
+                seg_img[self.selection_mask_map == cls] = (b, g, r)
+
+        # Lire alpha depuis slider transparence
+
+        alpha_overlay = getattr(self, "alpha", 0.35)
+        alpha_overlay = max(0.0, min(1.0, alpha_overlay))
+
+        # ---- NOUVEAU : préparer les masques supplémentaires pour les croix EM auto ----
+        # Dictionnaire {cls: mask_bool(H,W)} qui marquera les croix à afficher pour chaque classe
+        extra_cross_masks = {}
+
+        # Taille des croix
+        try:
+            cross_half_size = int(self.horizontalSlider_em_position_size.value())
+        except Exception:
+            cross_half_size = 0
+
+        if (
+                self.active_source == 'auto'
+                and cross_half_size > 0
+                and hasattr(self, "selection_mask_map_auto")
+                and self.selection_mask_map_auto is not None
+        ):
+            # On va générer les croix par classe auto
+            unique_cls = np.unique(self.selection_mask_map_auto)
+            unique_cls = [c for c in unique_cls if c >= 0]
+
+            for cls in unique_cls:
+                ys, xs = np.where(self.selection_mask_map_auto == cls)
+                if ys.size == 0:
+                    continue
+
+                # on prend juste la première position comme "endmember position"
+                y0 = int(ys[0])
+                x0 = int(xs[0])
+
+                # créer le masque booléen pour cette classe si pas encore fait
+                if cls not in extra_cross_masks:
+                    extra_cross_masks[cls] = np.zeros((H, W), dtype=bool)
+
+                m = extra_cross_masks[cls]
+
+                # dessiner une croix dans m
+                hs = max(1, cross_half_size)
+
+                # segment horizontal
+                x_min = max(0, x0 - hs)
+                x_max = min(W - 1, x0 + hs)
+                if 0 <= y0 < H:
+                    m[y0, x_min:x_max + 1] = True
+
+                # segment vertical
+                y_min = max(0, y0 - hs)
+                y_max = min(H - 1, y0 + hs)
+                if 0 <= x0 < W:
+                    m[y_min:y_max + 1, x0] = True
+
+        # ------------------------------------------------------------------------------
+
+        # 2) Overlay des classes sélectionnées sur l'image RGB (viewer_left)
         if getattr(self, "selection_mask_map", None) is not None and getattr(self, "show_selection", True):
-            a = float(getattr(self, "alpha", 0.35))
-            a = max(0.0, min(1.0, a))
-            current = overlay.copy()
+            current = overlay_img.copy()
+
             for cls, param in self.class_info.items():
-                b,g,r=param[2]
+                # couleur de la classe
+                b, g, r = param[2]
+
+                # masque pixels de la classe
                 mask2d = (self.selection_mask_map == cls)
+
+                # ajouter les croix EM auto pour cette classe (si on en a)
+                if cls in extra_cross_masks:
+                    mask2d = np.logical_or(mask2d, extra_cross_masks[cls])
+
                 if not np.any(mask2d):
                     continue
-                layer = np.zeros_like(overlay, dtype=np.uint8)
+
+                # créer un layer uni couleur
+                layer = np.zeros_like(overlay_img, dtype=np.uint8)
                 layer[:] = (b, g, r)
-                blended = cv2.addWeighted(overlay, 1.0 - a, layer, a, 0.0)
+
+                # mélange alpha
+                blended = cv2.addWeighted(overlay_img, 1.0 - alpha_overlay, layer, alpha_overlay, 0.0)
+
+                # appliquer le résultat sur les pixels de ce mask
                 current = np.where(mask2d[:, :, None], blended, current)
-            overlay = current
 
-        # 3) Aperçu en cours de tracé (facultatif)
+            overlay_img = current
+
+        # 3) Aperçu live temporaire (preview rouge)
         if preview and getattr(self, "_preview_mask", None) is not None:
-            layer = np.zeros_like(overlay, dtype=np.uint8)
+            layer = np.zeros_like(overlay_img, dtype=np.uint8)
             layer[:] = (0, 0, 255)
-            mixed = cv2.addWeighted(overlay, 0.7, layer, 0.3, 0.0)
-            overlay = np.where(self._preview_mask[:, :, None], mixed, overlay)
+            mixed = cv2.addWeighted(overlay_img, 0.7, layer, 0.3, 0.0)
+            overlay_img = np.where(self._preview_mask[:, :, None], mixed, overlay_img)
 
-        # 4) Push viewers
-        self.viewer_left.setImage(self._np2pixmap(overlay))
+        # 4) IMPORTANT : On veut aussi les croix sur viewer_right
+        #    seg_img est déjà coloré classe par classe sans alpha.
+        #    On va juste peindre les croix (opaques) par dessus.
+        #    Ici on réutilise extra_cross_masks.
+        for cls, cross_mask in extra_cross_masks.items():
+            # couleur : si tu veux cohérence, essaie class_info_auto[cls][2] si dispo sinon class_info[cls][2]
+            bgr_color = (0, 255, 255)
+            if hasattr(self, "class_info_auto") and cls in self.class_info_auto:
+                if len(self.class_info_auto[cls]) >= 3 and self.class_info_auto[cls][2] is not None:
+                    bgr_color = self.class_info_auto[cls][2]
+            elif cls in getattr(self, "class_info", {}):
+                bgr_color = self.class_info[cls][2]
 
-        if getattr(self, "selection_mask_map", None) is not None:
-            seg = np.zeros((H, W, 3), dtype=np.uint8)
-            for cls, param in getattr(self, "class_info", {}).items():
-                b,g,r=param[2]
-                seg[self.selection_mask_map == cls] = (b, g, r)
-            self.viewer_right.setImage(self._np2pixmap(seg))
+            seg_img[cross_mask] = bgr_color
+
+        # 5) Push vers les viewers
+        self.viewer_left.setImage(self._np2pixmap(overlay_img))
+        self.viewer_right.setImage(self._np2pixmap(seg_img))
 
     def update_alpha(self, value):
         self.alpha = value / 100.0
@@ -1105,7 +1202,15 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
 
     def update_spectra(self,x=None,y=None,maxR=0):
         self.spec_ax.clear()
-        x_graph = self.wl
+        wl = {"manual": self.wl_manual,
+              "auto": self.wl_auto,
+              "lib": self.wl_lib,
+              }.get(self.active_source, {})
+
+        if wl is None:
+            wl=self.wl
+
+        x_graph = wl
 
         if self.data is None:
             return
@@ -1157,14 +1262,17 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
                 self.spec_fig.subplots_adjust(right=0.95)  # récupère l’espace
 
             # if self.spec_ax.get_legend_handles_labels()[1]:
-            #     self.spec_ax.legend(loc='upper right', fontsize='small')
+            #     self.spec_ax.legend(loc='upper right', fontsize='small'
 
-            self.spec_ax.set_title(f"Spectra")
-            self.spec_ax.grid(color='black')
-            self.spec_ax.set_ylim(0,maxR+0.05)
-            self.spec_ax.set_xlim(x_graph[0],x_graph[-1])
-            self.spec_ax.set_xlabel("wavelength (nm)")
-            self.spec_ax.set_ylabel("Reflectance (a.u.)")
+            try:
+                self.spec_ax.set_title(f"Spectra")
+                self.spec_ax.grid(color='black')
+                self.spec_ax.set_ylim(0,maxR+0.05)
+                self.spec_ax.set_xlim(x_graph[0],x_graph[-1])
+                self.spec_ax.set_xlabel("wavelength (nm)")
+                self.spec_ax.set_ylabel("Reflectance (a.u.)")
+            except:
+                print('[UPDATE SPECTRA] problem with x_graph')
 
         for patch in self.selected_span_patch:
             # patch est un PolyCollection produit par axvspan()
@@ -1211,41 +1319,73 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
                     self.class_info[cls] += [None] * (3 - len(self.class_info[cls]))
                 self.class_info[cls][2] = (b, g, r)
 
+    def _draw_cross(self, img, y, x, half_size, color=(0, 255, 255)):
+        """
+        Dessine une croix opaque dans `img` (BGR) en-place.
+        img: np.uint8 (H,W,3) sur laquelle on dessine.
+        """
+        H, W = img.shape[:2]
+        hs = int(max(1, half_size))
+
+        # horizontal
+        x_min = max(0, x - hs)
+        x_max = min(W - 1, x + hs)
+        if 0 <= y < H:
+            img[y, x_min:x_max + 1, :] = color
+
+        # vertical
+        y_min = max(0, y - hs)
+        y_max = min(H - 1, y + hs)
+        if 0 <= x < W:
+            img[y_min:y_max + 1, x, :] = color
+
     def fill_form_em(self, source: str):
+
         form = {
             "manual": self.formLayout_em_manual,
             "auto": self.formLayout_em_auto,
             "lib": self.formLayout_em_lib,
         }.get(source)
 
-        if not form:
+        if form is None :
             return
 
+        # clear
         while form.count():
             item = form.takeAt(0)
-            if item.widget():
-                item.widget().deleteLater()
+            w = item.widget()
+            if w:
+                w.deleteLater()
 
-        # on récupère la dict complète
         class_info = {
             "manual": self.class_info_manual,
             "auto": self.class_info_auto,
             "lib": self.class_info_lib,
         }.get(source, {})
 
+        param = {
+            "manual": self.param_manual,
+            "auto": self.param_auto,
+            "lib": self.param_lib,
+        }.get(source, {})
+
+        wl={"manual": self.wl_manual,
+        "auto": self.wl_auto,
+        "lib": self.wl_lib,
+        }.get(source, {})
+
+        if param is None:
+            param='None'
+
         if not class_info:
-            form.addRow(QLabel("Aucune classe enregistrée"))
+            form.addRow(QLabel("No endmembers yet"))
             return
 
-        # affichage des paramètres de normalisation de la première classe (par ex)
-        first_cls = next(iter(class_info.values()))
-        norm_params = first_cls.get("norm_params", {})
-        if not norm_params:
-            form.addRow(QLabel("Aucun paramètre de normalisation"))
-            return
+        spectral_range=f'{int(wl[0])} - {int(wl[-1])}'
+        form.addRow(QLabel("wavelength :"), QLabel(spectral_range))
 
-        for k, v in norm_params.items():
-            form.addRow(QLabel(str(k)), QLabel(str(v)))
+        for key,item in param.items():
+            form.addRow(QLabel(str(key)+" :"), QLabel(str(item)))
 
     # </editor-fold>
 
@@ -1423,15 +1563,13 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         p = int(self.nclass_box.value())
         niter = int(self.niter_box.value())
         norm = self._current_normalization()
-        self.norm_manual=norm
+        self.param_auto["normalization"]=norm
+        self.param_auto["algorithm"] = method
+        self.param_auto["number iteration"] = niter
+        self.param_auto["number endmembers"] = p
+        self.wl_auto=self.wl
 
-        # Gather manual/library groups from host (signals or attributes)
-        manual_groups = getattr(self, 'manual_groups', None)
-        library_groups = getattr(self, 'library_groups', None)
-
-        job = EndmemberJob(method=method, p=p, niter=niter, normalization=norm,
-                           manual_groups=manual_groups,
-                           library_groups=library_groups)
+        job = EndmemberJob(method=method, p=p, niter=niter, normalization=norm)
 
         worker = EndmemberWorker(job,self.cube)
         worker.signals.em_ready.connect(self._on_em_ready)
@@ -1447,23 +1585,14 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
             name = str(lab)
             self.set_class_name(i, name)
 
-        self.comboBox_viz_show_EM.clear()
-        n=E.shape[1]
-        self.E_auto={}
-        for key in range(n):
-            spec=E[:,key]
-            self.E_auto[key]=spec
-            name = self.get_class_name(key)
-            self.comboBox_viz_show_EM.addItem(name)
-        # If you also have groups (labels), you can populate comboBox_viz_show_model too
-        print('[ENDMEMBERS]',
-            f"Endmembers ready: E shape {len(self.E_auto)},{len(self.E_auto[0])}, groups: {len(np.unique(labels)) if labels is not None else 0}")
-
         if self.selection_mask_map_auto is None:
             H, W = self.data.shape[:2]
             self.selection_mask_map_auto = np.full((H, W), -1, np.int32)
         else:
             self.selection_mask_map_auto.fill(-1)
+
+        self.E_auto = {}
+        self.comboBox_viz_show_EM.clear()
 
         H, W = self.data.shape[:2]
         idx_em = np.asarray(idx_em)
@@ -1473,8 +1602,19 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
             rows, cols = idx_em[:, 0], idx_em[:, 1]
 
         for cls, (r, c) in enumerate(zip(rows, cols)):
-            if 0 <= r < H and 0 <= c < W:
+            if 0 <= c < H and 0 <= r < W:
                 self.selection_mask_map_auto[c, r] = cls
+                spec = self.data[c,r]
+                self.E_auto[cls] = spec
+                name = self.get_class_name(cls)
+                self.comboBox_viz_show_EM.addItem(name)
+
+            else :
+                print(f'[ENDMEMBERS AUTO] pb idx EM {cls} with coords : ({c},{r})')
+                print(f'Cube shape : ({H},{W})')
+
+        print('[ENDMEMBERS]',
+              f"Endmembers ready: E shape {len(self.E_auto)},{len(self.E_auto[0])}, groups: {len(np.unique(labels)) if labels is not None else 0}")
 
         self._activate_endmembers('auto')
         self._assign_initial_colors()
@@ -1511,6 +1651,7 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
             return
 
         try:
+
             # 2) Lecture du fichier CSV
             df = pd.read_csv(filepath)
 
@@ -1529,10 +1670,11 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
                 self.set_class_name(i, name)
 
             # 4) Stockage dans l'objet
-            self.library_path = filepath
             self.wl_lib = wl
             self.E_lib = {i: E[:, i] for i in range(E.shape[1])}
             self.library_groups = {name: E[:, i:i + 1] for i, name in enumerate(names)}
+
+            self.param_lib['file']=filepath
 
             # 5) Renseigne la combo des endmembers (si présente)
             self.comboBox_viz_show_EM.clear()
@@ -1542,6 +1684,7 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
             # 6) Appelle la pipeline d’activation / affichage
             self._activate_endmembers('lib')
             self.fill_form_em('lib')
+            self.update_spectra()
 
             QMessageBox.information(
                 self,
@@ -1583,7 +1726,7 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         elif source == 'lib':
             try:
                 self.E = {c: np.asarray(v, dtype=float).reshape(-1, 1) for c, v in
-                      self.E_lib.items()} if self.E_auto else {}
+                      self.E_lib.items()} if self.E_lib else {}
             except:
                 self.E = {}
         else:
@@ -1599,7 +1742,7 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         # Met à jour moyennes/écarts-types par classe -> update_spectra les trace
         self.fill_means_std_classes()  # utilise self.E pour calculer mu/std par classe. :contentReference[oaicite:0]{index=0}
         self._assign_initial_colors()  # garde tes couleurs cohérentes
-        self.update_spectra(maxR=0)  # rafraîchit la figure spectra. :contentReference[oaicite:1]{index=1}
+        self.update_spectra(maxR=1)  # rafraîchit la figure spectra. :contentReference[oaicite:1]{index=1}
         self.update_overlay()
 
     def get_class_name(self, cls: int) -> str:
@@ -1909,6 +2052,7 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
                 # Réinitialise à -1 (aucune classe)
                 self.selection_mask_map[:] = -1
                 self.samples.clear()
+                self.param_manual={}
 
         self.selecting_pixels = True
         # self.viewer_left.setDragMode(QGraphicsView.NoDrag)
@@ -1937,7 +2081,7 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
             print(key,'->',self.E_manual[key].shape)
 
         self._activate_endmembers('manual')
-        self.update_spectra(maxR=0)
+        self.update_spectra(maxR=1)
         self.comboBox_endmembers_spectra.setCurrentText('Manual')
 
     def _handle_selection(self, coords):
@@ -1995,10 +2139,16 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
 
         self._add_region(cls, coords)
         self._activate_endmembers('manual')
-        self.update_spectra(maxR=0)
+        self.update_spectra(maxR=1)
         self.comboBox_endmembers_spectra.setCurrentText('Manual')
 
         # 3) rafraîchir l’affichage
+        self.wl_manual=self.wl
+        self.param_manual["number endmembers"]=len(self.E_manual)
+        for key in self.E_manual:
+            new_key=self.class_info_manual[key][1] + "  #spec "
+            self.param_manual[new_key]=self.E_manual[key].shape[0]
+
         self.fill_form_em('manual')
         self.show_rgb_image()
         self.update_overlay()
@@ -2040,8 +2190,13 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
                 self.class_stds.pop(c, None)
 
         self._activate_endmembers('manual')
-        self.update_spectra(maxR=0)
+        self.update_spectra(maxR=1)
         self.comboBox_endmembers_spectra.setCurrentText('Manual')
+
+        self.param_manual["number endmembers"] = len(self.E_manual)
+        for key in self.E_manual:
+            new_key = self.class_info_manual[key][1] + "  #spec "
+            self.param_manual[new_key] = self.E_manual[key].shape[0]
 
         self.fill_form_em('manual')
         self.update_overlay()
@@ -2113,7 +2268,6 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         used = self._union_coords_of_class(cls)
         coords_unique = [(x, y) for (x, y) in coords if (x, y) not in used]
         if not coords_unique:
-            # rien de nouveau pour cette classe -> juste recomposer E_manual au cas où
             self._recompute_E_manual_for_class(cls)
             return
         reg = {'coords': set(coords_unique), 'mean': None}

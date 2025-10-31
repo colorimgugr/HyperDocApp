@@ -4,7 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="[unmixing] : &#10;- unifier parametres dans class_info. gestion des couleurs OK">
+    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="[unmixing] : &#10;- implementando forms to show endmembers params">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/unmixing/unmixing_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/unmixing/unmixing_tool.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/unmixing/unmixing_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/unmixing/unmixing_window.py" afterDir="false" />
@@ -137,14 +137,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1744020944801</updated>
-    </task>
-    <task id="LOCAL-00062" summary="[main] open all bugg fixed&#10;[register] modif features, sliders bugg and labels and groups, click to select, auto load other, progress bar reset all, cubeinfo unique and parent cube editable at save.">
-      <option name="closed" value="true" />
-      <created>1752005647626</created>
-      <option name="number" value="00062" />
-      <option name="presentableId" value="LOCAL-00062" />
-      <option name="project" value="LOCAL" />
-      <updated>1752005647626</updated>
     </task>
     <task id="LOCAL-00063" summary="Lot of things but most of all matlab.engine">
       <option name="closed" value="true" />
@@ -530,7 +522,15 @@
       <option name="project" value="LOCAL" />
       <updated>1761825800628</updated>
     </task>
-    <option name="localTasksCounter" value="111" />
+    <task id="LOCAL-00111" summary="[unmixing] : &#10;- implementando forms to show endmembers params">
+      <option name="closed" value="true" />
+      <created>1761828442929</created>
+      <option name="number" value="00111" />
+      <option name="presentableId" value="LOCAL-00111" />
+      <option name="project" value="LOCAL" />
+      <updated>1761828442929</updated>
+    </task>
+    <option name="localTasksCounter" value="112" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -582,7 +582,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="[IDENTIFICATION] : Gestion of uncomplete spectral range -&gt; crop and interp. &#10;started implementation of learning with shorter spectral range." />
     <MESSAGE value="[IDENTIFICATION] : Dilog ofr opening saved model ok" />
     <MESSAGE value="[IDENTIFICATION] : learning process with croped features and save_load model OK" />
     <MESSAGE value="[IDENTIFICATION] : Substrate double implementation (fast and slow) added and propagated to save file." />
@@ -607,6 +606,7 @@
     <MESSAGE value="[unmixing] : &#10;- working on endmembers location and normalisation" />
     <MESSAGE value="[unmixing] : &#10;- affichages des endmembers auto et manual OK" />
     <MESSAGE value="[unmixing] : &#10;- unifier parametres dans class_info. gestion des couleurs OK" />
-    <option name="LAST_COMMIT_MESSAGE" value="[unmixing] : &#10;- unifier parametres dans class_info. gestion des couleurs OK" />
+    <MESSAGE value="[unmixing] : &#10;- implementando forms to show endmembers params" />
+    <option name="LAST_COMMIT_MESSAGE" value="[unmixing] : &#10;- implementando forms to show endmembers params" />
   </component>
 </project>
