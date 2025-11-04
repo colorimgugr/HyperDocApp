@@ -8,7 +8,7 @@ from PIL import Image
 import h5py
 
 import numpy as np
-from PyQt5.QtWidgets import (QApplication, QSizePolicy, QSplitter,QHeaderView,QProgressBar,
+from PyQt5.QtWidgets import (QApplication, QSizePolicy, QSplitter,QHeaderView,QProgressBar,QColorDialog,
                             QDialog, QVBoxLayout, QHBoxLayout, QFormLayout, QLabel, QLineEdit, QPushButton,
                              QDialogButtonBox, QCheckBox, QScrollArea, QWidget, QFileDialog, QMessageBox,
                              QRadioButton,QInputDialog,QTableWidget, QTableWidgetItem,QHeaderView,QGraphicsView
@@ -36,13 +36,15 @@ from interface.some_widget_for_interface import ZoomableGraphicsView
 from identification.load_cube_dialog import Ui_Dialog
 
 # <editor-fold desc="To do">
-#todo : from librarie -> gerer les wl_lib et wl (cube)
-#todo : unmixing -> select endmmembers AND if merge
+#todo : from library -> gerer les wl_lib et wl (cube) pour unmixing
+#todo : unmixing -> select endmembers AND if merge
 #todo : viz spectra -> show/hide by clicking line or title (or ctrl+click)
 #todo : save manual or auto EM selection
 #todo : add ban selection widget
 #todo : add ROI
 #todo : add one pixel fusion
+#todo : select pixels of endmembers also with ctrl+clic left
+#todo : endmembers name assign like in GT
 # </editor-fold>
 
 class LoadCubeDialog(QDialog):
@@ -226,6 +228,97 @@ class LoadCubeDialog(QDialog):
         # Only warn (never block)
         self._soft_validate_and_warn()
         self.accept()
+
+class EMEditDialog(QDialog):
+    """
+    Editable table for Endmembers:
+    Columns: [Index | Name | Color]
+    - Name is edited inline (QLineEdit).
+    - Color cell shows a swatch; clicking opens QColorDialog.
+    Returns updated (names, BGR colors) via accessors if accepted.
+    """
+    def __init__(self, parent, rows_data):
+        """
+        rows_data: list of tuples (cls_index:int, name:str, color_bgr:tuple[int,int,int])
+        """
+        super().__init__(parent)
+        self.setWindowTitle("Edit Endmembers")
+        self.setModal(True)
+        self.resize(560, 420)
+
+        self.table = QTableWidget(self)
+        self.table.setColumnCount(3)
+        self.table.setHorizontalHeaderLabels(["Index", "Name", "Color"])
+        self.table.verticalHeader().setVisible(False)
+        self.table.setEditTriggers(QTableWidget.DoubleClicked | QTableWidget.SelectedClicked | QTableWidget.EditKeyPressed)
+        self.table.setSelectionBehavior(QTableWidget.SelectRows)
+        self.table.setSelectionMode(QTableWidget.SingleSelection)
+        self.table.setRowCount(len(rows_data))
+
+        # Fill rows
+        for r, (cls_idx, name, bgr) in enumerate(rows_data):
+            # Index (read-only)
+            item_idx = QTableWidgetItem(str(cls_idx))
+            item_idx.setFlags(item_idx.flags() & ~Qt.ItemIsEditable)
+            item_idx.setTextAlignment(Qt.AlignCenter)
+            self.table.setItem(r, 0, item_idx)
+
+            # Name (editable)
+            item_name = QTableWidgetItem(name or f"class{cls_idx}")
+            self.table.setItem(r, 1, item_name)
+
+            # Color (button with swatch)
+            btn = QPushButton("")
+            btn.setObjectName(f"color_btn_{r}")
+            btn.setCursor(Qt.PointingHandCursor)
+            btn.clicked.connect(lambda _=False, row=r: self.pick_color(row))
+            self._apply_btn_color(btn, bgr)
+            self.table.setCellWidget(r, 2, btn)
+
+        self.table.horizontalHeader().setStretchLastSection(True)
+        self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
+        self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
+        self.table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeToContents)
+
+        # Buttons
+        buttons = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Cancel, parent=self)
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+
+        # Layout
+        lay = QVBoxLayout(self)
+        lay.addWidget(self.table)
+        lay.addWidget(buttons)
+
+    def _apply_btn_color(self, btn: QPushButton, bgr):
+        b, g, r = bgr
+        btn.setFixedWidth(90)
+        btn.setFixedHeight(22)
+        btn.setStyleSheet(
+            f"QPushButton {{ background-color: rgb({r},{g},{b}); border: 1px solid #555; }}"
+        )
+        btn.setProperty("bgr", (b, g, r))
+
+    def pick_color(self, row):
+        btn = self.table.cellWidget(row, 2)
+        b, g, r = btn.property("bgr")
+        initial = QColor(int(r), int(g), int(b))
+        col = QColorDialog.getColor(initial, self, "Pick color")
+        if col.isValid():
+            new_bgr = (col.blue(), col.green(), col.red())  # keep BGR in storage
+            self._apply_btn_color(btn, new_bgr)
+
+    def result_rows(self):
+        """Return list of (cls_index:int, name:str, color_bgr:tuple) from the table."""
+        out = []
+        for r in range(self.table.rowCount()):
+            idx = int(self.table.item(r, 0).text())
+            name = self.table.item(r, 1).text().strip()
+            btn = self.table.cellWidget(r, 2)
+            bgr = btn.property("bgr")
+            out.append((idx, name, bgr))
+        return out
+
 
 def _safe_name_from(cube) -> str:
     md = getattr(cube, "metadata", {}) or {}
@@ -581,7 +674,8 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         self.pushButton_load_EM.clicked.connect(self._on_load_library_clicked)
         self.pushButton_class_selection.toggled.connect(self.on_toggle_selection)
         self.pushButton_erase_selected_pix.toggled.connect(self.on_toggle_erase)
-
+        self.pushButton_save_EM.clicked.connect(self.save_endmembers_spectra)
+        self.pushButton_class_name_assign.clicked.connect(self.open_em_editor)
 
         # Spectra window
         self.comboBox_endmembers_spectra.currentIndexChanged.connect(self.on_changes_EM_spectra_viz)
@@ -1624,82 +1718,84 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
 
     def _on_load_library_clicked(self):
         """
-        Load a spectral library from a CSV file (wavelength + endmember columns).
-        Expected format:
-            Wavelength, Material1, Material2, ...
-            400, 0.12, 0.18, ...
-            ...
-        Each column (after wavelength) becomes an endmember spectrum.
+        Load a spectral library from a CSV file:
+          - Column 0: wavelength (nm)
+          - Columns 1..N: endmember spectra
+        Multiple columns can share the same name; their spectra are stacked
+        into the same class array with shape (L, n_regions).
         """
         import pandas as pd
+        import re
 
         if getattr(sys, 'frozen', False):
             BASE_DIR = sys._MEIPASS
         else:
             BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
-        open_dir=os.path.join(BASE_DIR, "unmixing", "data")
-
-        # 1) Sélection du fichier CSV
+        open_dir = os.path.join(BASE_DIR, "unmixing", "data")
         filepath, _ = QFileDialog.getOpenFileName(
-            self,
-            "Open spectral library",
-            open_dir,
-            "Spectral libraries (*.csv *.txt)"
+            self, "Open spectral library (CSV)", open_dir, "CSV files (*.csv)"
         )
         if not filepath:
             return
 
         try:
-
-            # 2) Lecture du fichier CSV
+            # 1) Read
             df = pd.read_csv(filepath)
-
-            # Vérifie qu’il y a au moins deux colonnes (λ + 1 matériau)
             if df.shape[1] < 2:
                 QMessageBox.warning(self, "Library error",
-                                    "Invalid library format (need wavelength + ≥1 spectrum column).")
+                                    "Invalid format: need wavelength + ≥1 spectrum column.")
                 return
 
-            # 3) Extraction des longueurs d’onde et des spectres
+            # 2) Columns
             wl = df.iloc[:, 0].to_numpy(dtype=float)
-            names = list(df.columns[1:])
-            E = df.iloc[:, 1:].to_numpy(dtype=float)  # shape (L, p)
+            raw_names = list(df.columns[1:])
+            mat = df.iloc[:, 1:].to_numpy(dtype=float)  # (L, P)
 
-            for i, name in enumerate(names):
-                self.set_class_name(i, name)
+            # 3) Build name-keyed dict with stacking on duplicate names
+            def canon(name: str) -> str:
+                n = re.sub(r"\.\d+$", "", str(name))  # drop ".1", ".2", ...
+                n = re.sub(r"\s+", " ", n.strip())  # tidy spaces
+                return n
 
-            # 4) Stockage dans l'objet
+            can_names = [canon(n) for n in raw_names]
+
+            E_by_name = {}  # {name: (L, n_regions)}
+            for j, name in enumerate(can_names):
+                col = mat[:, j].reshape(-1, 1)  # (L,1)
+                if name in E_by_name:
+                    E_by_name[name] = np.concatenate([E_by_name[name], col], axis=1)
+                else:
+                    E_by_name[name] = col
+
+            # 4) Store (name-keyed); no library_groups anymore
             self.wl_lib = wl
-            self.E_lib = {i: E[:, i] for i in range(E.shape[1])}
-            self.library_groups = {name: E[:, i:i + 1] for i, name in enumerate(names)}
+            self.E_lib = E_by_name
+            self.param_lib['file'] = filepath
 
-            self.param_lib['file']=filepath
-
-            # 5) Renseigne la combo des endmembers (si présente)
+            # 5) Refresh GUI: list each class name once
             self.comboBox_viz_show_EM.clear()
-            for i, name in enumerate(names):
+            for name in E_by_name.keys():
                 self.comboBox_viz_show_EM.addItem(name)
 
-            # 6) Appelle la pipeline d’activation / affichage
+            # 6) Activate LIB source for visualization/unmixing
             self._activate_endmembers('lib')
             self.fill_form_em('lib')
             self.update_spectra()
 
             QMessageBox.information(
-                self,
-                "Library loaded",
-                f"Loaded {len(names)} spectra from:\n{os.path.basename(filepath)}"
+                self, "Library loaded",
+                f"Loaded {sum(A.shape[1] for A in E_by_name.values())} spectra "
+                f"in {len(E_by_name)} classes from:\n{os.path.basename(filepath)}"
             )
 
+            print(f'[LIBRARY LOADED ] E len : {len(self.E_lib)}')
+            for key in self.E_lib:
+                print(key, '->', self.E_lib[key].shape)
+
         except Exception as e:
-            import traceback
             tb = traceback.format_exc()
-            QMessageBox.warning(
-                self,
-                "Load error",
-                f"Failed to read library:\n{e}\n\n{tb}"
-            )
+            QMessageBox.warning(self, "Load error", f"Failed to read library:\n{e}\n\n{tb}")
             print('[LIBRARY ERROR]', e)
 
     def _on_error(self, msg: str):
@@ -1723,12 +1819,25 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
                           self.E_auto.items()} if self.E_auto else {}
             except:
                 self.E={}
+
         elif source == 'lib':
-            try:
-                self.E = {c: np.asarray(v, dtype=float).reshape(-1, 1) for c, v in
-                      self.E_lib.items()} if self.E_lib else {}
-            except:
-                self.E = {}
+            # self.E_lib: {name: (L, n_regions)} or {name: (L,)} from loader
+            E_norm = {}
+            class_names = []
+            for idx, (name, V) in enumerate(self.E_lib.items()):
+                A = np.asarray(V, dtype=float)
+                if A.ndim == 1:
+                    A = A.reshape(-1, 1)
+                # Ensure shape (L, n_regions)
+                if A.shape[0] < A.shape[1]:
+                    A = A.T
+                E_norm[idx] = A  # keep internal integer keys for downstream logic
+                # keep UI name mapping
+                self.set_class_name(idx, name)
+                class_names.append(name)
+
+            self.E = E_norm
+
         else:
             self.E = {}
 
@@ -1740,7 +1849,7 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
             return
 
         # Met à jour moyennes/écarts-types par classe -> update_spectra les trace
-        self.fill_means_std_classes()  # utilise self.E pour calculer mu/std par classe. :contentReference[oaicite:0]{index=0}
+        self.fill_means_std_classes()  # utilise self.E pour calculer mu/std par classe.: contentReference[oaicite:0]{index=0}
         self._assign_initial_colors()  # garde tes couleurs cohérentes
         self.update_spectra(maxR=1)  # rafraîchit la figure spectra. :contentReference[oaicite:1]{index=1}
         self.update_overlay()
@@ -1761,6 +1870,187 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
             while len(self.class_info[cls]) < 3:
                 self.class_info[cls].append(None)
             self.class_info[cls][1] = name
+
+    def save_endmembers_spectra(self):
+        """
+        Save endmembers from the active source (manual/auto/lib) into a CSV:
+          Wavelength, ClassA, ClassA.1, ClassB, ClassC, ClassC.1, ...
+        Shapes are normalized to (L, n_specs) per class before writing.
+        """
+        import pandas as pd
+        from collections import defaultdict
+
+        # 1) Pick source dict + wavelength + name getter for display
+        src = (self.active_source or "").lower()
+
+        if src == "manual":
+            E_src = self.E_manual if isinstance(self.E_manual, dict) else {}
+            wl = getattr(self, "wl", None)
+
+            def _name_for(key):
+                try:
+                    return self.get_class_name(key)
+                except Exception:
+                    return f"class{key}"
+
+        elif src == "auto":
+            E_src = self.E_auto if isinstance(self.E_auto, dict) else {}
+            wl = getattr(self, "wl_auto", None)
+
+            def _name_for(key):
+                try:
+                    return self.get_class_name(key)
+                except Exception:
+                    return f"class{key}"
+
+        elif src == "lib":
+            # keys are already class names
+            E_src = self.E_lib if isinstance(self.E_lib, dict) else {}
+            wl = getattr(self, "wl_lib", None)
+
+            def _name_for(key):
+                return str(key)
+        else:
+            QMessageBox.warning(self, "Save endmembers", "Unknown active source.")
+            return
+
+        if wl is None or len(E_src) == 0:
+            QMessageBox.warning(self, "Save endmembers", "No spectra to save for this source.")
+            return
+
+        # 2) Normalize every entry to shape (L, n_specs)
+        def _to_LxN(arr):
+            A = np.asarray(arr, dtype=float)
+            if A.ndim == 1:
+                A = A.reshape(-1, 1)
+            # ensure (L, n)
+            if A.shape[0] < A.shape[1]:
+                A = A.T
+            return A
+
+        try:
+            # 3) Build a DataFrame
+            df = pd.DataFrame({"Wavelength": np.asarray(wl, dtype=float)})
+            name_counts = defaultdict(int)
+
+            # To keep a stable order: numeric keys sorted; string keys alphabetical
+            def _sort_key(k):
+                return (0, int(k)) if isinstance(k, (int, np.integer)) else (1, str(k))
+
+            for key in sorted(E_src.keys(), key=_sort_key):
+                base_name = _name_for(key) or f"class{key}"
+                A = _to_LxN(E_src[key])  # (L, n_specs)
+
+                for j in range(A.shape[1]):
+                    # First spectrum keeps base name; subsequent add .1, .2, ...
+                    cnt = name_counts[base_name]
+                    col_name = base_name if cnt == 0 else f"{base_name}.{cnt}"
+                    name_counts[base_name] += 1
+
+                    # Add column
+                    df[col_name] = A[:, j]
+
+            # 4) Ask where to save
+            if getattr(sys, 'frozen', False):
+                BASE_DIR = sys._MEIPASS
+            else:
+                BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+
+            default_dir = os.path.join(BASE_DIR, "unmixing", "data")
+            default_name = f"endmembers_{src}.csv"
+            path, _ = QFileDialog.getSaveFileName(
+                self, "Save endmembers as CSV", os.path.join(default_dir, default_name), "CSV files (*.csv)"
+            )
+            if not path:
+                return
+
+            # 5) Write CSV
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            df.to_csv(path, index=False)
+            QMessageBox.information(self, "Save endmembers",
+                                    f"Saved {df.shape[1] - 1} spectra to:\n{os.path.basename(path)}")
+
+        except Exception as e:
+            import traceback
+            QMessageBox.warning(self, "Save endmembers", f"Failed to save:\n{e}\n\n{traceback.format_exc()}")
+
+    def open_em_editor(self):
+        """
+        Open the EM editor on the current active source.
+        Reads class ids, names, colors from class_info; writes back on Save.
+        """
+        # Collect rows from current source
+        # We’ll use class_means (computed from E) to decide which classes exist/display;
+        # then pull names/colors from class_info. If missing, default nicely.
+        try:
+            class_ids = sorted(self.class_means.keys())
+        except Exception:
+            class_ids = sorted(getattr(self, "E", {}).keys())
+
+        rows = []
+        for cls in class_ids:
+            # Name
+            try:
+                name = self.get_class_name(cls)
+            except Exception:
+                name = f"class{cls}"
+
+            # Color (your storage is BGR in class_info[cls][2])
+            try:
+                b, g, r = self.class_info[cls][2]  # BGR stored, as in your tool
+            except Exception:
+                # fallback soft colors
+                b, g, r = (64 + (37 * cls) % 192, 64 + (91 * cls) % 192, 64 + (53 * cls) % 192)
+
+            rows.append((cls, name, (b, g, r)))
+
+        dlg = EMEditDialog(self, rows)
+        if dlg.exec_() != QDialog.Accepted:
+            return
+
+        # Write back names/colors
+        updated = dlg.result_rows()
+        for cls, name, (b, g, r) in updated:
+            # name
+            self.set_class_name(cls, name)  # keeps your per-source mapping consistent
+            # color (BGR)
+            try:
+                info = self.class_info.get(cls, None)
+                if info is None:
+                    # class_info entry: [label, name GT, (B,G,R)] in your pattern—preserve style if needed
+                    self.class_info[cls] = [cls, name, (b, g, r)]
+                else:
+                    # ensure a triplet slot exists
+                    if len(info) < 3:
+                        while len(info) < 2:
+                            info.append(name)
+                        info.append((b, g, r))
+                    else:
+                        info[2] = (b, g, r)
+            except Exception:
+                # if class_info is None or not a dict, initialize minimally
+                if not isinstance(self.class_info, dict):
+                    # if the property returns a proxy, make sure assignment works
+                    pass
+                self.class_info[cls] = [cls, name, (b, g, r)]
+
+        # Refresh UI that uses names/colors
+        self.update_spectra()
+        self.update_overlay()
+
+        # If you list EMs in a combo, refresh labels there too
+        try:
+            cb = self.comboBox_viz_show_EM
+            cur = cb.currentText()
+            cb.blockSignals(True)
+            cb.clear()
+            for cls in class_ids:
+                cb.addItem(self.get_class_name(cls))
+            idx_restore = cb.findText(cur)
+            cb.setCurrentIndex(idx_restore if idx_restore >= 0 else 0)
+            cb.blockSignals(False)
+        except Exception:
+            pass
 
     # </editor-fold>
 

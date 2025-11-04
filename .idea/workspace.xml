@@ -4,7 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="[unmixing] : &#10;- implementando forms to show endmembers params">
+    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="[unmixing] : &#10;- scrolable labels for endmembers&#10;- dynamic cross to visualize automatic endmembers&#10;- get Raw endmembers spectrum and normalisation to save of before unmixing&#10;- transforms extended to selection_mask&#10;- radiobuttons and stecked tabs for result_viz">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/unmixing/unmixing_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/unmixing/unmixing_tool.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/unmixing/unmixing_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/unmixing/unmixing_window.py" afterDir="false" />
@@ -137,14 +137,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1744020944801</updated>
-    </task>
-    <task id="LOCAL-00063" summary="Lot of things but most of all matlab.engine">
-      <option name="closed" value="true" />
-      <created>1752109688328</created>
-      <option name="number" value="00063" />
-      <option name="presentableId" value="LOCAL-00063" />
-      <option name="project" value="LOCAL" />
-      <updated>1752109688330</updated>
     </task>
     <task id="LOCAL-00064" summary="Ground Truth Features fixed.&#10;- cursor cross interference fixed,&#10;- updating spectra fixed&#10;- max R fixed &#10;- groups of widgets in tabs to have more space&#10;- add check box for live toggle&#10;- all made again because of a fucking error of merging :-/">
       <option name="closed" value="true" />
@@ -530,7 +522,15 @@
       <option name="project" value="LOCAL" />
       <updated>1761828442929</updated>
     </task>
-    <option name="localTasksCounter" value="112" />
+    <task id="LOCAL-00112" summary="[unmixing] : &#10;- scrolable labels for endmembers&#10;- dynamic cross to visualize automatic endmembers&#10;- get Raw endmembers spectrum and normalisation to save of before unmixing&#10;- transforms extended to selection_mask&#10;- radiobuttons and stecked tabs for result_viz">
+      <option name="closed" value="true" />
+      <created>1761921019704</created>
+      <option name="number" value="00112" />
+      <option name="presentableId" value="LOCAL-00112" />
+      <option name="project" value="LOCAL" />
+      <updated>1761921019705</updated>
+    </task>
+    <option name="localTasksCounter" value="113" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -582,7 +582,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="[IDENTIFICATION] : Dilog ofr opening saved model ok" />
     <MESSAGE value="[IDENTIFICATION] : learning process with croped features and save_load model OK" />
     <MESSAGE value="[IDENTIFICATION] : Substrate double implementation (fast and slow) added and propagated to save file." />
     <MESSAGE value="[IDENTIFICATION] : ROI uptaded for jobs and blinking overlay fixed" />
@@ -607,6 +606,7 @@
     <MESSAGE value="[unmixing] : &#10;- affichages des endmembers auto et manual OK" />
     <MESSAGE value="[unmixing] : &#10;- unifier parametres dans class_info. gestion des couleurs OK" />
     <MESSAGE value="[unmixing] : &#10;- implementando forms to show endmembers params" />
-    <option name="LAST_COMMIT_MESSAGE" value="[unmixing] : &#10;- implementando forms to show endmembers params" />
+    <MESSAGE value="[unmixing] : &#10;- scrolable labels for endmembers&#10;- dynamic cross to visualize automatic endmembers&#10;- get Raw endmembers spectrum and normalisation to save of before unmixing&#10;- transforms extended to selection_mask&#10;- radiobuttons and stecked tabs for result_viz" />
+    <option name="LAST_COMMIT_MESSAGE" value="[unmixing] : &#10;- scrolable labels for endmembers&#10;- dynamic cross to visualize automatic endmembers&#10;- get Raw endmembers spectrum and normalisation to save of before unmixing&#10;- transforms extended to selection_mask&#10;- radiobuttons and stecked tabs for result_viz" />
   </component>
 </project>

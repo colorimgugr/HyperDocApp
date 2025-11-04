@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1297</width>
+    <width>1300</width>
     <height>805</height>
    </rect>
   </property>
@@ -149,18 +149,28 @@
                </property>
               </widget>
              </item>
+             <item>
+              <widget class="QPushButton" name="pushButton_save_EM">
+               <property name="text">
+                <string>Save active endmembers</string>
+               </property>
+              </widget>
+             </item>
             </layout>
            </widget>
           </item>
           <item>
            <widget class="QStackedWidget" name="stackedWidget">
             <property name="currentIndex">
-             <number>2</number>
+             <number>1</number>
             </property>
             <widget class="QWidget" name="From_Library">
              <layout class="QVBoxLayout" name="verticalLayout_3">
               <item>
                <widget class="QPushButton" name="pushButton_load_EM">
+                <property name="styleSheet">
+                 <string notr="true">background-color: rgba(186, 255, 112, 125);</string>
+                </property>
                 <property name="text">
                  <string>Load Endmembers</string>
                 </property>
@@ -176,8 +186,8 @@
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>503</width>
-                   <height>139</height>
+                   <width>495</width>
+                   <height>142</height>
                   </rect>
                  </property>
                  <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -192,10 +202,19 @@
             </widget>
             <widget class="QWidget" name="Manual">
              <layout class="QGridLayout" name="gridLayout_4">
-              <item row="2" column="1">
-               <widget class="QPushButton" name="pushButton_save_EM_manual">
+              <item row="1" column="0">
+               <widget class="QLabel" name="label_selec_mode">
+                <property name="maximumSize">
+                 <size>
+                  <width>16777215</width>
+                  <height>20</height>
+                 </size>
+                </property>
                 <property name="text">
-                 <string>Save manual endmembers</string>
+                 <string>Select mode</string>
+                </property>
+                <property name="alignment">
+                 <set>Qt::AlignCenter</set>
                 </property>
                </widget>
               </item>
@@ -234,20 +253,26 @@
                 </property>
                </widget>
               </item>
-              <item row="1" column="0">
-               <widget class="QLabel" name="label_selec_mode">
-                <property name="maximumSize">
-                 <size>
-                  <width>16777215</width>
-                  <height>20</height>
-                 </size>
+              <item row="2" column="0" colspan="2">
+               <widget class="QScrollArea" name="scrollArea_2">
+                <property name="widgetResizable">
+                 <bool>true</bool>
                 </property>
-                <property name="text">
-                 <string>Select mode</string>
-                </property>
-                <property name="alignment">
-                 <set>Qt::AlignCenter</set>
-                </property>
+                <widget class="QWidget" name="scrollAreaWidgetContents_2">
+                 <property name="geometry">
+                  <rect>
+                   <x>0</x>
+                   <y>0</y>
+                   <width>495</width>
+                   <height>113</height>
+                  </rect>
+                 </property>
+                 <layout class="QVBoxLayout" name="verticalLayout_4">
+                  <item>
+                   <layout class="QFormLayout" name="formLayout_em_manual"/>
+                  </item>
+                 </layout>
+                </widget>
                </widget>
               </item>
               <item row="1" column="1">
@@ -270,28 +295,6 @@
                   <string>pixel</string>
                  </property>
                 </item>
-               </widget>
-              </item>
-              <item row="3" column="0" colspan="2">
-               <widget class="QScrollArea" name="scrollArea_2">
-                <property name="widgetResizable">
-                 <bool>true</bool>
-                </property>
-                <widget class="QWidget" name="scrollAreaWidgetContents_2">
-                 <property name="geometry">
-                  <rect>
-                   <x>0</x>
-                   <y>0</y>
-                   <width>503</width>
-                   <height>79</height>
-                  </rect>
-                 </property>
-                 <layout class="QVBoxLayout" name="verticalLayout_4">
-                  <item>
-                   <layout class="QFormLayout" name="formLayout_em_manual"/>
-                  </item>
-                 </layout>
-                </widget>
                </widget>
               </item>
              </layout>
@@ -331,19 +334,6 @@
                 </property>
                </widget>
               </item>
-              <item row="4" column="1">
-               <widget class="QPushButton" name="run_btn">
-                <property name="toolTip">
-                 <string>Lauch segmentation with parameters</string>
-                </property>
-                <property name="styleSheet">
-                 <string notr="true">background-color: rgba(186, 255, 112, 125);</string>
-                </property>
-                <property name="text">
-                 <string>End Members Extraction</string>
-                </property>
-               </widget>
-              </item>
               <item row="2" column="2">
                <widget class="QSpinBox" name="niter_box">
                 <property name="toolTip">
@@ -367,13 +357,6 @@
                 </property>
                 <property name="alignment">
                  <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-                </property>
-               </widget>
-              </item>
-              <item row="4" column="2">
-               <widget class="QPushButton" name="pushButton_save_EM_auto">
-                <property name="text">
-                 <string>Save automatic endmembers</string>
                 </property>
                </widget>
               </item>
@@ -432,7 +415,7 @@
                    <x>0</x>
                    <y>0</y>
                    <width>198</width>
-                   <height>143</height>
+                   <height>146</height>
                   </rect>
                  </property>
                  <layout class="QVBoxLayout" name="verticalLayout_6">
@@ -441,6 +424,19 @@
                   </item>
                  </layout>
                 </widget>
+               </widget>
+              </item>
+              <item row="4" column="1" colspan="2">
+               <widget class="QPushButton" name="run_btn">
+                <property name="toolTip">
+                 <string>Lauch segmentation with parameters</string>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true">background-color: rgba(186, 255, 112, 125);</string>
+                </property>
+                <property name="text">
+                 <string>End Members Extraction</string>
+                </property>
                </widget>
               </item>
              </layout>
