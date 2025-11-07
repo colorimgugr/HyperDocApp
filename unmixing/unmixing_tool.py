@@ -40,12 +40,8 @@ from identification.load_cube_dialog import Ui_Dialog
 #todo : from library -> gerer les wl_lib et wl (cube) pour unmixing
 #todo : unmixing -> select endmembers AND if merge
 #todo : viz spectra -> show/hide by clicking line or title (or ctrl+click)
-#todo : save manual or auto EM selection
-#todo : add ban selection widget
-#todo : add ROI
 #todo : add one pixel fusion
 #todo : select pixels of endmembers also with ctrl+clic left
-#todo : endmembers name assign like in GT
 # </editor-fold>
 
 class LoadCubeDialog(QDialog):
@@ -661,7 +657,7 @@ class UnmixWorker(QRunnable):
             self.signals.progress.emit(100)
             # Entregamos A en espacio (p, N) + E y los mapas por grupo
             self.signals.unmix_ready.emit(A, E, maps_by_group)
-            print('[UnmixWorker running] : end of job')
+            print(f'[UnmixWorker running] : end of job for {self.job.name}')
 
         except Exception as e:
             tb = traceback.format_exc()
@@ -2845,7 +2841,7 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
     # <editor-fold desc="Unmixing Job Queue">
     def _init_classification_table(self, table):
         from PyQt5.QtWidgets import QTableWidgetItem
-        headers = ["Name", "Algo", "EM source", "Params", "Status", "Progress", "Duration"]
+        headers = ["Name","Status", "Progress", "Params", "Algo", "EM source", "Duration"]
         table.clear()
         table.setColumnCount(len(headers))
         table.setHorizontalHeaderLabels(headers)
@@ -2859,7 +2855,7 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         # largeur indicative
         table.setColumnWidth(0, 140)
         table.setColumnWidth(1, 90)
-        table.setColumnWidth(2, 110)
+        table.setColumnWidth(2, 90)
         table.setColumnWidth(3, 320)
         table.setColumnWidth(4, 90)
         table.setColumnWidth(5, 120)
@@ -2982,18 +2978,18 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
 
         # Col 0: Name
         table.setItem(row, 0, QTableWidgetItem(name))
-        # Col 1: Algo
-        table.setItem(row, 1, QTableWidgetItem(P["algo"]))
-        # Col 2: EM source (+ merge)
-        em_txt = P["em_src"] + (" + merge" if P["em_merge"] else "")
-        table.setItem(row, 2, QTableWidgetItem(em_txt))
+        # Col 1: Status
+        table.setItem(row, 1, QTableWidgetItem("Queued"))
+        # Col 2: Progress (widget)
+        pb = self._make_progress_bar()
+        table.setCellWidget(row, 2, pb)
         # Col 3: Params
         table.setItem(row, 3, QTableWidgetItem(self._format_params_summary(P)))
-        # Col 4: Status
-        table.setItem(row, 4, QTableWidgetItem("Queued"))
-        # Col 5: Progress (widget)
-        pb = self._make_progress_bar()
-        table.setCellWidget(row, 5, pb)
+        # Col 3: Algo
+        table.setItem(row, 4, QTableWidgetItem(P["algo"]))
+        # Col 4: EM source (+ merge)
+        em_txt = P["em_src"] + (" + merge" if P["em_merge"] else "")
+        table.setItem(row, 5, QTableWidgetItem(em_txt))
         # Col 6: Duration
         table.setItem(row, 6, QTableWidgetItem("-"))
 
@@ -3026,7 +3022,7 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
     def _update_row_from_job(self, name: str):
         """Appelle ceci pendant l’exécution plus tard pour refléter status/progress/duration."""
         table = self.tableWidget_classificationList
-        NAME_COL, STATUS_COL, PROG_COL, DUR_COL = 0, 4, 5, 6
+        NAME_COL, STATUS_COL, PROG_COL, DUR_COL = 0, 1, 2, 6
         # Retrouve la row par le texte de la 1re colonne
         for row in range(table.rowCount()):
             item = table.item(row, NAME_COL)
@@ -3268,7 +3264,7 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         worker = UnmixWorker(job)
         worker.signals.unmix_ready.connect(self._on_unmix_ready)
         worker.signals.error.connect(self._on_error)
-        worker.signals.progress.connect(lambda v: self._on_job_progress(name, v))
+        worker.signals.progress.connect(lambda v: self._on_unmix_progress(name, v))
         self._current_worker = worker
         self.threadpool.start(worker)
 
@@ -3348,7 +3344,7 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
             self._current_worker.cancel()
 
     # -- Job progress UI -------------------------------------------------
-    def _on_job_progress(self, name: str, value: int):
+    def _on_unmix_progress(self, name: str, value: int):
         """MAJ douce de la barre de progression pour le job `name`."""
         job = self.jobs.get(name)
         if not job:
@@ -3400,8 +3396,7 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         Stocke dans le job, met à jour l’UI et affiche le résultat.
         """
 
-        print('[on_unmix_ready] : CALLED')
-
+        name = self.job_order[self._running_idx]
         job = self.jobs.get(name)
         if not job:
             print('[on_unmix_ready] : job not found')

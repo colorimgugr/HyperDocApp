@@ -67,7 +67,6 @@ def vectorize_cube(cube: np.ndarray) -> np.ndarray:
     Y = np.ascontiguousarray(cube.reshape(H * W, L).T, dtype=np.float64)
     return Y
 
-
 def abundances_to_maps(A: np.ndarray, H: int, W: int) -> np.ndarray:
     """Reshape abundances (p, N) to (p, H, W).
     """
@@ -77,7 +76,6 @@ def abundances_to_maps(A: np.ndarray, H: int, W: int) -> np.ndarray:
     if N != H * W:
         raise ValueError("H*W must equal N in A=(p,N)")
     return A.reshape(p, H, W)
-
 
 # ---------- Normalization utilities (cube & spectral matrix) -------------------
 
@@ -118,7 +116,6 @@ def normalize_cube(cube: np.ndarray, mode: str = 'L2', eps: float = 1e-12) -> np
     norms = np.maximum(norms, eps)
     Xn = X / norms
     return np.ascontiguousarray(Xn.reshape(H, W, L), dtype=np.float64)
-
 
 def normalize_spectra(Y: np.ndarray, mode: str = 'L2', eps: float = 1e-12) -> np.ndarray:
     """Normalize a spectral matrix Y (L, N) column-wise (per pixel).
@@ -211,7 +208,6 @@ def extract_endmembers_nfindr(data: np.ndarray, p: int, maxit: int = 3) -> np.nd
     E = np.asarray(E_list, dtype=np.float64).T
     return E,indices
 
-
 def unmix_ucls(E: np.ndarray, Y: np.ndarray) -> np.ndarray:
     """Unconstrained LS via pysptools (UCLS).
 
@@ -223,10 +219,11 @@ def unmix_ucls(E: np.ndarray, Y: np.ndarray) -> np.ndarray:
     if Y.shape[0] != L:
         raise ValueError("Y and E must share the same number of bands (rows)")
     X = Y.T.astype(np.float64, copy=False)
-    am = UCLS(E.T)  # pysptools expects (p, L) library
-    A = am.map(X).T  # to (p, N)
-    return np.ascontiguousarray(A, dtype=np.float64)
+    U = E.T.astype(np.float64, copy=False)  # (p, L)
 
+    A = UCLS(X,U).T
+
+    return np.ascontiguousarray(A, dtype=np.float64)
 
 def unmix_nnls(E: np.ndarray, Y: np.ndarray) -> np.ndarray:
     """Non-negative LS via pysptools (NNLS). Returns (p, N)."""
@@ -236,10 +233,11 @@ def unmix_nnls(E: np.ndarray, Y: np.ndarray) -> np.ndarray:
     if Y.shape[0] != L:
         raise ValueError("Y and E must share the same number of bands (rows)")
     X = Y.T.astype(np.float64, copy=False)
-    am = NNLS(E.T)
-    A = am.map(X).T
-    return np.ascontiguousarray(A, dtype=np.float64)
+    U = E.T.astype(np.float64, copy=False)  # (p, L)
 
+    A = NNLS(X, U).T
+
+    return np.ascontiguousarray(A, dtype=np.float64)
 
 def unmix_fcls(E: np.ndarray, Y: np.ndarray) -> np.ndarray:
     """Fully Constrained LS via pysptools (ANC+ASC). Returns (p, N)."""
@@ -249,10 +247,11 @@ def unmix_fcls(E: np.ndarray, Y: np.ndarray) -> np.ndarray:
     if Y.shape[0] != L:
         raise ValueError("Y and E must share the same number of bands (rows)")
     X = Y.T.astype(np.float64, copy=False)
-    am = FCLS(E.T)
-    A = am.map(X).T
-    return np.ascontiguousarray(A, dtype=np.float64)
+    U = E.T.astype(np.float64, copy=False)  # (p, L)
 
+    A = FCLS(X, U).T
+
+    return np.ascontiguousarray(A, dtype=np.float64)
 
 # ---------- SUnSAL (compact ADMM) ---------------------------------------------
 @dataclass
@@ -276,7 +275,6 @@ def _proj_simplex(v: np.ndarray) -> np.ndarray:
     rho = np.nonzero(u * (np.arange(1, v.size + 1)) > (cssv - 1))[0][-1]
     theta = (cssv[rho] - 1.0) / (rho + 1.0)
     return np.maximum(v - theta, 0.0)
-
 
 def _sunsal_admm_single(E: np.ndarray, y: np.ndarray, prm: SUnSALParams) -> np.ndarray:
     """Solve for a single pixel: min_a 0.5||Ea - y||^2 + lam||a||_1  s.t. a>=0, optional sum(a)=1.
@@ -321,7 +319,6 @@ def _sunsal_admm_single(E: np.ndarray, y: np.ndarray, prm: SUnSALParams) -> np.n
 
     return a
 
-
 def unmix_sunsal(
     E: np.ndarray,
     Y: np.ndarray,
@@ -363,7 +360,6 @@ def unmix_sunsal(
     for i in range(N):
         A[:, i] = _sunsal_admm_single(E, Y[:, i], prm)
     return A
-
 
 # ---------- Helpers: sanity checks, preprocessing -----------------------------
 
