@@ -1266,7 +1266,6 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         self.spec_ax.set_title('Spectra')
         self.spec_ax.grid()
 
-
         self.span_selector = SpanSelector(
             ax=self.spec_ax,  # votre axe “Spectrum”
             onselect=self._on_bandselect,  # callback

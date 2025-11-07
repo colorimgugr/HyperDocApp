@@ -68,7 +68,7 @@
          <enum>QTabWidget::North</enum>
         </property>
         <property name="currentIndex">
-         <number>1</number>
+         <number>0</number>
         </property>
         <widget class="QWidget" name="tab_endmembers">
          <attribute name="title">
@@ -186,8 +186,8 @@
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>495</width>
-                   <height>139</height>
+                   <width>585</width>
+                   <height>144</height>
                   </rect>
                  </property>
                  <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -614,28 +614,6 @@
               </property>
              </widget>
             </item>
-            <item row="6" column="5">
-             <widget class="QPushButton" name="pushButton_launch_unmixing">
-              <property name="minimumSize">
-               <size>
-                <width>100</width>
-                <height>0</height>
-               </size>
-              </property>
-              <property name="maximumSize">
-               <size>
-                <width>500</width>
-                <height>16777215</height>
-               </size>
-              </property>
-              <property name="styleSheet">
-               <string notr="true">background-color: rgba(186, 255, 112, 125);</string>
-              </property>
-              <property name="text">
-               <string>Add process</string>
-              </property>
-             </widget>
-            </item>
             <item row="4" column="5">
              <widget class="QCheckBox" name="checkBox_unmix_ANC">
               <property name="text">
@@ -697,7 +675,7 @@
                <string>Endmembers :</string>
               </property>
               <property name="alignment">
-               <set>Qt::AlignCenter</set>
+               <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
               </property>
              </widget>
             </item>
@@ -710,10 +688,10 @@
                </size>
               </property>
               <property name="text">
-               <string>Normalisation</string>
+               <string>Normalisation :</string>
               </property>
               <property name="alignment">
-               <set>Qt::AlignCenter</set>
+               <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
               </property>
              </widget>
             </item>
@@ -743,6 +721,56 @@
                 <string>None</string>
                </property>
               </item>
+             </widget>
+            </item>
+            <item row="2" column="4">
+             <widget class="QComboBox" name="comboBox_preprocess">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="toolTip">
+               <string>Choose distance for supervised classification</string>
+              </property>
+              <item>
+               <property name="text">
+                <string>RAW Spectrum </string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>First derivative</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Second derivative</string>
+               </property>
+              </item>
+             </widget>
+            </item>
+            <item row="6" column="4" colspan="2">
+             <widget class="QPushButton" name="pushButton_add_queue_unmixing">
+              <property name="minimumSize">
+               <size>
+                <width>100</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>500</width>
+                <height>16777215</height>
+               </size>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">background-color: rgba(186, 255, 112, 125);</string>
+              </property>
+              <property name="text">
+               <string>Add to queue</string>
+              </property>
              </widget>
             </item>
            </layout>

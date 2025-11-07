@@ -4,8 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="[unmixing] : &#10;- endmmembers editing name for saving abd color for temporal visualization.&#10;- saving automatic abd manual endmmbers to csv. &#10;- Loading dispersive endmmbers like with multiple spectrum">
+    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="[unmixing] : &#10;- adding ROI selection by rectanlge and state modification when selecting pixels">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ground_truth/ground_truth_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/ground_truth/ground_truth_tool.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/unmixing/unmixing_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/unmixing/unmixing_tool.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/unmixing/unmixing_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/unmixing/unmixing_window.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/unmixing/unmixing_window.ui" beforeDir="false" afterPath="$PROJECT_DIR$/unmixing/unmixing_window.ui" afterDir="false" />
@@ -137,14 +138,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1744020944801</updated>
-    </task>
-    <task id="LOCAL-00065" summary="[Register]ui + [Main] save on exit + [GT] keep GT_label_map in metadata y png with palette">
-      <option name="closed" value="true" />
-      <created>1752580162251</created>
-      <option name="number" value="00065" />
-      <option name="presentableId" value="LOCAL-00065" />
-      <option name="project" value="LOCAL" />
-      <updated>1752580162252</updated>
     </task>
     <task id="LOCAL-00066" summary="[Hypercube] matlab files with browser OK for v7.3 and v old without hypercube.&#10;Load and save envie.">
       <option name="closed" value="true" />
@@ -530,7 +523,15 @@
       <option name="project" value="LOCAL" />
       <updated>1762265390626</updated>
     </task>
-    <option name="localTasksCounter" value="114" />
+    <task id="LOCAL-00114" summary="[unmixing] : &#10;- adding ROI selection by rectanlge and state modification when selecting pixels">
+      <option name="closed" value="true" />
+      <created>1762349697300</created>
+      <option name="number" value="00114" />
+      <option name="presentableId" value="LOCAL-00114" />
+      <option name="project" value="LOCAL" />
+      <updated>1762349697300</updated>
+    </task>
+    <option name="localTasksCounter" value="115" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -582,7 +583,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="[IDENTIFICATION] : Substrate double implementation (fast and slow) added and propagated to save file." />
     <MESSAGE value="[IDENTIFICATION] : ROI uptaded for jobs and blinking overlay fixed" />
     <MESSAGE value="[IDENTIFICATION] : ROI selection, add from disk, traint/predict with reduces channels cube OK FOR INK AND SUBSTRATE" />
     <MESSAGE value="[IDENTIFICATION] : Loading Dialog prefilled with current value (if opened with dialog)" />
@@ -607,6 +607,7 @@
     <MESSAGE value="[unmixing] : &#10;- implementando forms to show endmembers params" />
     <MESSAGE value="[unmixing] : &#10;- scrolable labels for endmembers&#10;- dynamic cross to visualize automatic endmembers&#10;- get Raw endmembers spectrum and normalisation to save of before unmixing&#10;- transforms extended to selection_mask&#10;- radiobuttons and stecked tabs for result_viz" />
     <MESSAGE value="[unmixing] : &#10;- endmmembers editing name for saving abd color for temporal visualization.&#10;- saving automatic abd manual endmmbers to csv. &#10;- Loading dispersive endmmbers like with multiple spectrum" />
-    <option name="LAST_COMMIT_MESSAGE" value="[unmixing] : &#10;- endmmembers editing name for saving abd color for temporal visualization.&#10;- saving automatic abd manual endmmbers to csv. &#10;- Loading dispersive endmmbers like with multiple spectrum" />
+    <MESSAGE value="[unmixing] : &#10;- adding ROI selection by rectanlge and state modification when selecting pixels" />
+    <option name="LAST_COMMIT_MESSAGE" value="[unmixing] : &#10;- adding ROI selection by rectanlge and state modification when selecting pixels" />
   </component>
 </project>

@@ -11,7 +11,7 @@ import numpy as np
 from PyQt5.QtWidgets import (QApplication, QSizePolicy, QSplitter,QHeaderView,QProgressBar,QColorDialog,
                             QDialog, QVBoxLayout, QHBoxLayout, QFormLayout, QLabel, QLineEdit, QPushButton,
                              QDialogButtonBox, QCheckBox, QScrollArea, QWidget, QFileDialog, QMessageBox,
-                             QRadioButton,QInputDialog,QTableWidget, QTableWidgetItem,QHeaderView,QGraphicsView
+                             QRadioButton,QInputDialog,QTableWidget, QTableWidgetItem,QHeaderView,QGraphicsView,
                              )
 
 from PyQt5.QtGui import QPixmap, QImage,QGuiApplication,QStandardItemModel, QStandardItem,QColor
@@ -36,7 +36,7 @@ from interface.some_widget_for_interface import ZoomableGraphicsView
 from identification.load_cube_dialog import Ui_Dialog
 
 # <editor-fold desc="To do">
-#todo : BUGG with class name assign
+#todo : PRB OF NAME IN SIGNALS FUNCTION OF UMIXING
 #todo : from library -> gerer les wl_lib et wl (cube) pour unmixing
 #todo : unmixing -> select endmembers AND if merge
 #todo : viz spectra -> show/hide by clicking line or title (or ctrl+click)
@@ -469,83 +469,203 @@ class UnmixJob:
     name : str # unique key shown in table
     model: str  # 'UCLS'|'NNLS'|'FCLS'|'SUnSAL'
     normalization: str  # 'None'|'L2'|'L1'
+
     max_iter: int
     tol: float
+
     # SUnSAL specific
     lam: float = 1e-3
     rho: float = 1.0
     anc: bool = True
     asc: bool = False
+
     # inputs
+    cube: Optional[np.ndarray] = None        # (H, W, L)
     E = None  # (L,p)
-    rect : Optional[np.ndarray] = None  # (H,W) boolean (optional)
+    roi_mask : Optional[np.ndarray] = None  # (H,W) boolean (optional)
+    labels: Optional[np.ndarray] = None      # (p,) opcional (grupos)
+    em_src: str = "Auto"
+
+    preprocess = None
+    merge_EM = False
+    wl_job= None # wavelength kept for job
+    wl_cube = None # initial wl of cube
+    wl_em = None # initial wl of EM
+
+    # Job progress
     progress: int = 0         # 0..100
-    _t0: Optional[float] = field(default=None, repr=False)  # internal start time
+    status: str = "Queued"                   # 'Queued'|'Running'|'Done'|'Failed'|'Cancelled'
     duration_s: Optional[float] = None    # whole classification duration
+    _t0=None
+    error_msg: Optional[str] = None
+    reshape_order: str = 'C'  # 'C' (row-major) o 'F' (column-major), igual que en identification_tool
+    chunk_size: int = 0  # 0 = auto; >0 fuerza tamaño de bloque en nº de píxeles
+
+    #tOutputs
     abundance_maps: Optional[np.ndarray] = None     # raw classification map
     clean_map: Optional[np.ndarray] = None  # cleaned classification map
     clean_param = None  # clean parameters
 
+    #to compare with others
+    params: dict = field(default_factory=dict)
+    _frozen_params: tuple = field(default=(), repr=False, compare=False)
+
 class UnmixWorker(QRunnable):
-    def __init__(self, job: UnmixJob):
+    """
+    UnmixWorker con chunking por bloques contiguos de píxeles aplanados tras un reshape.
+    Respeta el orden de aplanado indicado en job.reshape_order ('C' o 'F').
+    """
+
+    def __init__(self, job):
         super().__init__()
         self.job = job
         self.signals = UnmixingSignals()
+        self._cancelled = False
+
+    # ---- API de cancelación desde la UI ----
+    def cancel(self):
+        self._cancelled = True
+
+    def _check_cancel(self):
+        if self._cancelled:
+            raise RuntimeError("Cancelled")
+
+    # ---- utilidades internas ----
+    def _auto_chunk_size(self, p: int, dtype) -> int:
+        """
+        Elige tamaño de bloque (nº de píxeles) para usar ~64 MB por tile.
+        Aproxima coste ~ (L + 3*p) * C * bytes. Redondea a múltiplos de 256.
+        """
+        bytes_per = np.dtype(dtype).itemsize
+        L = int(self.job.E.shape[0])
+        budget = 64 * 1024 * 1024  # 64 MB
+        denom = max(1, (L + 3 * p) * bytes_per)
+        C = max(1, int(budget // denom))
+        return max(256, (C // 256) * 256)
+
+    def _validate_inputs(self):
+        if self.job.cube is None or not isinstance(self.job.cube, np.ndarray) or self.job.cube.ndim != 3:
+            raise ValueError("cube must be a (H, W, L) ndarray.")
+        if self.job.E is None:
+            raise ValueError("E (endmembers) is required.")
+        E = np.asarray(self.job.E)
+        if E.ndim == 1:
+            E = E.reshape(-1, 1)
+        elif E.ndim != 2:
+            raise ValueError(f"E invalid ndim={E.ndim}; expected (L, p).")
+        H, W, L = self.job.cube.shape
+        if E.shape[0] != L:
+            raise ValueError(f"E and cube mismatch on L: E({E.shape[0]}) != cube({L}).")
+        self.job.E = E  # normalizado a 2D
+        return H, W, L
+
+    def _vectorize_like_identification(self, data: np.ndarray, order: str) -> np.ndarray:
+        """
+        Convierte (H, W, L) -> (L, N) siguiendo el mismo 'order' que en identification_tool.
+        """
+        H, W, L = data.shape
+        return np.reshape(data, (H * W, L), order=order).T  # (L, N)
 
     @pyqtSlot()
     def run(self):
+        t0 = time.time()
         try:
-            H, W, L = self.job.cube.shape
-            cube = normalize_cube(self.job.cube, mode=self.job.normalization)
-            Y = vectorize_cube(cube)  # (L,N)
+            # 0) Validación
+            H, W, L = self._validate_inputs()
+            self.signals.progress.emit(5)
+            self._check_cancel()
 
-            # Optionally restrict to ROI
-            if self.job.roi_mask is not None:
-                mask = self.job.roi_mask.astype(bool).ravel()
-                Y_work = Y[:, mask]
+            # 1) Normalización
+            cube = normalize_cube(self.job.cube, mode=self.job.normalization)
+            self.signals.progress.emit(15)
+            self._check_cancel()
+
+            # 2) Vectorizado al estilo identification_tool (controlando el 'order')
+            order = getattr(self.job, "reshape_order", "C")
+            if order not in ("C", "F"):
+                order = "C"
+            Y = self._vectorize_like_identification(cube, order=order)  # (L, N)
+            N = Y.shape[1]
+            self.signals.progress.emit(25)
+            self._check_cancel()
+
+            # 3) ROI -> índices en el espacio aplanado (alineados con el mismo 'order')
+            if getattr(self.job, "roi_mask", None) is not None:
+                mask = self.job.roi_mask.astype(bool).ravel(order=order)
+                idx_work = np.flatnonzero(mask)  # píxeles seleccionados
             else:
                 mask = None
-                Y_work = Y
+                idx_work = np.arange(N, dtype=np.int64)
+            Nw = int(idx_work.size)
+            self.signals.progress.emit(35)
+            self._check_cancel()
 
-            # Call selected solver
-            model = self.job.model.upper()
-            if model == 'UCLS':
-                A_work = unmix_ucls(self.job.E, Y_work)
-            elif model == 'NNLS':
-                A_work = unmix_nnls(self.job.E, Y_work)
-            elif model == 'FCLS':
-                A_work = unmix_fcls(self.job.E, Y_work)
-            elif model == 'SUNSAL':
-                A_work = unmix_sunsal(
-                    self.job.E, Y_work,
-                    lam=self.job.lam,
-                    positivity=self.job.anc or self.job.asc,
-                    sum_to_one=self.job.asc,
-                    rho=self.job.rho,
-                    max_iter=self.job.max_iter,
-                    tol=self.job.tol,
-                )
-            else:
-                raise ValueError(f"Unknown model: {self.job.model}")
+            # 4) Preparar solver + chunking
+            E = self.job.E  # (L, p)
+            p = int(E.shape[1])
+            # Decide tamaño de bloque
+            user_chunk = int(getattr(self.job, "chunk_size", 0))
+            chunk = user_chunk if user_chunk > 0 else self._auto_chunk_size(p, dtype=Y.dtype)
 
-            # Re-inject into full image if ROI was used
-            p = self.job.E.shape[1]
-            A = np.zeros((p, H * W), dtype=A_work.dtype)
-            if mask is None:
-                A = A_work
-            else:
-                A[:, mask] = A_work
+            # Destino global en espacio (p, N)
+            # float32 para equilibrio precisión/memoria
+            A = np.zeros((p, N), dtype=np.float32)
 
-            # Build maps by group (if labels provided)
+            # Progreso granular 35 -> 85 durante el solver
+            base_prog, end_prog = 35.0, 85.0
+            processed = 0
+
+            m = (self.job.model or "").upper()
+            for s in range(0, Nw, chunk):
+                self._check_cancel()
+                e = min(Nw, s + chunk)
+                cols = idx_work[s:e]          # índices contiguos en el espacio aplanado
+                Y_sub = Y[:, cols]            # (L, C)
+
+                # Ejecuta solver para el bloque
+                if m == 'UCLS':
+                    A_sub = unmix_ucls(E, Y_sub)
+                elif m == 'NNLS':
+                    A_sub = unmix_nnls(E, Y_sub)
+                elif m == 'FCLS':
+                    A_sub = unmix_fcls(E, Y_sub)
+                elif m == 'SUNSAL':
+                    A_sub = unmix_sunsal(
+                        E, Y_sub,
+                        lam=self.job.lam,
+                        positivity=self.job.anc or self.job.asc,
+                        sum_to_one=self.job.asc,
+                        rho=self.job.rho,
+                        max_iter=self.job.max_iter,
+                        tol=self.job.tol,
+                    )
+                else:
+                    raise ValueError(f"Unknown model: {self.job.model}")
+
+                # Reinyecta directamente en los índices globales
+                A[:, cols] = A_sub.astype(np.float32, copy=False)
+
+                # progreso por bloque
+                processed += (e - s)
+                frac = processed / max(1, Nw)
+                prog = int(base_prog + (end_prog - base_prog) * frac)
+                self.signals.progress.emit(prog)
+
+            # 5) Post-procesado opcional: mapas por grupo
             maps_by_group = {}
-            if self.job.labels is not None:
+            if getattr(self.job, "labels", None) is not None:
+                # Si tu abundance_maps_by_group soporta 'order', pásalo; si no, deja tal cual.
                 maps_by_group = abundance_maps_by_group(A, self.job.labels, H, W)
 
-            self.signals.unmix_ready.emit(A, self.job.E, maps_by_group)
+            # 6) Fin
+            self.signals.progress.emit(100)
+            # Entregamos A en espacio (p, N) + E y los mapas por grupo
+            self.signals.unmix_ready.emit(A, E, maps_by_group)
+            print('[UnmixWorker running] : end of job')
+
         except Exception as e:
             tb = traceback.format_exc()
             self.signals.error.emit(f"Unmixing failed: {e}\n{tb}")
-
 # ------------------------------- Main Widget ----------------------------------
 class UnmixingTool(QWidget,Ui_GroundTruthWidget):
 
@@ -681,6 +801,8 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         self.comboBox_endmembers_spectra.currentIndexChanged.connect(self.on_changes_EM_spectra_viz)
         self.checkBox_showLegend.toggled.connect(self.update_spectra)
         self.checkBox_showGraph.toggled.connect(self.toggle_spectra)
+        self.pushButton_band_selection.toggled.connect(self.band_selection)
+
 
         # Unmix window
         self.radioButton_view_em.toggled.connect(self.toggle_em_viz_stacked)
@@ -712,7 +834,10 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
 
         # Job Queue
         self._init_classification_table(self.tableWidget_classificationList)
-        self.pushButton_launch_unmixing.clicked.connect(self._on_add_unmix_job)
+        self.pushButton_add_queue_unmixing.clicked.connect(self._on_add_unmix_job)
+        self.pushButton_clas_start.clicked.connect(self._on_start_all)
+        self.pushButton_clas_stop.clicked.connect(self._on_cancel_queue)
+        self.pushButton_clas_start_selected.clicked.connect(self._on_start_selected_or_last)
         self.pushButton_clas_remove.clicked.connect(self.remove_selected_job)
         self.pushButton_clas_remove_all.clicked.connect(self.remove_all_jobs)
         self.pushButton_clas_up.clicked.connect(lambda: self._move_job(-1))
@@ -1258,7 +1383,7 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         self.spec_canvas = FigureCanvas(self.spec_fig)
         self.spec_ax = self.spec_fig.add_subplot(111)
         self.spec_ax.set_facecolor((0.7,0.7,0.7,1))
-        self.spec_ax.set_title('Spectra')
+        self.spec_ax.set_title('Endmembers Spectra')
         self.spec_ax.grid()
 
 
@@ -1368,6 +1493,93 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
             self.spec_ax.add_patch(patch)
 
             # 4) On rafraîchit le canvas
+
+        self.spec_canvas.draw_idle()
+
+    def band_selection(self,checked):
+        if checked:
+
+            try:
+                msg = QMessageBox(self)
+                msg.setWindowTitle("Bands selection")
+                msg.setText("Add or suppress bands ")
+                add_button = msg.addButton("Add", QMessageBox.AcceptRole)
+                remove_button = msg.addButton("Suppress", QMessageBox.AcceptRole)
+                reset_button=msg.addButton("Clear all bands", QMessageBox.AcceptRole)
+                cancel_button = msg.addButton(QMessageBox.Cancel)
+                msg.setDefaultButton(add_button)
+                msg.exec_()
+
+                if msg.clickedButton() == add_button:
+                    self._band_action = 'add'
+                elif msg.clickedButton() == remove_button:
+                    self._band_action = 'del'
+                elif msg.clickedButton() == reset_button:
+                    print('reset')
+                    self._band_action = None
+                    self.selected_bands = []
+
+                    for patch in self.selected_span_patch:  # reset patch
+                        patch.remove()
+                        self.selected_span_patch = []
+
+                    self.pushButton_band_selection.setChecked(False)
+                    self.spec_canvas.draw_idle()
+                    return
+
+                else:
+                    self.span_selector.set_active(False)
+                    self.pushButton_band_selection.setChecked(False)
+                    return
+
+                self.span_selector.set_active(True)
+                self.pushButton_band_selection.setText('STOP SELECTION')
+            except:
+                QMessageBox.warning(
+                    self, "Warning",
+                    "No band selection choice"
+                )
+                self.pushButton_band_selection.setChecked(False)
+
+                return
+
+        else:
+            self.span_selector.set_active(False)
+            self.pushButton_band_selection.setText('Band selection')
+
+    def _rebuild_band_patches_from_selected(self):
+        """A partir de self.selected_bands (lista de índices), compacta en intervalos contiguos
+           y vuelve a crear parches (axvspan) no solapados."""
+        # 1) limpiar parches previos
+        for p in getattr(self, 'selected_span_patch', []):
+            try:
+                p.remove()
+            except:
+                pass
+        self.selected_span_patch = []
+
+        if not self.selected_bands:
+            self.spec_canvas.draw_idle()
+            return
+
+        # 2) compactar índices consecutivos en bandas
+        sb = sorted(set(self.selected_bands))
+        bands = []
+        start = prev = sb[0]
+        for idx in sb[1:]:
+            if idx == prev + 1:
+                prev = idx
+            else:
+                bands.append((start, prev))
+                start = prev = idx
+        bands.append((start, prev))  # último intervalo
+
+        # 3) recrear parches no solapados
+        for i0, i1 in bands:
+            lam0, lam1 = float(self.wl[i0]), float(self.wl[i1])
+            patch = self.spec_ax.axvspan(lam0, lam1, alpha=0.2, color='tab:blue')
+            self.selected_span_patch.append(patch)
+
         self.spec_canvas.draw_idle()
 
     def on_changes_EM_spectra_viz(self):
@@ -2264,78 +2476,30 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         return False
 
     def _on_bandselect(self, lambda_min, lambda_max):
-        """
-        Callback  SpanSelector
-        """
-
+        """Callback del SpanSelector con merge automático de spans."""
         if self._band_action is None:
             return
 
-        # 1) S’assurer que lambda_min < lambda_max
         if lambda_min > lambda_max:
             lambda_min, lambda_max = lambda_max, lambda_min
 
-        # 2) Conversion en indices d’onde
         idx_min = int(np.argmin(np.abs(self.wl - lambda_min)))
         idx_max = int(np.argmin(np.abs(self.wl - lambda_max)))
 
-        # 3) update self.selected_bands
         if self._band_action == 'add':
-            for idx in range(idx_min,idx_max+1):
+            for idx in range(idx_min, idx_max + 1):
                 if idx not in self.selected_bands:
                     self.selected_bands.append(idx)
 
-            print(f"Selected band : [{idx_min} → {idx_max}] "
-                  f"({self.wl[idx_min]:.1f} → {self.wl[idx_max]:.1f} nm)")
-
-            patch=self.spec_ax.axvspan(
-                lambda_min, lambda_max,
-                alpha=0.2, color='tab:blue'
-            )
-
-            self.selected_span_patch.append(patch)
-
         elif self._band_action == 'del':
-
-            for idx in range(idx_min,idx_max+1):
+            # quitar los índices seleccionados de ese rango
+            for idx in range(idx_min, idx_max + 1):
                 if idx in self.selected_bands:
                     self.selected_bands.remove(idx)
 
-            self.selected_bands=sorted(self.selected_bands)
-
-            for patch in self.selected_span_patch:  # reset all patch
-                patch.remove()
-                self.selected_span_patch = []
-
-            bands={}
-            i_band=0
-            for i in range(len(self.selected_bands)-1): # get bands from index
-                if (self.selected_bands[i+1] -self.selected_bands[i]) ==1:
-                    try:
-                        bands[i_band].append(self.selected_bands[i])
-                    except:
-                        bands[i_band]=[self.selected_bands[i]]
-                else:
-                    try:
-                        bands[i_band].append(self.selected_bands[i])
-                    except:
-                        bands[i_band]=[self.selected_bands[i]]
-
-                    i_band+=1
-
-
-            # recreate patches
-            for i_band in bands:
-                lambda_min, lambda_max=self.wl[bands[i_band][0]],self.wl[bands[i_band][-1]]
-
-                patch = self.spec_ax.axvspan(
-                    lambda_min, lambda_max,
-                    alpha=0.2, color='tab:blue'
-                )
-
-                self.selected_span_patch.append(patch)
-
-        self.spec_canvas.draw_idle()
+        # Ordenar y reconstruir SIEMPRE: así evitamos solapes y hacemos el "merge".
+        self.selected_bands = sorted(set(self.selected_bands))
+        self._rebuild_band_patches_from_selected()
 
     def start_pixel_selection(self):
 
@@ -2710,6 +2874,7 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
 
     def _ensure_unique_name(self, base: str) -> str:
         name = base
+
         i = 1
         while name in self.jobs:
             i += 1
@@ -2761,6 +2926,28 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
             return
 
         P = self._collect_unmix_params()
+
+        # --- Canonicalisation des paramètres pour comparaison robuste
+        def _freeze_params(d):
+            def _norm_val(v):
+                if isinstance(v, float):
+                    return round(v, 10)  # évite les micro-différences
+                return v
+
+            return tuple(sorted((k, _norm_val(v)) for k, v in d.items()))
+
+        frozen = _freeze_params(P)
+
+        # --- Vérification de doublon (mêmes params = même job)
+        for exist in self.jobs.values():
+            if getattr(exist, "_frozen_params", None) == frozen:
+                QMessageBox.information(
+                    self,
+                    "Duplicate job",
+                    f"An identical job ('{exist.name}') already exists.\nNo new job was added."
+                )
+                return
+
         base = f"{P['algo']} ({P['em_src']})"
         name = self._ensure_unique_name(base)
 
@@ -2775,6 +2962,8 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
             rho=P["rho"],
             anc=P["anc"],
             asc=P["asc"],
+            params=P,
+            _frozen_params=frozen,
         )
         # Tu pourras plus tard remplir job.E et/ou un tag sur la source EM au moment du run.
 
@@ -2783,7 +2972,7 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
 
         # Insère la ligne dans la table
         self._insert_job_row(name, P)
-        # (si tu préfères recalculer tout : self._refresh_table())
+        self.tabWidget.setCurrentIndex(2)
 
     def _insert_job_row(self, name: str, P: dict):
         from PyQt5.QtWidgets import QTableWidgetItem
@@ -2896,6 +3085,393 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
 
     # </editor-fold>
 
+    # <editor-fold desc="Unmixing on work">
+    def _on_start_all(self):
+        if not self.job_order: return
+        self._stop_all = False
+        self._run_next_in_queue()
+
+    def _on_start_selected_or_last(self):
+        """
+        Lanza el job seleccionado en la tabla, o si no hay selección,
+        el último añadido. Prepara E/labels desde la fuente elegida
+        y arranca el worker en el threadpool.
+        """
+        # 1) Resolver qué job lanzar (seleccionado o último)
+        table = self.tableWidget_classificationList
+        row = table.currentRow()
+        if row < 0:
+            # sin selección -> usa la última fila si existe
+            if table.rowCount() == 0:
+                from PyQt5.QtWidgets import QMessageBox
+                QMessageBox.information(self, "Unmixing", "No hay jobs en la cola.")
+                return
+            row = table.rowCount() - 1
+            table.selectRow(row)
+
+        name_item = table.item(row, 0)
+        if name_item is None:
+            return
+        name = name_item.text()
+        job = self.jobs.get(name)
+        if job is None:
+            return
+
+        # Evitar relanzar si está corriendo
+        if getattr(job, "status", "") == "Running":
+            return
+
+        # 2) Preparar datos del job: cube y endmembers
+        if self.data is None or self.wl is None:
+            from PyQt5.QtWidgets import QMessageBox
+            QMessageBox.warning(self, "Unmixing", "Carga un cubo primero.")
+            return
+        job.cube = self.data  # (H,W,L)  -> requerido por UnmixWorker.run() :contentReference[oaicite:0]{index=0}
+
+        # Fuente EM desde la UI ("From library" | "Manual" | "Auto") :contentReference[oaicite:1]{index=1}
+        src_txt = self.comboBox_endmembers_use_for_unmixing.currentText()
+        if "library" in src_txt.lower():
+            src = "lib"
+        elif "manual" in src_txt.lower():
+            src = "manual"
+        else:
+            src = "auto"
+
+        # Activar esa fuente para tener self.E coherente y con formas estandarizadas
+        # (_activate_endmembers rellena y normaliza self.E por fuente, y recalcula medias/std) :contentReference[oaicite:2]{index=2}
+        try:
+            self._activate_endmembers(src)  # asegura self.E = dict{clase: (L,n_reg) o (L,1)}
+        except Exception:
+            pass
+
+        # Merge por grupos (media de regiones por clase) según checkbox de la UI :contentReference[oaicite:3]{index=3}
+        merge_groups = self.checkBox_unmix_merge_EM_groups.isChecked()
+
+        # 2.1) Construir matriz E (L,p) y vector de labels (p,) para agrupar mapas
+        #      Usamos una función local que homogeniza (L,n) para cada clase
+        def _to_LxN(arr):
+            A = np.asarray(arr, dtype=float)
+            if A.ndim == 1:
+                A = A.reshape(-1, 1)
+            if A.shape[0] < A.shape[1]:
+                A = A.T
+            return A  # (L,n)
+
+        E_cols = []
+        labels = []
+
+        # Mantener orden estable: claves numéricas primero ordenadas, luego texto alfabético
+        def _sort_key(k):
+            import numpy as _np
+            return (0, int(k)) if isinstance(k, (int, _np.integer)) else (1, str(k))
+
+        for cls in sorted(self.E.keys(), key=_sort_key):
+            A = _to_LxN(self.E[cls])  # (L,n_cls)
+            if merge_groups:
+                mu = A.mean(axis=1, keepdims=True)  # (L,1)
+                E_cols.append(mu)
+                labels.append(int(cls) if isinstance(cls, (int, np.integer)) else len(labels))
+            else:
+                E_cols.append(A)  # (L,n_cls)
+                labels.extend([int(cls) if isinstance(cls, (int, np.integer)) else len(labels)] * A.shape[1])
+
+        if not E_cols:
+            from PyQt5.QtWidgets import QMessageBox
+            QMessageBox.warning(self, "Unmixing", "No hay endmembers en la fuente seleccionada.")
+            return
+
+        E_mat = np.concatenate(E_cols, axis=1)  # (L,p)
+        job.E = E_mat
+        job.labels = np.asarray(labels, dtype=int)
+        job.roi_mask = None  # ROI opcional; aún no gestionado
+
+        # Guardar trazas útiles en el job (por si luego necesitas mostrarlas)
+        job.merge_EM = merge_groups
+        job.wl_job = self.wl
+        job.wl_cube = self.wl
+        job.wl_em = {"manual": self.wl,
+                     "auto": getattr(self, "wl_auto", self.wl),
+                     "lib": getattr(self, "wl_lib", self.wl)}.get(src, self.wl)
+
+        # 3) Actualizar estado en la tabla y lanzar el worker
+        job.status = "Running"
+        job.progress = 0
+        job._t0 = time.time()
+        self._update_row_from_job(
+            name)  # refresca status/progreso/duración en la fila :contentReference[oaicite:4]{index=4}
+
+        worker = UnmixWorker(job)
+        # Señales del worker -> handlers de UI
+        worker.signals.progress.connect(lambda v, n=name: self._on_unmix_progress(n, v))
+        worker.signals.error.connect(lambda msg, n=name: self._on_unmix_error(n, msg))
+        worker.signals.unmix_ready.connect(lambda A, E, maps, n=name: self._on_unmix_ready(n, A, E, maps))
+
+        # Arrancar en el pool
+        self.threadpool.start(worker)
+
+        # Marcar índices de ejecución (útil si luego encadenas cola)
+        try:
+            self._running_idx = self.job_order.index(name)
+        except ValueError:
+            self._running_idx = -1
+
+    def _run_next_in_queue(self):
+        """
+        Toma el siguiente job en cola, le inyecta los datos (cube, E, labels, ROI)
+        según la fuente de EM seleccionada y lo lanza en el threadpool.
+        """
+        if not self.job_order:
+            return
+
+        # El siguiente job pendiente
+        name = None
+        for n in self.job_order:
+            st = getattr(self.jobs.get(n, None), "status", "Queued")
+            if st in (None, "", "Queued"):
+                name = n
+                break
+        if name is None:
+            return  # nada por ejecutar
+
+        job = self.jobs[name]
+        job.status = "Running"
+        job._t0 = time.time()
+        self._update_row_from_job(name)  # solo UI
+
+        # 1) Fuente de endmembers desde UI
+        src_txt = self.comboBox_endmembers_use_for_unmixing.currentText().lower()  # "from library" | "manual" | "auto"
+        if "library" in src_txt:
+            src = "lib"
+        elif "manual" in src_txt:
+            src = "manual"
+        else:
+            src = "auto"  # por descarte
+        merge_groups = self.checkBox_unmix_merge_EM_groups.isChecked()  # merge on/off  :contentReference[oaicite:2]{index=2}
+
+        # Asegura que self.E se corresponda con la fuente elegida
+        self._activate_endmembers(
+            src)  # construye self.E (dict) desde E_manual/E_auto/E_lib  :contentReference[oaicite:3]{index=3}
+
+        # 2) Preparar E (L×p) y labels (p,) a partir de self.E
+        E_mat, labels = self._prepare_job_inputs_from_current_E(
+            src=src,
+            merge_groups=merge_groups
+        )
+
+        # 3) Rellenar el job
+        job.cube = np.asarray(self.cube.data, dtype=float)  # H×W×L
+        job.E = E_mat  # L×p
+        job.labels = labels  # (p,) dtype=object, para mapas por grupo
+        job.roi_mask = getattr(self, "roi_mask", None)  # si tienes ROI, si no None
+
+        # 4) Lanzar el worker
+        worker = UnmixWorker(job)
+        worker.signals.unmix_ready.connect(self._on_unmix_ready)
+        worker.signals.error.connect(self._on_error)
+        worker.signals.progress.connect(lambda v: self._on_job_progress(name, v))
+        self._current_worker = worker
+        self.threadpool.start(worker)
+
+    def _prepare_job_inputs_from_current_E(self, src: str, merge_groups: bool):
+        """
+        Usa self.E (dict clase->(L,n_regiones)) ya construida por _activate_endmembers(src)
+        para devolver:
+          - E_mat: (L, p) concatenando columnas por clase
+          - labels: (p,) con el label de grupo por columna (nombre de clase si merge=True,
+                    o 'Class i - #k' si no merge)
+        Si la fuente es 'lib' y las WL no coinciden con el cubo, reinterpola E a self.wl.
+        """
+        # self.E: {cls_id: (L, n_regions)} ya normalizado de la fuente elegida
+        E_dict = getattr(self, "E", {}) or {}
+
+        # Gestionar wavelentghs por fuente
+        wl_cube = np.asarray(self.wl, dtype=float)
+        if src == "manual":
+            wl_em = wl_cube
+        elif src == "auto":
+            wl_em = wl_cube
+        else:  # 'lib'
+            wl_em = np.asarray(self.wl_lib, dtype=float)
+
+        # 1) Reinterpolar a la rejilla del cubo si hace falta (solo lib)
+        def _to_LxN(arr):
+            A = np.asarray(arr, dtype=float)
+            if A.ndim == 1:
+                A = A.reshape(-1, 1)
+            if A.shape[0] < A.shape[1]:
+                A = A.T
+            return A
+
+        E_resampled = []
+        col_labels = []
+
+        # nombre legible de cada clase
+        def _class_name(cid):
+            try:
+                return self.get_class_name(cid)
+            except Exception:
+                return f"Class {cid}"
+
+        for cls_id in sorted(E_dict.keys()):
+            A = _to_LxN(E_dict[cls_id])  # (L_em, n_reg)
+            # resample si procede
+            if src == "lib" and wl_em is not None and not np.array_equal(wl_em, wl_cube):
+                # interp columna a columna
+                L_target = wl_cube.size
+                A_rs = np.empty((L_target, A.shape[1]), dtype=float)
+                for j in range(A.shape[1]):
+                    A_rs[:, j] = np.interp(wl_cube, wl_em, A[:, j])
+                A = A_rs
+
+            # labels por columna
+            if merge_groups:
+                grp = _class_name(cls_id)  # todas las columnas de esta clase comparten grupo
+                col_labels.extend([grp] * A.shape[1])
+            else:
+                base = _class_name(cls_id)
+                for j in range(A.shape[1]):
+                    col_labels.append(f"{base} #{j + 1}")
+
+            E_resampled.append(A)
+
+        if not E_resampled:
+            raise ValueError("No hay endmembers disponibles para esta fuente.")
+
+        # 2) Concatenar columnas
+        E_mat = np.concatenate(E_resampled, axis=1)  # (L, p total)
+        labels = np.asarray(col_labels, dtype=object)
+        return E_mat, labels
+
+    def _on_cancel_queue(self):
+        self._stop_all = True
+        if self._current_worker:
+            self._current_worker.cancel()
+
+    # -- Job progress UI -------------------------------------------------
+    def _on_job_progress(self, name: str, value: int):
+        """MAJ douce de la barre de progression pour le job `name`."""
+        job = self.jobs.get(name)
+        if not job:
+            return
+        job.progress = max(0, min(100, int(value)))
+        self._update_row_from_job(name)  # met à jour Status/Progress/Durée dans la table
+
+    # -- Job error UI ----------------------------------------------------
+    def _on_unmix_error(self, name: str, message: str):
+        """Marque le job en erreur/annulé et met la ligne de tableau à jour."""
+        job = self.jobs.get(name)
+        if not job:
+            return
+
+        txt = message or ""
+        if "canceled" in txt.lower() or "cancelled" in txt.lower():
+            job.status = "Canceled"
+            job.progress = 0
+        else:
+            job.status = "Error"
+
+        if getattr(job, "_t0", None) is not None:
+            try:
+                import time
+                job.duration_s = time.time() - job._t0
+            except Exception:
+                job.duration_s = None
+
+        self._update_row_from_job(name)
+
+        # Message d’erreur uniquement pour les vraies erreurs
+        if job.status == "Error":
+            from PyQt5.QtWidgets import QMessageBox
+            QMessageBox.critical(self, f"{name} failed", txt)
+
+        # enchaîner éventuellement
+        try:
+            self._run_next_in_queue()
+        except Exception:
+            pass
+
+    # -- Job success UI --------------------------------------------------
+    def _on_unmix_ready(self, A: np.ndarray, E_used: np.ndarray, maps_by_group: dict):
+        """
+        Reçoit le résultat du worker:
+          - A: (H, W, p) cartes d’abondances par endmember (p)
+          - E_used: (L, p) matrice d’EM effectivement utilisée
+          - maps_by_group: dict {cls_id -> (H, W)} (si le worker te renvoie des cartes par groupe)
+        Stocke dans le job, met à jour l’UI et affiche le résultat.
+        """
+
+        print('[on_unmix_ready] : CALLED')
+
+        job = self.jobs.get(name)
+        if not job:
+            print('[on_unmix_ready] : job not found')
+            return
+
+        # 1) Stocker les outputs dans le job
+        job.A = A  # (H, W, p)
+        job.E_used = E_used  # (L, p)
+        job.maps_by_group = maps_by_group if maps_by_group is not None else {}
+        job.status = "Done"
+        job.progress = 100
+
+        # durée
+        try:
+            import time
+            job.duration_s = (time.time() - job._t0) if getattr(job, "_t0", None) else None
+        except Exception:
+            job.duration_s = None
+
+        self._update_row_from_job(name)
+
+        # 2) Choisir quoi afficher immédiatement
+        #    a) si maps_by_group est fourni: on affiche la “somme” des groupes ou la 1ère carte
+        shown = None
+        if isinstance(job.maps_by_group, dict) and len(job.maps_by_group) > 0:
+            # stack -> (H, W, G) puis max ou somme (au choix); ici: somme
+            try:
+                stack = np.stack(list(job.maps_by_group.values()), axis=-1)
+                shown = np.clip(stack.sum(axis=-1), 0, 1)  # (H, W), normalisé si déjà binaire
+            except Exception:
+                # fallback: premier élément
+                k0 = next(iter(job.maps_by_group.keys()))
+                shown = job.maps_by_group[k0]
+        elif isinstance(job.A, np.ndarray) and job.A.ndim == 3 and job.A.shape[-1] > 0:
+            # b) sinon on affiche la carte d’abondance du 1er EM
+            shown = job.A[..., 0]
+
+        # 3) Pousser dans les viewers (colorisation simple pour commencer)
+        if shown is not None:
+            # mise à l’échelle pour 8 bits, sûre même si déjà 0..1
+            try:
+                vis = np.asarray(shown, dtype=float)
+                if vis.size and (vis.max() > 1.0 or vis.min() < 0.0):
+                    vmin, vmax = vis.min(), vis.max()
+                    if vmax > vmin:
+                        vis = (vis - vmin) / (vmax - vmin)
+                    else:
+                        vis = np.zeros_like(vis)
+                vis_u8 = (255.0 * vis).clip(0, 255).astype(np.uint8)
+                rgb = np.dstack([vis_u8] * 3)
+                self.viewer_right.setImage(self._np2pixmap(rgb))
+            except Exception:
+                pass
+
+        # 4) Optionnel: mémoriser ce résultat comme “modèle courant” pour l’overlay
+        #    (si tu as déjà une logique d’overlay, tu peux déclencher ici)
+        try:
+            self.current_unmix_job_name = name
+            self.update_overlay()  # si l’overlay tient compte d’unmixing
+        except Exception:
+            pass
+
+        # 5) Enchaîner le prochain job de la queue
+        try:
+            self._run_next_in_queue()
+        except Exception:
+            pass
+
+    # </editor-fold>
+
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     w = UnmixingTool()
@@ -2910,4 +3486,9 @@ if __name__ == "__main__":
     filepath2 = os.path.join(folder, fname2)
     cube=fused_cube(Hypercube(filepath1,load_init=True),Hypercube(filepath2,load_init=True))
     w.load_cube(cube=cube)
+
+    w.active_source='auto'
+    w._on_extract_endmembers()
+    w.comboBox_endmembers_use_for_unmixing.setCurrentText('Auto')
+
     sys.exit(app.exec_())
