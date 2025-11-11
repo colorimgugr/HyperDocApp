@@ -36,9 +36,10 @@ from interface.some_widget_for_interface import ZoomableGraphicsView
 from identification.load_cube_dialog import Ui_Dialog
 
 # <editor-fold desc="To do">
-#todo : endmembers name from library unstable
 #todo : add substrate to library by manual selection
 #todo : color map of abundance map
+#todo : export results en h5 or multiple png
+#todo : show all classified by : name, total abundace, max abundance, other ?
 #todo : check interaction with transtaprecny between EM and AMap
 #todo : from library -> gerer les wl_lib et wl (cube) pour unmixing
 #todo : unmixing -> select endmembers AND if merge
@@ -1191,6 +1192,27 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
             return None
         x_min, y_min, w, h = coords
         return (y_min, x_min, h, w)
+
+    def _current_roi_mask(self):
+        """Construit un masque bool (H,W) à partir du rectangle sélectionné dans viewer_left.
+           Retourne None s’il n’y a pas de sélection."""
+        if self.data is None:
+            return None
+        H, W = self.data.shape[:2]
+        rect = self._get_selected_rect()  # (y, x, h, w) ou None
+        if not rect:
+            return None
+        y, x, h, w = rect
+        # bornes sûres
+        y0 = max(0, int(y));
+        x0 = max(0, int(x))
+        y1 = min(H, int(y + h));
+        x1 = min(W, int(x + w))
+        if y1 <= y0 or x1 <= x0:
+            return None
+        m = np.zeros((H, W), dtype=bool)
+        m[y0:y1, x0:x1] = True
+        return m
 
     def _rect_to_qrectf(self, rect_tuple):
         if not rect_tuple:
@@ -3441,7 +3463,7 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         job.cube = np.asarray(self.cube.data, dtype=float)  # H×W×L
         job.E = E_mat  # L×p
         job.labels = labels  # (p,)
-        job.roi_mask = getattr(self, "roi_mask", None)
+        job.roi_mask = self._current_roi_mask()
         job.wl_job = self.wl
 
         # Marque comme Running
