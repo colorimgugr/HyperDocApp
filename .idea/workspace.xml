@@ -4,9 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="[unmixing] : implementing unmixing jobs&#10;- run one and all from queue&#10;- check if already in queue">
+    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="[unmixing] : implementing unmixing jobs&#10;- ask confirm on supress if job done &#10;- only one job at a time&#10;- unmix simple view of abondance map">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/unmixing/unmixing_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/unmixing/unmixing_tool.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/unmixing/unmixing_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/unmixing/unmixing_window.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/unmixing/unmixing_window.ui" beforeDir="false" afterPath="$PROJECT_DIR$/unmixing/unmixing_window.ui" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -135,14 +137,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1744020944801</updated>
-    </task>
-    <task id="LOCAL-00068" summary="Cube_info.pathS homogene pour tous les outils -&gt; mise en memoire choix browser&#10;Envi files ok for reading">
-      <option name="closed" value="true" />
-      <created>1752679512168</created>
-      <option name="number" value="00068" />
-      <option name="presentableId" value="LOCAL-00068" />
-      <option name="project" value="LOCAL" />
-      <updated>1752679512169</updated>
     </task>
     <task id="LOCAL-00069" summary="[Hypercube] -&gt; Calibration window OK.&#10;Add : white from norway and load file .txt">
       <option name="closed" value="true" />
@@ -528,7 +522,15 @@
       <option name="project" value="LOCAL" />
       <updated>1762532648707</updated>
     </task>
-    <option name="localTasksCounter" value="117" />
+    <task id="LOCAL-00117" summary="[unmixing] : implementing unmixing jobs&#10;- ask confirm on supress if job done &#10;- only one job at a time&#10;- unmix simple view of abondance map">
+      <option name="closed" value="true" />
+      <created>1762784783506</created>
+      <option name="number" value="00117" />
+      <option name="presentableId" value="LOCAL-00117" />
+      <option name="project" value="LOCAL" />
+      <updated>1762784783507</updated>
+    </task>
+    <option name="localTasksCounter" value="118" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -580,7 +582,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="[IDENTIFICATION] : Loading Dialog prefilled with current value (if opened with dialog)" />
     <MESSAGE value="[IDENTIFICATION] : Inserted in the MainWindow Correctly" />
     <MESSAGE value="[IDENTIFICATION] : Fixed loading parameters, icon, fusion, and defauts rgb parameters" />
     <MESSAGE value="[IDENTIFICATION] : Traning status added, no rectangle roi on right viewer, security and restet on load new cube" />
@@ -605,6 +606,7 @@
     <MESSAGE value="[unmixing] : &#10;- adding ROI selection by rectanlge and state modification when selecting pixels" />
     <MESSAGE value="[unmixing] : implementing unmixing jobs" />
     <MESSAGE value="[unmixing] : implementing unmixing jobs&#10;- run one and all from queue&#10;- check if already in queue" />
-    <option name="LAST_COMMIT_MESSAGE" value="[unmixing] : implementing unmixing jobs&#10;- run one and all from queue&#10;- check if already in queue" />
+    <MESSAGE value="[unmixing] : implementing unmixing jobs&#10;- ask confirm on supress if job done &#10;- only one job at a time&#10;- unmix simple view of abondance map" />
+    <option name="LAST_COMMIT_MESSAGE" value="[unmixing] : implementing unmixing jobs&#10;- ask confirm on supress if job done &#10;- only one job at a time&#10;- unmix simple view of abondance map" />
   </component>
 </project>

@@ -36,7 +36,10 @@ from interface.some_widget_for_interface import ZoomableGraphicsView
 from identification.load_cube_dialog import Ui_Dialog
 
 # <editor-fold desc="To do">
-#todo : PRB OF NAME IN SIGNALS FUNCTION OF UMIXING
+#todo : endmembers name from library unstable
+#todo : add substrate to library by manual selection
+#todo : color map of abundance map
+#todo : check interaction with transtaprecny between EM and AMap
 #todo : from library -> gerer les wl_lib et wl (cube) pour unmixing
 #todo : unmixing -> select endmembers AND if merge
 #todo : viz spectra -> show/hide by clicking line or title (or ctrl+click)
@@ -593,7 +596,7 @@ class UnmixWorker(QRunnable):
                 mask = None
                 idx_work = np.arange(N, dtype=np.int64)
             Nw = int(idx_work.size)
-            self.signals.progress.emit(35)
+            self.signals.progress.emit(0)
             self._check_cancel()
 
             # 4) Preparar solver + chunking
@@ -601,14 +604,19 @@ class UnmixWorker(QRunnable):
             p = int(E.shape[1])
             # Decide tamaño de bloque
             user_chunk = int(getattr(self.job, "chunk_size", 0))
-            chunk = user_chunk if user_chunk > 0 else self._auto_chunk_size(p, dtype=Y.dtype)
+            if user_chunk > 0:
+                chunk = user_chunk
+            else:
+                # ➜ 20 morceaux ≈ 5% chacun
+                steps = 20
+                chunk = max(1, int(np.ceil(Nw / steps)))
 
             # Destino global en espacio (p, N)
             # float32 para equilibrio precisión/memoria
             A = np.zeros((p, N), dtype=np.float32)
 
-            # Progreso granular 35 -> 85 durante el solver
-            base_prog, end_prog = 35.0, 85.0
+            # Progreso granular 5 -> 95 durante el solver
+            base_prog, end_prog = 5.0, 95.0  # 5%..95% pendant le solveur
             processed = 0
 
             m = (self.job.model or "").upper()
@@ -658,6 +666,10 @@ class UnmixWorker(QRunnable):
             # Entregamos A en espacio (p, N) + E y los mapas por grupo
             self.signals.unmix_ready.emit(A, E, maps_by_group)
             print(f'[UnmixWorker running] : end of job for {self.job.name}')
+            print(f'[UnmixWorker running] labels of EM :')
+            for lab in self.job.labels:
+                print(lab)
+
 
         except Exception as e:
             tb = traceback.format_exc()
@@ -799,10 +811,9 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         self.pushButton_band_selection.toggled.connect(self.band_selection)
 
         #Results viz window
-        self.comboBox_viz_show_model.currentIndexChanged.connect(self._refresh_abundance_view)
+        self.comboBox_viz_show_model.currentIndexChanged.connect(self._on_model_viz_change)
         self.comboBox_viz_show_EM.currentIndexChanged.connect(self._refresh_abundance_view)
         self.radioButton_view_abundance.toggled.connect(self._refresh_abundance_view)
-
 
         # Unmix window
         self.radioButton_view_em.toggled.connect(self.toggle_em_viz_stacked)
@@ -1591,33 +1602,46 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         else:
             self._activate_endmembers('auto')
 
-    def _assign_initial_colors(self,c=None):
-
-        if c is not None :
-            unique_labels=[c]
-        elif getattr(self, 'class_means', None):  # NEW fallback
-            unique_labels = list(self.class_means.keys())
+    def _assign_initial_colors(self, c=None):
+        """
+        Assigne une couleur aux classes qui n'en ont pas encore,
+        sans jamais écraser le nom existant.
+        """
+        # Déterminer les classes concernées
+        if c is not None:
+            class_ids = [c]
+        elif getattr(self, 'class_means', None):
+            class_ids = list(self.class_means.keys())
         else:
-            return
+            return  # rien à faire
 
-        if len(unique_labels) <= 10:
-            cmap = colormaps.get_cmap('tab10')
-        else:
-            cmap = colormaps.get_cmap('tab20')
-
+        # Colormap : tab10 jusqu'à 10 classes, tab20 sinon
+        cmap = colormaps.get_cmap('tab10' if len(class_ids) <= 10 else 'tab20')
         n_colors = cmap.N
 
-        for cls in unique_labels:
+        # Dictionnaire actif : manual / auto / lib selon active_source
+        ci = self.class_info
+        if ci is None or not isinstance(ci, dict):
+            return
+
+        for cls in class_ids:
             color_idx = cls % n_colors
             r_f, g_f, b_f, _ = cmap(color_idx)
-            r, g, b = int(255 * r_f), int(255 * g_f), int(255 * b_f)
-            if cls not in self.class_info:
-                self.class_info[cls] = [cls, f"Class {cls}", (b, g, r)]
-            else:
-                if len(self.class_info[cls]) < 3:
-                    # sécurité au cas où
-                    self.class_info[cls] += [None] * (3 - len(self.class_info[cls]))
-                self.class_info[cls][2] = (b, g, r)
+            bgr = (int(255 * b_f), int(255 * g_f), int(255 * r_f))
+
+            # Si l'entrée n'existe pas du tout → créer structure minimale SANS nom
+            if cls not in ci:
+                ci[cls] = [cls, None, bgr]  # [class_id, name=None, color=BGR]
+                continue
+
+            # L'entrée existe :
+            # s'assurer qu'elle a 3 champs
+            if len(ci[cls]) < 3:
+                ci[cls] += [None] * (3 - len(ci[cls]))
+
+            # Ne JAMAIS écraser le nom si ci[cls][1] existe
+            # → on met à jour uniquement la couleur
+            ci[cls][2] = bgr
 
     def _draw_cross(self, img, y, x, half_size, color=(0, 255, 255)):
         """
@@ -1687,9 +1711,23 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         for key,item in param.items():
             form.addRow(QLabel(str(key)+" :"), QLabel(str(item)))
 
+    def _on_model_viz_change(self):
+        idx_job = self.comboBox_viz_show_model.currentIndex()
+        if idx_job < 0:
+            return
+
+        job_name = self.comboBox_viz_show_model.itemText(idx_job)
+        job = self.jobs.get(job_name)
+        self.comboBox_viz_show_EM.clear()
+        for name in job.labels:
+            self.comboBox_viz_show_EM.addItem(name)
+
+        self._refresh_abundance_view()
+
     def _refresh_abundance_view(self):
         """Affiche la carte d'abondance de l'endmember choisi pour le job sélectionné,
         en utilisant la couleur d'endmember définie."""
+
         try:
             # On ne fait rien si le mode n’est pas activé
             if not getattr(self, "radioButton_view_abundance", None) or not self.radioButton_view_abundance.isChecked():
@@ -1703,6 +1741,7 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
                 return
             job_name = self.comboBox_viz_show_model.itemText(idx_job)
             job = self.jobs.get(job_name)
+
             if job is None or getattr(job, "A", None) is None:
                 return
 
@@ -1965,7 +2004,6 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
             self.selection_mask_map_auto.fill(-1)
 
         self.E_auto = {}
-        self.comboBox_viz_show_EM.clear()
 
         H, W = self.data.shape[:2]
         idx_em = np.asarray(idx_em)
@@ -1980,7 +2018,6 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
                 spec = self.data[c,r]
                 self.E_auto[cls] = spec
                 name = self.get_class_name(cls)
-                self.comboBox_viz_show_EM.addItem(name)
 
             else :
                 print(f'[ENDMEMBERS AUTO] pb idx EM {cls} with coords : ({c},{r})')
@@ -2055,11 +2092,6 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
             self.E_lib = E_by_name
             self.param_lib['file'] = filepath
 
-            # 5) Refresh GUI: list each class name once
-            self.comboBox_viz_show_EM.clear()
-            for name in E_by_name.keys():
-                self.comboBox_viz_show_EM.addItem(name)
-
             # 6) Activate LIB source for visualization/unmixing
             self._activate_endmembers('lib')
             self.fill_form_em('lib')
@@ -2088,32 +2120,42 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         """
         assert source in ('manual', 'auto', 'lib')
         self.active_source = source
+
         if source == 'manual':
             # E_manual[c] : (n_regions_c, L)
-            self.E = {c: arr for c, arr in self.E_manual.items()} if self.E_manual else {}
+            self.E = {c: arr for c, arr in (self.E_manual or {}).items()}
+
         elif source == 'auto':
             # E_auto[c] : (L,) -> E[c] : (L,1)
-            try :
-                self.E = {c: np.asarray(v, dtype=float).reshape(-1, 1) for c, v in
-                          self.E_auto.items()} if self.E_auto else {}
-            except:
-                self.E={}
+            try:
+                self.E = {c: np.asarray(v, dtype=float).reshape(-1, 1)
+                          for c, v in (self.E_auto or {}).items()}
+            except Exception:
+                self.E = {}
 
         elif source == 'lib':
-            # self.E_lib: {name: (L, n_regions)} or {name: (L,)} from loader
+            # self.E_lib: {name: (L, n_regions)} ou {name: (L,)}
             E_norm = {}
-            class_names = []
-            for idx, (name, V) in enumerate(self.E_lib.items()):
+            for idx, (name, V) in enumerate((self.E_lib or {}).items()):
                 A = np.asarray(V, dtype=float)
                 if A.ndim == 1:
                     A = A.reshape(-1, 1)
                 # Ensure shape (L, n_regions)
                 if A.shape[0] < A.shape[1]:
                     A = A.T
-                E_norm[idx] = A  # keep internal integer keys for downstream logic
-                # keep UI name mapping
-                self.set_class_name(idx, name)
-                class_names.append(name)
+                E_norm[idx] = A
+
+                # --- PRÉSERVER LES NOMS EXISTANTS ---
+                # On ne réécrit le nom que si l’entrée est absente ou vide
+                current_name = None
+                try:
+                    # essaie de lire le nom existant côté 'lib'
+                    current_name = self.get_class_name(idx, src='lib')
+                except Exception:
+                    pass
+
+                if not current_name or current_name.startswith("Class "):
+                    self.set_class_name(idx, str(name))
 
             self.E = E_norm
 
@@ -2121,24 +2163,30 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
             self.E = {}
 
         if not self.E:
-            # Rien à afficher
             self.class_means, self.class_stds = {}, {}
             self.update_spectra()
             self.update_overlay()
             return
 
-        # Met à jour moyennes/écarts-types par classe -> update_spectra les trace
-        self.fill_means_std_classes()  # utilise self.E pour calculer mu/std par classe.: contentReference[oaicite:0]{index=0}
-        self._assign_initial_colors()  # garde tes couleurs cohérentes
-        self.update_spectra(maxR=1)  # rafraîchit la figure spectra. :contentReference[oaicite:1]{index=1}
+        # mu/std + couleurs (les couleurs n’écrasent pas les noms)
+        self.fill_means_std_classes()
+        self._assign_initial_colors()
+        self.update_spectra(maxR=1)
         self.update_overlay()
 
-    def get_class_name(self, cls: int) -> str:
-        """Return human-readable name for class id."""
-        if cls in self.class_info and len(self.class_info[cls]) > 1:
-            name = self.class_info[cls][1]
-            if name and name.strip():
-                return name
+    def get_class_name(self, cls: int, src=None) -> str:
+        prefer = src or getattr(self, "active_source", "lib")
+        sources = [prefer, "lib", "auto", "manual"]
+        dicts = {
+            "manual": getattr(self, "class_info_manual", {}) or {},
+            "auto": getattr(self, "class_info_auto", {}) or {},
+            "lib": getattr(self, "class_info_lib", {}) or {},
+        }
+        # priorité à la source préférée, sinon fallback
+        for s in sources:
+            d = dicts.get(s, {})
+            if isinstance(d, dict) and cls in d and len(d[cls]) >= 2 and d[cls][1]:
+                return str(d[cls][1])
         return f"Class {cls}"
 
     def set_class_name(self, cls: int, name):
@@ -2883,7 +2931,11 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
                     del d[cls]
 
     def _get_E(self):
-        return {'manual': self.E_manual, 'auto': self.E_auto, 'lib': self.E_lib}[self.active_source]
+        """Public method to retrieve E from a specified source."""
+        return {
+            'manual': self.E_manual,
+            'auto': self.E_auto,
+            'lib': self.E_lib}[self.active_source]
 
     def _set_E(self, E):
         if self.active_source == 'manual':
@@ -2904,8 +2956,8 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
     @property
     def class_info(self):
         return {'manual': self.class_info_manual,
-                'auto': self.class_info_auto,
-                'lib': self.class_info_lib}[self.active_source]
+                    'auto': self.class_info_auto,
+                    'lib': self.class_info_lib}[self.active_source]
 
     @property
     def norm_em(self):
@@ -3027,6 +3079,7 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         # Construire l’objet job (on ne calcule/attache pas encore E ici)
         job = UnmixJob(
             name=name,
+            em_src=P['em_src'],
             model=P["algo"],
             normalization=P["norm"],
             max_iter=P["max_iter"],
@@ -3088,10 +3141,8 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
                 tol=job.tol, lam=job.lam, rho=job.rho,
                 max_iter=job.max_iter,
                 p=getattr(self, "nclass_box", None).value() if hasattr(self, "nclass_box") else None,
-                em_src=getattr(self, "comboBox_endmembers_use_for_unmixing", None).currentText() if hasattr(self,
-                                                                                                            "comboBox_endmembers_use_for_unmixing") else "?",
-                em_merge=getattr(self, "checkBox_unmix_merge_EM_groups", None).isChecked() if hasattr(self,
-                                                                                                      "checkBox_unmix_merge_EM_groups") else False
+                em_src=job.em_src,
+                em_merge=job.merge_EM
             )
             self._insert_job_row(name, P)
 
@@ -3368,8 +3419,9 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         job = self.jobs[next_name]
 
         # ---- Préparation des endmembers et des inputs ICI ----
-        src_txt = self.comboBox_endmembers_use_for_unmixing.currentText().lower()
+        src_txt = job.em_src.lower()
         src = "lib" if "library" in src_txt else ("manual" if "manual" in src_txt else "auto")
+        print('[RUN NEXT JOB] : ',src,' - ',src_txt)
         merge_groups = self.checkBox_unmix_merge_EM_groups.isChecked()
 
         # (ré)active la source sélectionnée -> remplit self.E standardisée
@@ -3392,6 +3444,7 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         job._t0 = time.time()
         self._update_row_from_job(next_name)
         self._refresh_viz_model_combo(select_name=next_name)
+        self._on_model_viz_change()
 
         # Crée le worker et mémorise-le comme courant
         worker = UnmixWorker(job)
@@ -3416,16 +3469,19 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         Si la fuente es 'lib' y las WL no coinciden con el cubo, reinterpola E a self.wl.
         """
         # self.E: {cls_id: (L, n_regions)} ya normalizado de la fuente elegida
-        E_dict = getattr(self, "E", {}) or {}
 
         # Gestionar wavelentghs por fuente
         wl_cube = np.asarray(self.wl, dtype=float)
         if src == "manual":
-            wl_em = wl_cube
+            wl_em = self.wl_manual
+            E_dict=self.E_manual
+
         elif src == "auto":
-            wl_em = wl_cube
+            wl_em = self.wl_auto
+            E_dict = self.E_auto
         else:  # 'lib'
             wl_em = np.asarray(self.wl_lib, dtype=float)
+            E_dict = self.E_lib
 
         # 1) Reinterpolar a la rejilla del cubo si hace falta (solo lib)
         def _to_LxN(arr):
@@ -3440,9 +3496,9 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         col_labels = []
 
         # nombre legible de cada clase
-        def _class_name(cid):
+        def _class_name(cid,src=None):
             try:
-                return self.get_class_name(cid)
+                return self.get_class_name(cid,src)
             except Exception:
                 return f"Class {cid}"
 
@@ -3469,7 +3525,7 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
             E_resampled.append(A)
 
         if not E_resampled:
-            raise ValueError("No hay endmembers disponibles para esta fuente.")
+            raise ValueError("No endmembers for this source.")
 
         # 2) Concatenar columnas
         E_mat = np.concatenate(E_resampled, axis=1)  # (L, p total)
@@ -3493,6 +3549,8 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
             return
         job.progress = max(0, min(100, int(value)))
         self._update_row_from_job(name)  # met à jour Status/Progress/Durée dans la table
+        if getattr(self, "radioButton_view_abundance", None) and self.radioButton_view_abundance.isChecked():
+            self._refresh_abundance_view()
 
     # -- Job error UI ----------------------------------------------------
     def _on_unmix_error(self, name: str, message: str):

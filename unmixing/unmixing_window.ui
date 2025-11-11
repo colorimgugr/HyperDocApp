@@ -177,6 +177,13 @@
                </widget>
               </item>
               <item>
+               <widget class="QPushButton" name="pushButton_add_substrate_EM">
+                <property name="text">
+                 <string>Add Substrate</string>
+                </property>
+               </widget>
+              </item>
+              <item>
                <widget class="QScrollArea" name="scrollArea">
                 <property name="widgetResizable">
                  <bool>true</bool>
@@ -186,8 +193,8 @@
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>585</width>
-                   <height>144</height>
+                   <width>495</width>
+                   <height>105</height>
                   </rect>
                  </property>
                  <layout class="QVBoxLayout" name="verticalLayout_2">
