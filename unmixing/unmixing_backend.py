@@ -263,7 +263,6 @@ class SUnSALParams:
     max_iter: int = 1000
     tol: float = 1e-4        # relative change tolerance
 
-
 def _proj_simplex(v: np.ndarray) -> np.ndarray:
     """Project v onto the probability simplex {a >= 0, sum(a) = 1}.
     Implementation of the O(N log N) algorithm.

@@ -579,7 +579,7 @@ class UnmixWorker(QRunnable):
             self.signals.progress.emit(15)
             self._check_cancel()
 
-            # 2) Vectorizado al estilo identification_tool (controlando el 'order')
+            # 2) Vectorizado
             order = getattr(self.job, "reshape_order", "C")
             if order not in ("C", "F"):
                 order = "C"
@@ -601,6 +601,11 @@ class UnmixWorker(QRunnable):
 
             # 4) Preparar solver + chunking
             E = self.job.E  # (L, p)
+            norm = (getattr(self.job, "normalization", "None") or "None").lower()
+            if norm != "none":
+                # same column-wise normalization applied to Y must be applied to E
+                E = normalize_spectra(E, mode=norm)
+
             p = int(E.shape[1])
             # Decide tamaño de bloque
             user_chunk = int(getattr(self.job, "chunk_size", 0))
@@ -3007,7 +3012,7 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         return name
 
     def _current_normalization(self) -> str:
-        txt = self.comboBox_normalisation.currentText()
+        txt = self.comboBox_normalisation_unmix.currentText()
         if "L2" in txt: return "L2"
         if "L1" in txt: return "L1"
         return "None"
