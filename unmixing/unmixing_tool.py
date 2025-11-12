@@ -2643,7 +2643,7 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         if isinstance(row, (list, tuple)) and len(row) >= 3:
             col = row[2]
             try:
-                r, g, b = col
+                b, g, r = col
                 return int(r), int(g), int(b)
             except Exception:
                 pass
@@ -2789,45 +2789,42 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
 
             # --- Merge into library ---
             new_key=False
+            name_manual=self.class_info_manual[key][1]
+            color_manual=self.class_info_manual[key][2]
+
             if key not in self.E_lib or self.E_lib.get(key, None) is None or np.size(self.E_lib.get(key)) == 0:
                 self.E_lib[key] = self._as_LxK(em_to_add, L)
             else:
                 cur = np.asarray(self.E_lib[key])
                 cur = self._as_LxK(cur, L)
                 em_to_add = self._as_LxK(em_to_add, L)
-                name_manual=self.class_info_manual[key][1]
                 names_lib=[]
                 for key,item in self.class_info_lib.items():
                     names_lib.append(item[1])
                 if name_manual not in names_lib:
-
                     used = [k for k in self.class_info_lib.keys() if isinstance(k, int)]
                     key_temp = (max(used) + 1) if used else 0
                     while key_temp in self.class_info_lib:
                         key_temp += 1
                     self.E_lib[key_temp] = self._as_LxK(em_to_add, L)
                     new_key=True
+                    key=key_temp
                 else:
                     self.E_lib[key] = np.concatenate([cur, em_to_add], axis=1)
 
             # Update class_info_lib
-
             if getattr(self, "class_info_lib", None) is None:
                 self.class_info_lib = {}
-            if key not in self.class_info_lib:
-                row_m = (getattr(self, "class_info_manual", {}) or {}).get(key)
-                if row_m is not None:
-                    self.class_info_lib[key] = list(row_m)
-                else:
-                    nm = self._class_name_from_manual(key)
-                    self.class_info_lib[key] = [str(key), nm, self._class_rgb_from_manual(key)]
+            if new_key :
+                self.class_info_lib[key] = [key,name_manual,color_manual,None]
+            else:
+                self.class_info_lib[key][2] = color_manual
 
+            print(key,' class info ->',self.class_info_lib[key])
             added_any = True
 
         if added_any:
             QMessageBox.information(self, "Library updated", "Selected endmembers were added to the library.")
-            self._activate_endmembers('lib')
-            self.fill_form_em('lib')
             self.update_spectra()
             print()
             print('[ADDED SELECTED]')
