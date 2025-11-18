@@ -4,12 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="[unmixing] : &#10;- wl cossitancey when adding unmixig job OK&#10;- local or global norm for abundace vizualisation&#10;- added dialog for erasing part when loading cube&#10;- reinit part when loading cube">
+    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="[unmixing] : &#10;- derivative added&#10;- live viz of abundance value of pixels">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/unmixing/unmixing_backend.py" beforeDir="false" afterPath="$PROJECT_DIR$/unmixing/unmixing_backend.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/unmixing/unmixing_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/unmixing/unmixing_tool.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/unmixing/unmixing_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/unmixing/unmixing_window.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/unmixing/unmixing_window.ui" beforeDir="false" afterPath="$PROJECT_DIR$/unmixing/unmixing_window.ui" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -138,14 +135,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1744020944801</updated>
-    </task>
-    <task id="LOCAL-00078" summary="[DataViz] &amp; [Metadata] : DataViz updated on metadata change. Quick change to all files ending with .h5, .hdr and .mat">
-      <option name="closed" value="true" />
-      <created>1753785992254</created>
-      <option name="number" value="00078" />
-      <option name="presentableId" value="LOCAL-00078" />
-      <option name="project" value="LOCAL" />
-      <updated>1753785992255</updated>
     </task>
     <task id="LOCAL-00079" summary="[Identification] : first step for binarisation OK">
       <option name="closed" value="true" />
@@ -531,7 +520,15 @@
       <option name="project" value="LOCAL" />
       <updated>1763122237370</updated>
     </task>
-    <option name="localTasksCounter" value="127" />
+    <task id="LOCAL-00127" summary="[unmixing] : &#10;- derivative added&#10;- live viz of abundance value of pixels">
+      <option name="closed" value="true" />
+      <created>1763446297281</created>
+      <option name="number" value="00127" />
+      <option name="presentableId" value="LOCAL-00127" />
+      <option name="project" value="LOCAL" />
+      <updated>1763446297281</updated>
+    </task>
+    <option name="localTasksCounter" value="128" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -583,7 +580,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="[unmixing] : &#10;- unmixing_backend with pyspotools and laars&#10;- ui -&gt; OK for cube viz and end members auto extraction" />
     <MESSAGE value="[unmixing] : &#10;- spectra canvas added" />
     <MESSAGE value="[unmixing] : &#10;- changing menu with endmemebers methos" />
     <MESSAGE value="[unmixing] : &#10;- changing menu with endmemebers method" />
@@ -608,6 +604,7 @@
     <MESSAGE value="[unmixing] : working on merging manual selection and library&#10;-&gt; OK if same wl" />
     <MESSAGE value="[unmixing] : working on merging manual selection and library&#10;-&gt; OK if wl different with dialog box" />
     <MESSAGE value="[unmixing] : &#10;- wl cossitancey when adding unmixig job OK&#10;- local or global norm for abundace vizualisation&#10;- added dialog for erasing part when loading cube&#10;- reinit part when loading cube" />
-    <option name="LAST_COMMIT_MESSAGE" value="[unmixing] : &#10;- wl cossitancey when adding unmixig job OK&#10;- local or global norm for abundace vizualisation&#10;- added dialog for erasing part when loading cube&#10;- reinit part when loading cube" />
+    <MESSAGE value="[unmixing] : &#10;- derivative added&#10;- live viz of abundance value of pixels" />
+    <option name="LAST_COMMIT_MESSAGE" value="[unmixing] : &#10;- derivative added&#10;- live viz of abundance value of pixels" />
   </component>
 </project>

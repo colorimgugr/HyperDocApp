@@ -33,12 +33,13 @@ Example (sparse with a library of endmembers)
 --------------------------------------------
 >>> E = load_library(...)             # (L, p)
 >>> A = unmix_sunsal(E, Y, lam=1e-3, positivity=True, sum_to_one=False)
-
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Optional, Tuple
+from scipy.signal import savgol_filter
 import numpy as np
 
 _aliases = {'int': int, 'float': float, 'bool': bool}
@@ -150,30 +151,51 @@ def normalize_spectra(Y: np.ndarray, mode: str = 'L2', eps: float = 1e-12) -> np
     norms = np.maximum(norms, eps)
     return np.ascontiguousarray(X / norms, dtype=np.float64)
 
-def spectral_derivative(data: np.ndarray,
-                        wl: Optional[np.ndarray] = None,
-                        order: int = 1,
-                        axis: int = -1) -> np.ndarray:
+def _auto_sg_window(n_bands: int,
+                    max_win: int = 15,
+                    min_win: int = 5) -> int:
     """
-    Compute 1st or 2nd spectral derivative le long d'un axis.
-    - data : ndarray (cube ou matrice spectrale)
-    - wl   : vecteur de longueurs d'onde (optionnel). Si fourni, on l'utilise
-             comme espacement dans np.gradient.
-    - order: 1 ou 2
+    Choisit une taille de fenêtre impaire raisonnable pour Savitzky–Golay.
     """
-    if order not in (1, 2):
-        raise ValueError(f"Unsupported derivative order: {order}")
+    # fenêtre max bornée par max_win et par le nb de bandes
+    w = min(max_win, n_bands)
+    # on force à être impair
+    if w % 2 == 0:
+        w -= 1
+    # on évite les fenêtres trop petites
+    if w < min_win:
+        w = max(3, n_bands if n_bands % 2 == 1 else n_bands - 1)
+    return max(3, w)
 
+
+def _apply_savgol(data: np.ndarray,
+                  wl: Optional[np.ndarray],
+                  order: int,
+                  axis: int,
+                  polyorder: int = 2) -> np.ndarray:
+    """
+    Applique Savitzky–Golay (dérivée d'ordre 0,1,2) le long de l'axe spectral.
+    """
     arr = np.asarray(data, dtype=float)
+    n_bands = arr.shape[axis]
 
-    # On applique la dérivée plusieurs fois si order==2
-    out = arr
-    for _ in range(order):
-        if wl is not None:
-            wl_arr = np.asarray(wl, dtype=float)
-            out = np.gradient(out, wl_arr, axis=axis, edge_order=2)
-        else:
-            out = np.gradient(out, axis=axis, edge_order=2)
+    window_length = _auto_sg_window(n_bands, max_win=15, min_win=5)
+
+    if wl is not None and len(wl) >= 2:
+        wl = np.asarray(wl, dtype=float)
+        delta = float(np.mean(np.diff(wl)))
+    else:
+        delta = 1.0
+
+    out = savgol_filter(
+        arr,
+        window_length=window_length,
+        polyorder=polyorder,
+        deriv=order,       # 0 = lissage, 1 = 1ère dérivée, 2 = 2nde
+        delta=delta,
+        axis=axis,
+        mode="interp",
+    )
     return out
 
 def preprocess_spectra(data: np.ndarray,
@@ -189,12 +211,11 @@ def preprocess_spectra(data: np.ndarray,
         return np.asarray(data, dtype=float)
 
     if m in ("deriv1", "first", "first derivative", "1st"):
-        return spectral_derivative(data, wl=wl, order=1, axis=axis)
+        return _apply_savgol(data, wl=wl, order=1, axis=axis)
     if m in ("deriv2", "second", "second derivative", "2nd"):
-        return spectral_derivative(data, wl=wl, order=2, axis=axis)
+        return _apply_savgol(data, wl=wl, order=2, axis=axis)
 
     raise ValueError(f"Unknown preprocess mode: {mode}")
-
 
 # ---------- Optional dependency: pysptools wrappers ----------------------------
 
