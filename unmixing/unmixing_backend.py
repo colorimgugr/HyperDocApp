@@ -150,6 +150,52 @@ def normalize_spectra(Y: np.ndarray, mode: str = 'L2', eps: float = 1e-12) -> np
     norms = np.maximum(norms, eps)
     return np.ascontiguousarray(X / norms, dtype=np.float64)
 
+def spectral_derivative(data: np.ndarray,
+                        wl: Optional[np.ndarray] = None,
+                        order: int = 1,
+                        axis: int = -1) -> np.ndarray:
+    """
+    Compute 1st or 2nd spectral derivative le long d'un axis.
+    - data : ndarray (cube ou matrice spectrale)
+    - wl   : vecteur de longueurs d'onde (optionnel). Si fourni, on l'utilise
+             comme espacement dans np.gradient.
+    - order: 1 ou 2
+    """
+    if order not in (1, 2):
+        raise ValueError(f"Unsupported derivative order: {order}")
+
+    arr = np.asarray(data, dtype=float)
+
+    # On applique la dérivée plusieurs fois si order==2
+    out = arr
+    for _ in range(order):
+        if wl is not None:
+            wl_arr = np.asarray(wl, dtype=float)
+            out = np.gradient(out, wl_arr, axis=axis, edge_order=2)
+        else:
+            out = np.gradient(out, axis=axis, edge_order=2)
+    return out
+
+def preprocess_spectra(data: np.ndarray,
+                       mode: str = "raw",
+                       wl: Optional[np.ndarray] = None,
+                       axis: int = -1) -> np.ndarray:
+    """
+    Applique le prétraitement choisi le long de l'axe spectral.
+    mode: 'raw' | 'deriv1' | 'deriv2'
+    """
+    m = (mode or "raw").lower()
+    if m in ("raw", "none"):
+        return np.asarray(data, dtype=float)
+
+    if m in ("deriv1", "first", "first derivative", "1st"):
+        return spectral_derivative(data, wl=wl, order=1, axis=axis)
+    if m in ("deriv2", "second", "second derivative", "2nd"):
+        return spectral_derivative(data, wl=wl, order=2, axis=axis)
+
+    raise ValueError(f"Unknown preprocess mode: {mode}")
+
+
 # ---------- Optional dependency: pysptools wrappers ----------------------------
 
 def _require_pysptools():

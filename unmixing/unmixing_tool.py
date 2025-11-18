@@ -8,6 +8,7 @@ from PIL import Image
 import h5py
 
 import numpy as np
+import re
 
 from PyQt5.QtWidgets import (QApplication, QSizePolicy, QSplitter,QHeaderView,QProgressBar,QColorDialog,
                             QDialog, QVBoxLayout, QHBoxLayout, QFormLayout, QLabel, QLineEdit, QPushButton,
@@ -574,7 +575,7 @@ class UnmixJob:
     labels: Optional[np.ndarray] = None      # (p,) opcional (grupos)
     em_src: str = "Auto"
 
-    preprocess = None
+    preprocess : str = "raw"
     merge_EM = False
     wl_job= None # wavelength kept for job
     wl_cube = None # initial wl of cube
@@ -662,8 +663,25 @@ class UnmixWorker(QRunnable):
             H, W, L = self._validate_inputs()
             self._check_cancel()
 
-            # 1) Normalización
-            cube = normalize_cube(self.job.cube, mode=self.job.normalization)
+            pre_mode = getattr(self.job, "preprocess", "raw")
+            wl_job = getattr(self.job, "wl_job", None)
+
+            # cube : (H, W, L) -> prétraité le long de l'axe spectral (axis=2)
+            cube = preprocess_spectra(self.job.cube,
+                                      mode=pre_mode,
+                                      wl=wl_job,
+                                      axis=2)
+            self._check_cancel()
+
+            # IMPORTANT : appliquer le même preprocess à E (L, p) le long de l'axe 0
+            if self.job.E is not None:
+                self.job.E = preprocess_spectra(self.job.E,
+                                                mode=pre_mode,
+                                                wl=wl_job,
+                                                axis=0)
+
+            # 1) Normalisation (sur les données prétraitées)
+            cube = normalize_cube(cube, mode=self.job.normalization)
             self._check_cancel()
 
             # 2) Vectorizado
@@ -795,6 +813,12 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         self.viewer_left.viewport().installEventFilter(self)
         self.viewer_left.viewport().setMouseTracking(True)
         self.viewer_left.setDragMode(QGraphicsView.ScrollHandDrag)
+        self.viewer_right.viewport().installEventFilter(self)
+        self.viewer_right.viewport().setMouseTracking(True)
+        self.viewer_right.setDragMode(QGraphicsView.ScrollHandDrag)
+        self.viewer_right.setCursor(Qt.CrossCursor)
+        self.viewer_left.setCursor(Qt.CrossCursor)
+
 
         # Promote spec_canvas placeholder to FigureCanvas
         self._promote_canvas('spec_canvas', FigureCanvas)
@@ -896,6 +920,7 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         self.pushButton_save_EM.clicked.connect(self.save_endmembers_spectra)
         self.pushButton_class_name_assign.clicked.connect(self.open_em_editor)
         self.pushButton_add_EM.clicked.connect(self._add_em_to_lib)
+        self.pushButton_remove_EM.clicked.connect(self._remove_em_from_lib)
 
         # Spectra window
         self.comboBox_endmembers_spectra.currentIndexChanged.connect(self.on_changes_EM_spectra_viz)
@@ -915,7 +940,7 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         self.horizontalSlider_overlay_transparency.valueChanged.connect(self.update_alpha)
 
         # Defaults values algorithm
-        self.comboBox_unmix_algorithm.setCurrentText('SUnSAL')
+        self.comboBox_unmix_algorithm.setCurrentText('UCLS')
         self.doubleSpinBox_unmix_lambda_3.setValue(-3.0)  # log10 lambda
         self.doubleSpinBox_unmix_lambda_2.setValue(-4.0)  # log10 tol
         self.doubleSpinBox_unmix_lambda_4.setValue(1.0)   # rho
@@ -1854,6 +1879,7 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         job = self.jobs.get(job_name)
         self.comboBox_viz_show_EM.clear()
         for name in job.labels:
+            name=name.split('#')[0]
             self.comboBox_viz_show_EM.addItem(name)
 
         self._refresh_abundance_view()
@@ -1947,6 +1973,124 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
             self._draw_current_rect(use_job=True, surface=False)
         except Exception as e:
             print("[ABUNDANCE VIEW] error:", e)
+
+    def _update_abundance_legend_for_pixel(self, x=None, y=None):
+        """
+        Actualiza las labels de la leyenda del spec_canvas para añadir
+        la abundancia del píxel (x,y) del job seleccionado.
+
+        Si x o y son None -> se restauran las labels 'limpias' (sin a=...).
+        """
+        try:
+            # Solo en modo abundance map
+            if not self.radioButton_view_abundance.isChecked():
+                return
+            if self.data is None:
+                return
+            if not self.checkBox_showLegend.isChecked():
+                print('checkBox_showLegend NOT CHECKED')
+                return
+
+            # Recuperar handles y labels actuales
+            handles, labels = self.spec_ax.get_legend_handles_labels()
+            if not labels:
+                print('No Labels')
+                return
+
+            # Siempre limpiamos cualquier " | a=..." previo
+            base_labels = [re.sub(r"\s*\|\s*a=.*$", "", lb) for lb in labels]
+
+            # Si no hay coordenadas válidas -> sólo restaurar nombres base
+            if x is None or y is None:
+                new_labels = base_labels
+            else:
+                H, W = self.data.shape[:2]
+                if not (0 <= x < W and 0 <= y < H):
+                    print('not 0 <= x < W and 0 <= y < H')
+                    return
+
+                # Job seleccionado en la parte de visualización de resultados
+                idx_job = self.comboBox_viz_show_model.currentIndex()
+                if idx_job < 0:
+                    return
+                job_name = self.comboBox_viz_show_model.itemText(idx_job)
+                job = self.jobs.get(job_name)
+                if job is None:
+                    return
+
+                A = getattr(job, "A", None)
+                if A is None:
+                    return
+                A = np.asarray(A)
+
+                # A3 -> (H,W,p)
+                if A.ndim == 2:
+                    p, N = A.shape
+                    if N != H * W:
+                        return
+                    A3 = A.reshape(p, H, W).transpose(1, 2, 0)
+                elif A.ndim == 3:
+                    A3 = A
+                    # nos aseguramos de estar en (H,W,p)
+                    if A3.shape[0] == H and A3.shape[1] == W:
+                        pass
+                    elif A3.shape[2] == H and A3.shape[1] == W:
+                        A3 = np.transpose(A3, (2, 1, 0))
+                    else:
+                        return
+                else:
+                    return
+
+                # Vector de abundancias para ese píxel: (p,)
+                if not (0 <= y < A3.shape[0] and 0 <= x < A3.shape[1]):
+                    return
+                row_vals = A3[y, x, :]
+
+                # Agrupar por etiqueta de endmember (job.labels)
+                abun_by_name = {}
+                labels_arr = getattr(job, "labels", None)
+                if labels_arr is not None:
+                    labels_arr = np.asarray(labels_arr, dtype=object)
+                    if labels_arr.shape[0] == row_vals.shape[0]:
+                        for lab, val in zip(labels_arr, row_vals):
+                            full = str(lab)
+                            # On enlève le suffixe " #1", " #2", etc. pour matcher les labels de la légende
+                            key = re.sub(r"\s*#\d+$", "", full)
+                            abun_by_name[key] = abun_by_name.get(key, 0.0) + float(val)
+
+                # Construir nuevas labels
+                new_labels = []
+                for base in base_labels:
+                    # quitamos posible "(±std)" para buscar el nombre 'puro'
+                    clean_base = re.sub(r"\s*\(±std\)$", "", base)
+                    val = abun_by_name.get(clean_base, None)
+
+                    if val is not None:
+                        # ejemplo: "Ink A | a=0.734"
+                        new_labels.append(f"{clean_base} | a={(100*val):.1f}")
+                    else:
+                        # Pixel, curvas std, etc -> se dejan igual
+                        new_labels.append(base)
+
+            # Reaplicar legend con las nuevas labels
+            if new_labels:
+                ncol = min(4, max(1, (len(new_labels) // 8 + 1)))
+                leg = self.spec_ax.legend(
+                    handles, new_labels,
+                    loc='upper left',
+                    borderaxespad=0.,
+                    frameon=True,
+                    fontsize='small',
+                    ncol=ncol
+                )
+                leg.set_draggable(True)
+                self.spec_fig.subplots_adjust(right=0.95)
+                self.spec_canvas.draw_idle()
+            else :
+                print('NOOOOOOOOOOOOO NEW LABELS')
+
+        except Exception as e:
+            print("[ABUNDANCE LEGEND] error:", e)
 
     # </editor-fold>
 
@@ -2454,7 +2598,7 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
             wl = getattr(self, "wl_lib", None)
 
             def _name_for(key):
-                return str(key)
+                return self._ci_name(self.class_info_lib, key)
         else:
             QMessageBox.warning(self, "Save endmembers", "Unknown active source.")
             return
@@ -2596,6 +2740,226 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
             cb.blockSignals(False)
         except Exception:
             pass
+
+    def _add_em_to_lib(self):
+        """
+        Add selected MANUAL endmembers to the library, resolving wavelength
+        incompatibilities (Interpolate/Crop/Cancel) before any shape checks.
+        Merge is done by CLASS NAME (not by integer key).
+        """
+        # ---- Guards ---------------------------------------------------------
+        if not isinstance(self.E_manual, dict) or len(self.E_manual) == 0:
+            QMessageBox.warning(self, "No Endmembers", "No manual endmembers available to add.")
+            return
+        self._ensure_lib_structs()
+
+        keys = list(self.E_manual.keys())
+        dlg = SelectEMDialog(self, rows=keys,
+                             get_name=self._class_name_from_manual,
+                             get_rgb=self._class_rgb_from_manual)
+        if dlg.exec_() != QDialog.Accepted:
+            return
+        selected = dlg.selected_keys()
+        if not selected:
+            QMessageBox.information(self, "Nothing selected", "No endmember selected.")
+            return
+
+        # Manual wavelength axis
+        wl_m = self._get_current_wl()
+        if wl_m is None:
+            QMessageBox.critical(self, "Missing wavelengths",
+                                 "Could not determine the wavelength axis for manual endmembers.")
+            return
+        wl_m = wl_m.astype(float)
+
+        # If library empty, adopt manual wl
+        if not self._any_library_present() or self.wl_lib is None:
+            self.wl_lib = wl_m.copy()
+        lib_wl = self.wl_lib.astype(float)
+
+        # Simple chooser
+        def ask_resolve():
+            box = QMessageBox(self)
+            box.setWindowTitle("Wavelength mismatch")
+            box.setText(
+                f"Selected endmembers use {wl_m.size} bands, library uses {lib_wl.size}.\n"
+                "How do you want to resolve this?"
+            )
+            b_interp = box.addButton("Interpolate to library", QMessageBox.AcceptRole)
+            b_cancel = box.addButton("Cancel", QMessageBox.RejectRole)
+            box.setIcon(QMessageBox.Question)
+            box.exec_()
+            if box.clickedButton() is b_interp: return "interp"
+            return "cancel"
+
+        added_any = False
+
+        for key in selected:
+            # --- Normalize MANUAL spectra for this class to (Lm, K) -------------
+            raw = self.E_manual.get(key, None)
+            if raw is None:
+                continue
+            A = np.asarray(raw, dtype=float)
+            if A.ndim == 1:
+                if A.size != wl_m.size:
+                    QMessageBox.warning(self, "Shape mismatch",
+                                        f"Class {key}: spectrum has {A.size} values; expected {wl_m.size}. Skipped.")
+                    continue
+                A = A[:, None]  # (Lm,1)
+            else:
+                # ensure rows = bands
+                if A.shape[0] != wl_m.size and A.shape[1] == wl_m.size:
+                    A = A.T
+                if A.shape[0] != wl_m.size:
+                    QMessageBox.warning(self, "Shape mismatch",
+                                        f"Class {key}: matrix is {A.shape}; cannot match wl size {wl_m.size}. Skipped.")
+                    continue
+
+            # --- Align to library wavelengths BEFORE any _as_LxK ----------------
+            Aligned = A
+            lib_wl = self.wl_lib.astype(float)  # refresh if modified earlier
+
+            if not self._almost_equal_arrays(wl_m, lib_wl):
+                action = ask_resolve()
+                if action == "cancel":
+                    continue
+
+                if action == "interp":
+                    # 1) Crop existing library spectra to the true overlap with wl_m
+                    if not self._crop_library_to_overlap(wl_m):
+                        # No overlap or error -> skip this class
+                        continue
+
+                    # 2) Refresh lib_wl to the cropped axis
+                    lib_wl = self.wl_lib.astype(float)
+
+                    # 3) Interpolate manual EM onto this cropped library axis
+                    Aligned, _ = self._interp_to(lib_wl, wl_m, A)  # (L_lib x K)
+
+            # --- Final shape check on the ALIGNED matrix ------------------------
+            L = int(lib_wl.size)
+            em_to_add = self._as_LxK(Aligned, L)
+
+            # --- Merge by CLASS NAME (not by integer key!) ----------------------
+            name_manual = self.class_info_manual[key][1]
+            color_manual = self.class_info_manual[key][2]
+
+            # find existing class id in library by NAME
+            existing_key = None
+            for k_lib, info in (self.class_info_lib or {}).items():
+                if isinstance(info, (list, tuple)) and len(info) >= 2 and info[1] == name_manual:
+                    existing_key = k_lib
+                    break
+
+            if existing_key is None:
+                # create a new numeric key (next free int)
+                used = [k for k in self.class_info_lib.keys() if isinstance(k, int)] if self.class_info_lib else []
+                new_key = (max(used) + 1) if used else 0
+                while self.class_info_lib and new_key in self.class_info_lib:
+                    new_key += 1
+                self.E_lib[new_key] = em_to_add
+                # class_info_lib entry: [label, name, (B,G,R), ...]
+                if self.class_info_lib is None:
+                    self.class_info_lib = {}
+                self.class_info_lib[new_key] = [new_key, name_manual, color_manual, None]
+            else:
+                # append to existing class bucket
+                cur = np.asarray(self.E_lib.get(existing_key, np.empty((L, 0), float)))
+                cur = self._as_LxK(cur, L)
+                self.E_lib[existing_key] = np.concatenate([cur, em_to_add], axis=1)
+                # keep (or update) color to manual's color
+                try:
+                    self.class_info_lib[existing_key][2] = color_manual
+                except Exception:
+                    pass
+
+            added_any = True
+
+        if added_any:
+            QMessageBox.information(self, "Library updated", "Selected endmembers were added to the library.")
+            self._activate_endmembers('lib')
+            self.fill_form_em('lib')
+            self.update_spectra()
+        else:
+            QMessageBox.information(self, "No changes", "No endmember was added.")
+
+    def _remove_em_from_lib(self):
+        if not hasattr(self, "E_lib") or self.E_lib is None or len(self.E_lib) == 0:
+            QMessageBox.information(self, "Library empty", "No classes to remove.")
+            return
+
+        # --- Prépare la liste des keys existants ---
+        keys = list(self.E_lib.keys())
+
+        # --- Adapter la boîte SelectEMDialog à la suppression ---
+        dlg = SelectEMDialog(
+            self,
+            rows=keys,
+            get_name=lambda k: self._ci_name(self.class_info_lib, k),
+            get_rgb=lambda k: self._ci_rgb(self.class_info_lib, k)
+        )
+
+        # Changer le texte du bouton principal
+        dlg.btn_add.setText("Remove selected")
+
+        if dlg.exec_() != QDialog.Accepted:
+            return
+
+        selected_keys = dlg.selected_keys()
+        if not selected_keys:
+            QMessageBox.information(self, "Nothing selected", "No class selected.")
+            return
+
+        # --- Suppression des classes sélectionnées ---
+        removed = 0
+        for k in selected_keys:
+            if k in self.E_lib:
+                del self.E_lib[k]
+                removed += 1
+            if hasattr(self, "class_info_lib") and k in self.class_info_lib:
+                del self.class_info_lib[k]
+
+        if removed > 0:
+            # Si la lib est vide → reset wl_lib
+            if len(self.E_lib) == 0:
+                self.wl_lib = None
+
+            QMessageBox.information(self, "Removed", f"Removed {removed} class(es) from library.")
+            self._activate_endmembers('lib')
+            self.fill_form_em('lib')
+            self.update_spectra()
+        else:
+            QMessageBox.information(self, "No changes", "No class was removed.")
+
+    def _ci_name(self, ci_dict, key):
+        """
+        Generic helper to get the 'name' from a class_info-like dict:
+        ci_dict: {key: [label, name, (B,G,R), ...]}
+        """
+        ci = ci_dict or {}
+        row = ci.get(key)
+        if isinstance(row, (list, tuple)) and len(row) >= 2:
+            # row = [label, name, (B,G,R), ...]
+            name = row[1] if row[1] not in (None, "", []) else row[0]
+            return str(name) if name is not None else str(key)
+        return str(key)
+
+    def _ci_rgb(self, ci_dict, key):
+        """
+        Generic helper to get RGB from a class_info-like dict storing BGR.
+        Returns (r, g, b) for display.
+        """
+        ci = ci_dict or {}
+        row = ci.get(key)
+        if isinstance(row, (list, tuple)) and len(row) >= 3 and row[2] is not None:
+            try:
+                b, g, r = row[2]   # stored as BGR in class_info
+                return int(r), int(g), int(b)
+            except Exception:
+                pass
+        # fallback neutral gray
+        return (180, 180, 180)
+
 
     # </editor-fold>
 
@@ -2743,147 +3107,6 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         # fallback
         return (180, 180, 180)
 
-    def _add_em_to_lib(self):
-        """
-        Add selected MANUAL endmembers to the library, resolving wavelength
-        incompatibilities (Interpolate/Crop/Cancel) before any shape checks.
-        Merge is done by CLASS NAME (not by integer key).
-        """
-        # ---- Guards ---------------------------------------------------------
-        if not isinstance(self.E_manual, dict) or len(self.E_manual) == 0:
-            QMessageBox.warning(self, "No Endmembers", "No manual endmembers available to add.")
-            return
-        self._ensure_lib_structs()
-
-        keys = list(self.E_manual.keys())
-        dlg = SelectEMDialog(self, rows=keys,
-                             get_name=self._class_name_from_manual,
-                             get_rgb=self._class_rgb_from_manual)
-        if dlg.exec_() != QDialog.Accepted:
-            return
-        selected = dlg.selected_keys()
-        if not selected:
-            QMessageBox.information(self, "Nothing selected", "No endmember selected.")
-            return
-
-        # Manual wavelength axis
-        wl_m = self._get_current_wl()
-        if wl_m is None:
-            QMessageBox.critical(self, "Missing wavelengths",
-                                 "Could not determine the wavelength axis for manual endmembers.")
-            return
-        wl_m = wl_m.astype(float)
-
-        # If library empty, adopt manual wl
-        if not self._any_library_present() or self.wl_lib is None:
-            self.wl_lib = wl_m.copy()
-        lib_wl = self.wl_lib.astype(float)
-
-        # Simple chooser
-        def ask_resolve():
-            box = QMessageBox(self)
-            box.setWindowTitle("Wavelength mismatch")
-            box.setText(
-                f"Selected endmembers use {wl_m.size} bands, library uses {lib_wl.size}.\n"
-                "How do you want to resolve this?"
-            )
-            b_interp = box.addButton("Interpolate to library", QMessageBox.AcceptRole)
-            b_cancel = box.addButton("Cancel", QMessageBox.RejectRole)
-            box.setIcon(QMessageBox.Question)
-            box.exec_()
-            if box.clickedButton() is b_interp: return "interp"
-            return "cancel"
-
-        added_any = False
-
-        for key in selected:
-            # --- Normalize MANUAL spectra for this class to (Lm, K) -------------
-            raw = self.E_manual.get(key, None)
-            if raw is None:
-                continue
-            A = np.asarray(raw, dtype=float)
-            if A.ndim == 1:
-                if A.size != wl_m.size:
-                    QMessageBox.warning(self, "Shape mismatch",
-                                        f"Class {key}: spectrum has {A.size} values; expected {wl_m.size}. Skipped.")
-                    continue
-                A = A[:, None]  # (Lm,1)
-            else:
-                # ensure rows = bands
-                if A.shape[0] != wl_m.size and A.shape[1] == wl_m.size:
-                    A = A.T
-                if A.shape[0] != wl_m.size:
-                    QMessageBox.warning(self, "Shape mismatch",
-                                        f"Class {key}: matrix is {A.shape}; cannot match wl size {wl_m.size}. Skipped.")
-                    continue
-
-            # --- Align to library wavelengths BEFORE any _as_LxK ----------------
-            Aligned = A
-            lib_wl = self.wl_lib.astype(float)  # refresh if modified earlier
-
-            if not self._almost_equal_arrays(wl_m, lib_wl):
-                action = ask_resolve()
-                if action == "cancel":
-                    continue
-
-                if action == "interp":
-                    # 1) Crop existing library spectra to the true overlap with wl_m
-                    if not self._crop_library_to_overlap(wl_m):
-                        # No overlap or error -> skip this class
-                        continue
-
-                    # 2) Refresh lib_wl to the cropped axis
-                    lib_wl = self.wl_lib.astype(float)
-
-                    # 3) Interpolate manual EM onto this cropped library axis
-                    Aligned, _ = self._interp_to(lib_wl, wl_m, A)  # (L_lib x K)
-
-            # --- Final shape check on the ALIGNED matrix ------------------------
-            L = int(lib_wl.size)
-            em_to_add = self._as_LxK(Aligned, L)
-
-            # --- Merge by CLASS NAME (not by integer key!) ----------------------
-            name_manual = self.class_info_manual.get(key, [None, f"class{key}", (180, 180, 180)])[1]
-            color_manual = self.class_info_manual.get(key, [None, None, (180, 180, 180)])[2]
-
-            # find existing class id in library by NAME
-            existing_key = None
-            for k_lib, info in (self.class_info_lib or {}).items():
-                if isinstance(info, (list, tuple)) and len(info) >= 2 and info[1] == name_manual:
-                    existing_key = k_lib
-                    break
-
-            if existing_key is None:
-                # create a new numeric key (next free int)
-                used = [k for k in self.class_info_lib.keys() if isinstance(k, int)] if self.class_info_lib else []
-                new_key = (max(used) + 1) if used else 0
-                while self.class_info_lib and new_key in self.class_info_lib:
-                    new_key += 1
-                self.E_lib[new_key] = em_to_add
-                # class_info_lib entry: [label, name, (B,G,R), ...]
-                if self.class_info_lib is None:
-                    self.class_info_lib = {}
-                self.class_info_lib[new_key] = [new_key, name_manual, color_manual, None]
-            else:
-                # append to existing class bucket
-                cur = np.asarray(self.E_lib.get(existing_key, np.empty((L, 0), float)))
-                cur = self._as_LxK(cur, L)
-                self.E_lib[existing_key] = np.concatenate([cur, em_to_add], axis=1)
-                # keep (or update) color to manual's color
-                try:
-                    self.class_info_lib[existing_key][2] = color_manual
-                except Exception:
-                    pass
-
-            added_any = True
-
-        if added_any:
-            QMessageBox.information(self, "Library updated", "Selected endmembers were added to the library.")
-            self._activate_endmembers('lib')
-            self.fill_form_em('lib')
-            self.update_spectra()
-        else:
-            QMessageBox.information(self, "No changes", "No endmember was added.")
 
     # </editor-fold>
 
@@ -3070,6 +3293,26 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
                 self._handle_selection(coords)  # close selection
             return True
 
+        # --- Actualización de la legend con abundancias al pasar el ratón por viewer_right ---
+        if source is self.viewer_right.viewport() and event.type() == QEvent.MouseMove:
+            try:
+                if self.data is not None:
+                    pos = self.viewer_right.mapToScene(event.pos())
+                    x, y = int(pos.x()), int(pos.y())
+                    H, W = self.data.shape[:2]
+                    if 0 <= x < W and 0 <= y < H:
+                        self._update_abundance_legend_for_pixel(x, y)
+            except Exception as e:
+                print("[EVT] error abundance hover:", e)
+            # devolvemos False para no bloquear scroll/zoom
+            return False
+
+        if source is self.viewer_right.viewport() and event.type() == QEvent.Leave:
+            # Cuando el ratón sale de la imagen, limpiamos los sufijos " | a=..."
+            self._update_abundance_legend_for_pixel(None, None)
+            return False
+
+
         # 4) Mouvement souris pour le live spectrum
         # if source is self.viewer_left.viewport() and event.type() == QEvent.MouseMove and         self.checkBox_live_spectra.isChecked():
         #     if self.checkBox_live_spectra.isChecked() and self.data is not None:
@@ -3082,6 +3325,8 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         #     return True
 
         # return super().eventFilter(source, event)
+
+
         return False
 
     def _on_bandselect(self, lambda_min, lambda_max):
@@ -3522,14 +3767,34 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         em_merge = self.checkBox_unmix_merge_EM_groups.isChecked()
         p = int(self.nclass_box.value())
 
+        # --- NEW: preprocess mode depuis comboBox_preprocess
+        txt_pre = self.comboBox_preprocess.currentText() or ""
+        txt_pre = txt_pre.lower()
+        if "first" in txt_pre or "1" in txt_pre:
+            preprocess = "deriv1"
+        elif "second" in txt_pre or "2" in txt_pre:
+            preprocess = "deriv2"
+        else:
+            preprocess = "raw"
+
         return dict(
             algo=algo, norm=norm, anc=anc, asc=asc, tol=tol, lam=lam, rho=rho,
-            max_iter=max_iter, em_src=em_src, em_merge=em_merge, p=p
+            max_iter=max_iter, em_src=em_src, em_merge=em_merge, p=p,
+            preprocess=preprocess,   # NEW
         )
 
     def _format_params_summary(self, P: dict) -> str:
         # court et lisible dans la table
         bits = [f"norm={P['norm']}"]
+
+        pre = P.get("preprocess", "raw")
+        if pre == "deriv1":
+            bits.append("pre=1st deriv")
+        elif pre == "deriv2":
+            bits.append("pre=2nd deriv")
+        else:
+            bits.append("pre=raw")
+
         if P["algo"] == "SUnSAL":
             bits += [f"λ={P['lam']:.1e}", f"tol={P['tol']:.1e}", f"ρ={P['rho']:.3g}",
                      f"ANC={'on' if P['anc'] else 'off'}", f"ASC={'on' if P['asc'] else 'off'}",
@@ -3583,6 +3848,7 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
             rho=P["rho"],
             anc=P["anc"],
             asc=P["asc"],
+            preprocess=P["preprocess"],
             params=P,
             _frozen_params=frozen,
         )
@@ -3639,7 +3905,8 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
                 max_iter=job.max_iter,
                 p=getattr(self, "nclass_box", None).value() if hasattr(self, "nclass_box") else None,
                 em_src=job.em_src,
-                em_merge=job.merge_EM
+                em_merge=job.merge_EM,
+                preprocess=getattr(job, "preprocess", "raw"),
             )
             self._insert_job_row(name, P)
 
@@ -3737,6 +4004,7 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         self._init_classification_table(self.tableWidget_classificationList)
         self._refresh_viz_model_combo()
         self._refresh_table()
+
     def _move_job(self, delta: int):
         row = self.tableWidget_classificationList.currentRow()
         if row < 0: return

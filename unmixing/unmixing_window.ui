@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1300</width>
-    <height>805</height>
+    <width>1304</width>
+    <height>814</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -177,11 +177,22 @@
                </widget>
               </item>
               <item>
-               <widget class="QPushButton" name="pushButton_add_EM">
-                <property name="text">
-                 <string>Add manual endmembers</string>
-                </property>
-               </widget>
+               <layout class="QHBoxLayout" name="horizontalLayout_10">
+                <item>
+                 <widget class="QPushButton" name="pushButton_add_EM">
+                  <property name="text">
+                   <string>Add manual endmembers</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QPushButton" name="pushButton_remove_EM">
+                  <property name="text">
+                   <string>Remove endmembers</string>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
               </item>
               <item>
                <widget class="QScrollArea" name="scrollArea">
@@ -193,8 +204,8 @@
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>495</width>
-                   <height>105</height>
+                   <width>589</width>
+                   <height>113</height>
                   </rect>
                  </property>
                  <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -270,7 +281,7 @@
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>59</width>
+                   <width>63</width>
                    <height>20</height>
                   </rect>
                  </property>
@@ -421,7 +432,7 @@
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>177</width>
+                   <width>181</width>
                    <height>20</height>
                   </rect>
                  </property>
