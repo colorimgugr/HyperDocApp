@@ -611,12 +611,14 @@ class AbundanceGalleryWindow(QDialog):
                 title = f"{job.name} – {em_name}"
                 items.append(dict(
                     title=title,
+                    job_name=job.name,
                     amap=amap,
                     img=img,
                     local_max=local_max,
                     global_sum=global_sum,
-                    name_key=job.name
+                    name_key=job.name,
                 ))
+
 
         # --- Mode 1 : tous les endmembers d’un modèle ---
         else:
@@ -663,11 +665,12 @@ class AbundanceGalleryWindow(QDialog):
                 title = f"{job.name} – {base}"
                 items.append(dict(
                     title=title,
+                    job_name=job.name,
                     amap=amap,
                     img=img,
                     local_max=local_max,
                     global_sum=global_sum,
-                    name_key=base
+                    name_key=base,
                 ))
 
         # --- Tri ---
@@ -684,20 +687,51 @@ class AbundanceGalleryWindow(QDialog):
             # sort by global max abundance (sum over map, desc)
             items.sort(key=lambda d: d["global_sum"], reverse=True)
 
-
         # --- Calcul des pourcentages pour affichage ---
+
         # max local en % (on suppose que les abondances sont ~[0,1])
         for it in items:
             it["max_pct"] = 100.0 * it["local_max"]
 
-        # intégrale en % de l'endmember total (somme des intégrales des cartes visibles)
-        total_sum = sum(it["global_sum"] for it in items)
-        for it in items:
-            if total_sum > 0:
-                it["sum_pct"] = 100.0 * it["global_sum"] / total_sum
-            else:
-                it["sum_pct"] = 0.0
+        # sum_pct :
+        #   - en mode 0 (compare same endmember for all models) :
+        #       sum_pct = 100 * global_sum(EM_k du modèle M) / sum( global_sum(TOUS les EM de M) )
+        #       => on doit repartir du job.A complet
+        #   - en mode 1 (see all endmembers for one model) :
+        #       items contient déjà tous les EM du même modèle,
+        #       donc on peut normaliser par la somme des global_sum de items.
 
+        if mode == 0:
+            # On calcule une fois la somme totale des abondances pour chaque job à partir de job.A
+            model_totals = {}
+            for it in items:
+                job_name = it["job_name"]
+                if job_name in model_totals:
+                    continue
+                job = self.tool.jobs.get(job_name)
+                A = getattr(job, "A", None)
+                if A is None:
+                    model_totals[job_name] = 0.0
+                    continue
+                A = np.asarray(A, dtype=float)
+                model_totals[job_name] = float(np.nansum(A)) if A.size else 0.0
+
+            for it in items:
+                job_name = it["job_name"]
+                tot = model_totals.get(job_name, 0.0)
+                if tot > 0:
+                    it["sum_pct"] = 100.0 * it["global_sum"] / tot
+                else:
+                    it["sum_pct"] = 0.0
+
+        else:
+            # mode 1 : on a tous les EM d'un seul modèle dans items
+            total_sum = sum(it["global_sum"] for it in items)
+            for it in items:
+                if total_sum > 0:
+                    it["sum_pct"] = 100.0 * it["global_sum"] / total_sum
+                else:
+                    it["sum_pct"] = 0.0
 
         # --- Construction des cartes dans le scroll ---
         for it in items:
@@ -716,7 +750,6 @@ class AbundanceGalleryWindow(QDialog):
             lbl.setAlignment(Qt.AlignCenter)
             lbl.setStyleSheet("font-weight: bold;")
             vlay.addWidget(lbl)
-
 
             view = SyncedAbundanceView()
             view.setDragMode(QGraphicsView.ScrollHandDrag)
