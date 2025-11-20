@@ -611,8 +611,9 @@ class Hypercube:
         elif ext == '.hdr':
             try:
                 img = envi.open(filepath)
-                self.data = img.load().astype(np.float32)
                 self.metadata = copy.deepcopy(img.metadata)
+                # dtype = self.metadata.get('data type')
+                self.data = img.load().astype(np.float32)
 
                 wl = self.metadata.get('wavelength')
                 if wl is None:
@@ -1831,36 +1832,34 @@ class HDF5BrowserWidget(QWidget, Ui_HDF5BrowserWidget):
 
 if __name__ == '__main__':
 
-    folder = r'C:\Users\Usuario\Documents\DOC_Yannick\HYPERDOC Database_TEST\Samples\minicubes/'
-    fname = '00279-VNIR-mock-up.h5'
-    # folder=(r'C:\Users\Usuario\Documents\DOC_Yannick\HYPERDOC Database_TEST\identification')
-    # fname='01378-VNIR-royal.h5'
+    # folder = r'C:\Users\Usuario\Documents\DOC_Yannick\HYPERDOC Database_TEST\Samples\minicubes/'
+    # fname = '00279-VNIR-mock-up.h5'
+    folder=(r'C:\Users\Usuario\Documents\DOC_Yannick\HYPERDOC Database_TEST\From_Cameras\Specim-IQ\IQ_185\results/')
+    fname='REFLECTANCE_IQ_185.hdr'
 
     import os
-
     filepath = os.path.join(folder, fname)
-
-    app = QApplication(sys.argv)
 
     # cube = Hypercube(filepath=filepath, load_init=True)
     cube = Hypercube(filepath=filepath, cube_info=None, load_init=True)
     # img = cube.get_rgb_image([50, 30, 10])
-    img=cube.get_binary_from_best_band()
 
-    window = QMainWindow()
-    central_widget = QWidget()
-    layout = QVBoxLayout(central_widget)
+    # app = QApplication(sys.argv)
 
-    mpl = MatplotlibCanvas()
-    toolbar = NavigationToolbar(mpl, window)
-    layout.addWidget(toolbar)
-    layout.addWidget(mpl)
-
-    window.setCentralWidget(central_widget)
-
-    # Affichage de l'image
-    mpl.ax.imshow(img)
-    mpl.draw()
-
-    window.show()
-    sys.exit(app.exec_())
+    # window = QMainWindow()
+    # central_widget = QWidget()
+    # layout = QVBoxLayout(central_widget)
+    #
+    # mpl = MatplotlibCanvas()
+    # toolbar = NavigationToolbar(mpl, window)
+    # layout.addWidget(toolbar)
+    # layout.addWidget(mpl)
+    #
+    # window.setCentralWidget(central_widget)
+    #
+    # # Affichage de l'image
+    # mpl.ax.imshow(img)
+    # mpl.draw()
+    #
+    # window.show()
+    # sys.exit(app.exec_())

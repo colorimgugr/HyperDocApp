@@ -20,7 +20,6 @@ from PyQt5.QtWidgets import (QApplication, QSizePolicy, QSplitter,QHeaderView,QP
 from PyQt5.QtGui import QPixmap, QImage,QGuiApplication,QStandardItemModel, QStandardItem,QColor
 from PyQt5.QtCore import Qt,QObject, pyqtSignal, QRunnable, QThreadPool, pyqtSlot, QRectF,QEvent,QRect, QPoint, QSize
 
-
 # Graphs
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
@@ -46,6 +45,8 @@ from identification.load_cube_dialog import Ui_Dialog
 #todo : viz spectra -> show/hide by clicking line or title (or ctrl+click)
 #todo : add one pixel fusion
 #todo : select pixels of endmembers also with ctrl+clic left
+# todo : con Fran -> look pinta salidas en matlab
+# todo : ask him how is the specim_IQ reflectances files.
 # </editor-fold>
 
 class SelectEMDialog(QDialog):

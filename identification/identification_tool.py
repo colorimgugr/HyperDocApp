@@ -26,6 +26,8 @@ from hypercubes.hypercube import Hypercube
 from interface.some_widget_for_interface  import ZoomableGraphicsView
 from identification.load_cube_dialog import Ui_Dialog
 
+#todo : load map !!!!
+
 def _safe_name_from(cube) -> str:
     md = getattr(cube, "metadata", {}) or {}
     if isinstance(md, dict):
@@ -852,6 +854,7 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         self.radioButton_overlay_identification.toggled.connect(self.update_overlay)
         self.pushButton_clean_start_selected.clicked.connect(self._on_click_clean_start_selected)
         self.pushButton_clean_start_all.clicked.connect(self._on_click_clean_start_all)
+        self.pushButton_load_map.clicked.connect(self.load_map)
 
         self.radioButton_clean_show_raw.toggled.connect(self.update_overlay)
         self.radioButton_clean_show_cleaned.toggled.connect(self.update_overlay)
@@ -3280,6 +3283,230 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
                                f"model bands={wl_ref.size}, cube bands={self.wl.size}")
 
         return False, "Cannot verify feature compatibility (no train_wl in model)."
+
+    def load_map(self):
+        """
+        Charge une carte de classification sauvegardée en .h5 avec _write_h5_class_map
+        et l'ajoute comme un nouveau job 'Done' dans la file, avec palette + labels
+        + métadonnées (rect, params binaires, clean, spectral range…).
+        """
+        from PyQt5.QtWidgets import QFileDialog, QMessageBox
+        import os
+        import h5py
+        import numpy as np
+
+        # --- 1) Choix du fichier ---
+        path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Load classification map",
+            "",
+            "HDF5 files (*.h5 *.hdf5);;All files (*)"
+        )
+        if not path:
+            return
+
+        def _decode_str(x):
+            if isinstance(x, (bytes, np.bytes_)):
+                try:
+                    return x.decode("utf-8")
+                except Exception:
+                    return x.decode(errors="ignore")
+            return str(x)
+
+        def _read_group_to_dict(group):
+            """Lecture récursive d'un groupe HDF5 -> dict (pour binary_param / clean_param)."""
+            out = {}
+            # attrs
+            for k, v in group.attrs.items():
+                out[k] = v
+            # datasets / sous-groupes
+            for name, item in group.items():
+                if isinstance(item, h5py.Dataset):
+                    data = item[()]
+                    # Décodage éventuel de chaînes
+                    if isinstance(data, (bytes, np.bytes_)):
+                        data = _decode_str(data)
+                    elif isinstance(data, np.ndarray) and data.dtype.kind in ("S", "O", "U"):
+                        # tableau de chaînes
+                        data = [
+                            _decode_str(val)
+                            for val in data.ravel().tolist()
+                        ]
+                    out[name] = data
+                elif isinstance(item, h5py.Group):
+                    out[name] = _read_group_to_dict(item)
+            return out
+
+        try:
+            # --- 2) Lecture du fichier HDF5 ---
+            with h5py.File(path, "r") as f:
+                if "class_map" not in f:
+                    raise ValueError("Dataset 'class_map' not found in file.")
+
+                class_map = np.asarray(f["class_map"][()])
+                if class_map.ndim != 2:
+                    raise ValueError(f"'class_map' must be 2D, got shape {class_map.shape}.")
+
+                meta_grp = f.get("Metadata", None)
+
+                # Valeurs par défaut
+                base_name = os.path.splitext(os.path.basename(path))[0]
+                clf_name = base_name
+                clf_type = "Loaded H5 map"
+                labels = None
+                palette_bgr = None
+                rect = None
+                spectral_range_used = None
+                binary_param = None
+                clean_param = None
+                substrate_name = "Unknown Substrate"
+
+                # --- 3) Métadonnées si dispo ---
+                if meta_grp is not None:
+                    # Nom / type de classif
+                    if "classifier_name" in meta_grp.attrs:
+                        clf_name = _decode_str(meta_grp.attrs["classifier_name"])
+                    if "classifier_type" in meta_grp.attrs:
+                        clf_type = _decode_str(meta_grp.attrs["classifier_type"])
+
+                    # Labels des classes
+                    if "class_labels" in meta_grp:
+                        raw = meta_grp["class_labels"][()]
+                        arr = np.array(raw)
+                        if arr.ndim == 0:
+                            arr = arr.reshape(1)
+                        labels = {}
+                        for i, v in enumerate(arr.tolist()):
+                            labels[i] = _decode_str(v)
+                        if labels:
+                            substrate_name = labels.get(0, substrate_name)
+
+                    # Palette (enregistrée en RGB, on repasse en BGR)
+                    if "palette" in meta_grp:
+                        pal = np.asarray(meta_grp["palette"][()], dtype=np.uint8)
+                        palette_bgr = {}
+                        for i in range(pal.shape[0]):
+                            r, g, b = pal[i]
+                            palette_bgr[i] = (int(b), int(g), int(r))
+
+                    # Rectangle de crop
+                    if "rect_crop" in meta_grp:
+                        rc = np.asarray(meta_grp["rect_crop"][()]).ravel()
+                        if rc.size >= 4:
+                            y, x, h, w = [int(v) for v in rc[:4]]
+                            rect = (y, x, h, w)
+
+                    # Spectral range utilisé
+                    if "spectral_range_used" in meta_grp:
+                        sr = np.asarray(meta_grp["spectral_range_used"][()]).ravel()
+                        if sr.size >= 1:
+                            spectral_range_used = [float(sr[0]), float(sr[-1])]
+
+                    # Params binaires / cleaning
+                    if "binary_param" in meta_grp:
+                        binary_param = _read_group_to_dict(meta_grp["binary_param"])
+                    if "clean_param" in meta_grp:
+                        clean_param = _read_group_to_dict(meta_grp["clean_param"])
+
+                # Fallback du spectral_range si nécessaire
+                if spectral_range_used is None:
+                    if isinstance(self.wl, np.ndarray) and self.wl.size > 0:
+                        spectral_range_used = [float(self.wl[0]), float(self.wl[-1])]
+                    else:
+                        spectral_range_used = [0.0, 0.0]
+
+                # --- 4) Palette / labels par défaut si manquants ---
+                max_cls = int(class_map.max()) if class_map.size else 0
+
+                if labels is None:
+                    labels = {i: f"class_{i}" for i in range(max_cls + 1)}
+
+                if palette_bgr is None:
+                    # Si une palette existe déjà dans le widget, on la recycle
+                    if hasattr(self, "palette_bgr") and self.palette_bgr:
+                        palette_bgr = {}
+                        for i in range(max_cls + 1):
+                            palette_bgr[i] = self.palette_bgr.get(i, (0, 0, 0))
+                    else:
+                        # Palette simple pseudo-aléatoire mais stable
+                        palette_bgr = {0: (128, 128, 128)}
+                        for i in range(1, max_cls + 1):
+                            palette_bgr[i] = (
+                                (37 * i) % 255,
+                                (91 * i) % 255,
+                                (179 * i) % 255
+                            )
+
+        except Exception as e:
+            QMessageBox.critical(self, "Load map error", f"Could not load map:\n{e}")
+            return
+
+        # --- 5) Intégration dans le widget comme un job 'Done' ---
+
+        # Mise à jour de la palette globale + labels
+        self.palette_bgr = palette_bgr
+        self.labels = labels
+        self.substrate_label = substrate_name
+
+        # Nom unique pour le job
+        unique_name = self._ensure_unique_name(clf_name)
+        if unique_name is None:
+            # L'utilisateur a refusé d'ajouter un doublon
+            return
+
+        # Création du job
+        job = ClassificationJob(unique_name, clf_type, kind="Loaded H5 map")
+        job.status = "Done"
+        job.class_map = class_map.astype(np.int32, copy=False)
+        job.rect = rect
+        job.spectral_range_used = spectral_range_used
+        job.binary_param = binary_param
+        job.clean_param = clean_param
+        if isinstance(binary_param, dict):
+            job.binary_algo = binary_param.get("algorithm")
+        else:
+            job.binary_algo = None
+        job.substrate_name = substrate_name
+
+        # Enregistrement dans les structures
+        self.jobs[unique_name] = job
+        self.job_order.append(unique_name)
+        self._refresh_table()
+        self._refresh_show_model_combo(select_name=unique_name)
+        self._refresh_clean_sources_list()
+
+        # --- 6) Affichage immédiat ---
+
+        # Problème potentiel si la taille de la map != image RGB
+        if self.data is not None and class_map.shape != self.data.shape[:2]:
+            QMessageBox.warning(
+                self, "Size mismatch",
+                f"Loaded map shape {class_map.shape} does not match current cube image "
+                f"shape {self.data.shape[:2]}.\n"
+                "The map will be shown without RGB overlay."
+            )
+
+            # On affiche la carte seule (sans overlay) :
+            def _colorize(cm: np.ndarray) -> np.ndarray:
+                colors = self.palette_bgr
+                h, w = cm.shape
+                result_rgb = np.zeros((h, w, 3), dtype=np.uint8)
+                for val, bgr in colors.items():
+                    result_rgb[cm == val] = bgr
+                return result_rgb
+
+            rgb_map = _colorize(class_map)
+            self.viewer_right.setImage(self._np2pixmap(rgb_map))
+            self.label_viewer_right.setText("RAW map (loaded)")
+            # On laisse la viewer_left telle quelle (RGB actuelle ou vide)
+            self.labels[0] = job.substrate_name
+            self.update_legend()
+            self._set_info_rows()
+        else:
+            # Cas normal : on utilise le pipeline existant
+            self.class_map = class_map
+            self.radioButton_overlay_identification.setChecked(True)
+            self.show_classification_result()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

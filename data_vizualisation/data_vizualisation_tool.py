@@ -598,6 +598,8 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
 
     def update_metadata_label(self):
         key = self.comboBox_metadata.currentText()
+        hyp = self.hyps[self.radioButton_SWIR.isChecked()]
+
         if key == '':
             try:
                 key = 'cubeinfo'
@@ -605,7 +607,6 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
             except:
                 pass
 
-        hyp = self.hyps[self.radioButton_SWIR.isChecked()]
         raw = hyp.metadata[key]
 
         try:
