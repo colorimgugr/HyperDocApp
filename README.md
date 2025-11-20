@@ -4,11 +4,55 @@
 
 ---
 
+## 📚 Table of Contents
+[Overview](#-overview)  
+[Key Features](#-key-features)  
+[1. Metadata Tool](#-1-metadata-tool)  
+[2. Data Visualization Tool](#-2-data-visualization-tool)  
+[3. Registration Tool](#-3-registration-tool)  
+[4. Ground Truth Tool](#-4-ground-truth-tool)  
+[5. Minicube Extract Tool](#-5-minicube-extract-tool)  
+[6. Identification Tool](#-6-identification-tool)  
+[7. Illumination Tool](#-7-illumination-tool)  
+[8. HDF5 / File Browser](#-8-hdf5--file-browser)  
+[9. White Calibration Window](#-9-white-calibration-window)  
+[Cube Management and Synchronization](#-cube-management-and-synchronization)  
+[Tips & Tricks](#-tips--tricks)  
+[Launching the Application](#-launching-the-application)
+[Authors & Credits](#-authors--credits)  
+[License](#-license)
+
 ## 🧭 Overview
 
 Hypertool integrates multiple processing modules ("tools") into a single workspace. Each tool is accessible through dockable panels and shares a common cube and metadata manager.
 
 Supported formats include **MATLAB (.mat)**, **HDF5 (.h5)**, and **ENVI (.hdr)**.
+
+---
+
+## ✨ Key Features
+
+Load and manage multiple hyperspectral cubes simultaneously
+
+Advanced visualization (RGB, grayscale, spectra, GT overlay)
+
+Precise VNIR–SWIR registration
+
+Ground truth creation & class labelling
+
+Minicube extraction with editable metadata
+
+Endmember extraction & spectral unmixing
+
+Synchronized abundance map gallery
+
+Machine learning classification (KNN, SVM, LDA, CNN, RF…)
+
+Illumination modeling (render RGB under D65, A, F2, etc.)
+
+Full HDF5 explorer to load unknown file structures
+
+White calibration (flat-field and reference panel workflows)
 
 ---
 
@@ -35,7 +79,7 @@ All modules interact through the shared **HypercubeManager**, ensuring synchroni
 
 ---
 
- ## <img src="/interface/icons/metadata_icon.svg" width="26" />  1. Metadata Tool
+ ## <img src="/interface/icons/metadata_icon.svg" width="26" /> 1. Metadata Tool
 
 **Purpose:** Inspect, edit, and generate metadata for a loaded cube.
 
@@ -100,7 +144,7 @@ All modules interact through the shared **HypercubeManager**, ensuring synchroni
 ### Tips
 - Toggle transparency to inspect GT overlay.
 - Merge or reassign classes interactively.
-- Use **Live Spectra** mode to preview pixel responses.
+- Use **Live Spectra** mode to preview pixel spectrum.
 
 ---
 
@@ -187,18 +231,22 @@ All modules interact through the shared **HypercubeManager**, ensuring synchroni
 
 - Use the **toolbar icons** for one-click access to tools.
 - Docks can be detached, resized, or made fullscreen (⛶ button).
-- The **cube list** menu helps quickly switch between active datasets.
-- Keyboard shortcuts and sliders allow fast channel tuning.
-
+- Ctrl+scroll or drag to zoom/pan viewers
 ---
 
 ## 🧑‍💻 Launching the Application
+
+the simplest way for windows : 
+- Dowload the .zip file
+- Extract it on your disk
+- Lauch the .exe file
 
 
 ```bash
 # From your project root
 git clone https://github.com/yourusername/Hypertool.git
 cd Hypertool
+python install_requirements.py
 python MainWindow.py
 ```
 
@@ -218,8 +266,6 @@ pyinstaller --noconfirm --noconsole --exclude-module tensorflow --exclude-module
 ## 🧩 Authors & Credits
 
 Developed by **CIMLab / Hyperdoc Project Team**.
-
-Includes code contributions for hyperspectral data handling, image registration, machine learning classification, and illumination modeling.
 
 ---
 
