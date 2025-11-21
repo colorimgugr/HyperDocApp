@@ -803,6 +803,65 @@ def fused_cube(cube1, cube2, *, copy_common_meta: bool = True):
     if cube1 is None and cube2 is None:
         raise ValueError("fused_cube: at least one cube is required")
 
+    def _ensure_wl_units_for_single_pixel(cube, role_label: str):
+        """
+        Si le cube ne contient qu'un seul spectre (1 pixel), demande à l'utilisateur
+        si les longueurs d'onde sont en nm ou en cm-1.
+        - Si cm-1 : convertit en nm (1e7 / nu) et trie les bandes.
+        - Si nm : se contente de trier les bandes si nécessaire.
+        """
+        if cube is None:
+            return
+        data = getattr(cube, "data", None)
+        wl = getattr(cube, "wl", None)
+        if data is None or wl is None:
+            return
+        if data.ndim != 3:
+            return
+
+        h, w, b = data.shape
+        if h * w > 1:
+            # Ce n'est pas un cube "1 spectre", on ne fait rien
+            return
+
+        wl = np.array(wl, dtype=float)
+
+        # Boîte de dialogue pour demander l'unité
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Question)
+        msg.setWindowTitle("Unité des longueurs d'onde")
+        msg.setText(
+            f"Le cube {role_label} contient un seul spectre (un pixel).\n\n"
+            "Dans quelle unité sont exprimées ses longueurs d'onde ?"
+        )
+        btn_nm = msg.addButton("nanomètres (nm)", QMessageBox.AcceptRole)
+        btn_cm = msg.addButton("nombre d'onde (cm⁻¹)", QMessageBox.ActionRole)
+        btn_cancel = msg.addButton(QMessageBox.Cancel)
+
+        msg.setDefaultButton(btn_nm)
+        msg.exec_()
+        clicked = msg.clickedButton()
+
+        if clicked is btn_cancel:
+            # On annule la fusion
+            raise RuntimeError("Fusion annulée par l'utilisateur (choix des unités).")
+
+        if clicked is btn_cm:
+            # Conversion cm-1 -> nm
+            # λ (nm) = 1e7 / ν (cm-1)
+            wl_nm = 1e7 / wl
+        else:
+            # Déjà en nm
+            wl_nm = wl
+
+        # On s'assure que wl est dans l'ordre croissant
+        order = np.argsort(wl_nm)
+        if not np.all(order == np.arange(order.size)):
+            wl_nm = wl_nm[order]
+            cube.data = cube.data[:, :, order]
+
+        cube.wl = wl_nm
+
     # Decide roles from wavelength starts
     if cube1 is None or cube2 is None:
         parent = cube1 or cube2
@@ -822,7 +881,7 @@ def fused_cube(cube1, cube2, *, copy_common_meta: bool = True):
     else:
         raise ValueError("fused_cube: could not infer VNIR/SWIR from wavelength ranges")
 
-    target = {'VNIR': (400, 950), 'SWIR': (955, 1700)}
+    target = {'VNIR': (400, 950), 'SWIR': (955, 20000)}
 
     # Crop both ranges
     hyps_cut = {}
@@ -835,9 +894,49 @@ def fused_cube(cube1, cube2, *, copy_common_meta: bool = True):
         wl_cut   = wl[start_idx:end_idx + 1]
         hyps_cut[role] = Hypercube(data=data_cut, wl=wl_cut, cube_info=cube.cube_info)
 
+    _ensure_wl_units_for_single_pixel(VNIR, "VNIR")
+    _ensure_wl_units_for_single_pixel(SWIR, "SWIR")
+
     # Spatial check
     h1, w1, _ = hyps_cut["VNIR"].data.shape
     h2, w2, _ = hyps_cut["SWIR"].data.shape
+
+    n1 = h1 * w1
+    n2 = h2 * w2
+
+    def _broadcast_single(data, H, W):
+        """
+        Prend un cube avec 0 ou 1 pixel et duplique le spectre
+        sur une image HxW.
+        """
+        h, w, B = data.shape
+        if h * w == 0:
+            # cas dégénéré : on crée un spectre nul
+            spec = np.zeros((B,), dtype=data.dtype)
+        else:
+            # on prend le seul spectre disponible
+            spec = data.reshape(-1, B)[0]
+        out = np.tile(spec[None, None, :], (H, W, 1))
+        return out
+
+    if (h1 != h2) or (w1 != w2):
+        # Si l'un des deux cubes n'a qu'un seul pixel, on le diffuse sur l'autre
+        if n1 <= 1 and n2 > 1:
+            hyps_cut["VNIR"].data = _broadcast_single(hyps_cut["VNIR"].data, h2, w2)
+        elif n2 <= 1 and n1 > 1:
+            hyps_cut["SWIR"].data = _broadcast_single(hyps_cut["SWIR"].data, h1, w1)
+        elif n1 <= 1 and n2 <= 1:
+            # les deux sont "un seul spectre" -> on choisit 1x1
+            Ht = max(h1, h2, 1)
+            Wt = max(w1, w2, 1)
+            hyps_cut["VNIR"].data = _broadcast_single(hyps_cut["VNIR"].data, Ht, Wt)
+            hyps_cut["SWIR"].data = _broadcast_single(hyps_cut["SWIR"].data, Ht, Wt)
+
+        # on recalcule les tailles après éventuel broadcast
+        h1, w1, _ = hyps_cut["VNIR"].data.shape
+        h2, w2, _ = hyps_cut["SWIR"].data.shape
+
+    # Check final (si toujours pas compatibles, on lève une erreur)
     if (h1 != h2) or (w1 != w2):
         raise ValueError(f"fused_cube: incompatible spatial dims VNIR={h1}x{w1}, SWIR={h2}x{w2}")
 
