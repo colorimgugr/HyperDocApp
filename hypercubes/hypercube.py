@@ -901,6 +901,10 @@ class Hypercube:
                 self.other_white_capture=False # if other file loaded.
                 self.use_unity_white = False
 
+                self.cube_main = None
+                self.cube_white= None
+                self.cube_dark= None
+
                 # Add ZoomableGraphicsView into frame_image
                 self.viewer = ZoomableGraphicsView()
                 layout = QVBoxLayout()
@@ -922,10 +926,13 @@ class Hypercube:
                 self.viewer.selectionChanged.connect(self.update_selection_overlay)
 
                 self.ui.pushButton_load_white_capture.clicked.connect(self.load_other_white)
+                self.ui.pushButton_load_dark.clicked.connect(self.load_dark)
+
                 self.ui.pushButton_valid_calibration.clicked.connect(self.accept)
                 self.ui.pushButton_load_personal_white_ref.clicked.connect(self.load_white_corection_file)
                 self.ui.doubleSpinBox_R_manual.valueChanged.connect(self.update_white_spectrum)
                 self.ui.checkBox_crop_ref_1.clicked.connect(self.crop_ref_to_one)
+                self.ui.checkBox_use_white_capture.toggled.connect(self.on_use_white_capture_toggled)
 
                 self.ui.radioButton_horizontal_flat_field.toggled.connect(self.update_selection_overlay)
                 self.ui.radioButton_vertical_flat_field.toggled.connect(self.update_selection_overlay)
@@ -957,13 +964,114 @@ class Hypercube:
             def get_white_ref_name(self):
                 return self.ui.comboBox_white_Reference_choice.currentText()
 
+            def load_dark(self):
+                filters = (
+                    "Supported files (*.h5 *.mat *.hdr);;"
+                    "HDF5 files (*.h5);;"
+                    "MATLAB files (*.mat);;"
+                    "ENVI header (*.hdr)"
+                )
+                default_filter = "Supported files (*.h5 *.mat *.hdr);;"
+
+                try:
+                    dir = os.path.dirname(self.cube_calib.cube_info.filepath)
+                except:
+                    dir = None
+
+                filename, _ = QFileDialog.getOpenFileName(
+                    parent=None,
+                    caption="Open Dark Capture",
+                    directory=dir,
+                    filter=filters,
+                    initialFilter=default_filter
+                )
+
+                if not filename:
+                    return
+                self.cube_dark = Hypercube()
+                self.cube_dark.open_hyp(default_path=filename, open_dialog=False, ask_calib=False)
+                self.ui.pushButton_load_dark.setText(f'Dark Loaded {self.cube_dark.data.shape}')
+
             def load_other_white(self):
-                filename,_=QFileDialog.getOpenFileName(self,"Open White Reference Capture",os.path.dirname(self.cube_calib.cube_info.filepath))
-                if filename:
-                    self.cube_calib = Hypercube()
-                    self.cube_calib.open_hyp(default_path=filename, ask_calib=False)
-                    self.set_cube(self.cube_calib)
-                    self.other_white_capture = True
+                filters = (
+                    "Supported files (*.h5 *.mat *.hdr);;"
+                    "HDF5 files (*.h5);;"
+                    "MATLAB files (*.mat);;"
+                    "ENVI header (*.hdr)"
+                )
+                default_filter = "Supported files (*.h5 *.mat *.hdr);;"
+
+                try :
+                    dir=os.path.dirname(self.cube_calib.cube_info.filepath)
+                except:
+                    dir=None
+
+                filename, _ = QFileDialog.getOpenFileName(
+                    parent=None,
+                    caption="Open White Reference Capture",
+                    directory=dir,
+                    filter=filters,
+                    initialFilter=default_filter
+                )
+
+                if not filename:
+                    return
+                self.cube_white = Hypercube()
+                self.cube_white.open_hyp(default_path=filename, open_dialog=False,ask_calib=False)
+                self.other_white_capture = True
+
+
+                cube=self.cube_white
+                self.cube_calib = cube
+
+                self.cube_calib_init = Hypercube(
+                    data=cube.data if cube.data is not None else None,
+                    wl=cube.wl if cube.wl is not None else None,
+                    metadata=cube.metadata,
+                    cube_info=cube.cube_info,
+                )
+                print('[CALIBRATION] : cube filepath : ',self.cube_main.cube_info.filepath)
+                print('[CALIBRATION] : cube size : ',self.cube_main.data.shape)
+
+                print('[CALIBRATION] : white filepath : ',self.cube_white.cube_info.filepath)
+                print('[CALIBRATION] : white size : ',self.cube_white.data.shape)
+
+                print('[CALIBRATION] : calib filepath : ',self.cube_calib.cube_info.filepath)
+                print('[CALIBRATION] : calib size : ',self.cube_calib.data.shape)
+
+                print('[CALIBRATION] : init filepath : ', self.cube_calib_init.cube_info.filepath)
+                print('[CALIBRATION] : init size : ', self.cube_calib_init.data.shape)
+
+                self.set_cube(self.cube_white, renorm=False)
+
+                print('--------------SET CUBE-----------------')
+
+                print('[CALIBRATION] : cube filepath : ',self.cube_main.cube_info.filepath)
+                print('[CALIBRATION] : cube size : ',self.cube_main.data.shape)
+
+                print('[CALIBRATION] : white filepath : ',self.cube_white.cube_info.filepath)
+                print('[CALIBRATION] : white size : ',self.cube_white.data.shape)
+
+                print('[CALIBRATION] : calib filepath : ',self.cube_calib.cube_info.filepath)
+                print('[CALIBRATION] : calib size : ',self.cube_calib.data.shape)
+
+                print('[CALIBRATION] : init filepath : ', self.cube_calib_init.cube_info.filepath)
+                print('[CALIBRATION] : init size : ', self.cube_calib_init.data.shape)
+
+                n_bands = self.cube_calib.wl.size
+                channels = [0, n_bands // 2, n_bands - 1]
+                img_rgb = self.cube_calib.data[:, :, channels]
+
+                if img_rgb.max() > 0:
+                    img_rgb = (img_rgb * 255.0 / img_rgb.max()).clip(0, 255).astype(np.uint8)
+                else:
+                    img_rgb = np.zeros_like(img_rgb, dtype=np.uint8)
+
+                self.viewer.setImage(np_to_qpixmap(img_rgb))
+
+                self.toggle_manual_value_fields()
+
+                self.ui.checkBox_use_white_capture.setChecked(True)
 
             def toggle_manual_value_fields(self):
                 index = self.ui.comboBox_white_Reference_choice.currentIndex()
@@ -1001,7 +1109,13 @@ class Hypercube:
                 if init:
 
                     self.cube_calib = cube
-                    self.cube_calib_init=copy.deepcopy(self.cube_calib)
+                    self.cube_calib_init = Hypercube(
+                        data=cube.data.copy() if cube.data is not None else None,
+                        wl=cube.wl.copy() if cube.wl is not None else None,
+                        metadata=copy.deepcopy(cube.metadata),
+                        cube_info=cube.cube_info,
+                    )
+                    self.cube_main = cube
 
                     # 1) S'assurer que les données sont chargées
                     if getattr(self.cube_calib, "data", None) is None:
@@ -1268,6 +1382,40 @@ class Hypercube:
                 self.ui.comboBox_white_Reference_choice.setCurrentText("Personal (load file)")
                 self.update_white_spectrum()
 
+            def on_use_white_capture_toggled(self, checked):
+                from PyQt5.QtWidgets import QMessageBox
+
+                if checked:
+                    if self.cube_white is None:
+                        QMessageBox.warning(
+                            self,
+                            "No white capture loaded",
+                            "You must load a white reference capture first."
+                        )
+                        # revenir à l’état décoché
+                        self.ui.checkBox_use_white_capture.setChecked(False)
+                        return
+
+                    # 👉 utiliser le cube de white capture
+                    cube = self.cube_white
+                    renorm = False
+
+
+                else:
+                    # 👉 revenir au cube principal
+                    cube = self.cube_main
+                    renorm = self.ui.checkBox_crop_ref_1.isChecked()
+
+                self.cube_calib = cube
+                self.cube_calib_init = Hypercube(
+                    data=cube.data if cube.data is not None else None,
+                    wl=cube.wl if cube.wl is not None else None,
+                    metadata=cube.metadata,
+                    cube_info=cube.cube_info,
+                )
+
+                self.set_cube(self.cube_calib, renorm=renorm)
+
             def plot_white_reflectance(self, wavelengths, reflectance,name='white_ref'):
                 self.canvas_white.ax.clear()
                 self.canvas_white.ax.plot(wavelengths, reflectance)
@@ -1367,27 +1515,48 @@ class Hypercube:
         dialog.set_cube(cube=self,init=True)
 
         if dialog.exec_() == QDialog.Accepted:
-            # 1) Gestion du cas "pas de zone, spectre de 1"
-            if getattr(dialog, "use_unity_white", False):
-                # On définit un spectre de 1 (aucune correction sur les données,
-                # mais on garde une trace dans les metadata)
-                n_bands = self.data.shape[2]
-                white_ref_values = np.ones(n_bands, dtype=float)
-                self.metadata['calibration_reflectance_values'] = white_ref_values
-                self.metadata['white_reference'] = 'Unity (no white zone selected)'
-                self.metadata['reflectance_data_from'] = 'unity_white_no_region'
-                self.metadata['calibration_type'] = 'none_unity_white'
-                # On ne touche pas à self.data
-                return
 
-            # 2) Cas normal : comme avant
+            # --- 0) DARK CORRECTION (cube + white) ---
+            dark_cube = getattr(self, "cube_dark", None)
+            if dark_cube is not None and getattr(dark_cube, "data", None) is not None:
+                try:
+                    # 0a) Dark pour le cube principal
+                    dark_main = self._make_dark_map(dark_cube.data, self.data.shape)
+                    self.data = np.maximum(
+                        self.data.astype(np.float32) - dark_main,
+                        0.0
+                    )
+
+                    # 0b) Dark pour le cube white (si différent du cube principal)
+                    if dialog.cube_calib is not None and dialog.cube_calib is not self \
+                            and getattr(dialog.cube_calib, "data", None) is not None:
+                        try:
+                            dark_white = self._make_dark_map(
+                                dark_cube.data,
+                                dialog.cube_calib.data.shape
+                            )
+                            dialog.cube_calib.data = np.maximum(
+                                dialog.cube_calib.data.astype(np.float32) - dark_white,
+                                0.0
+                            )
+                        except Exception:
+                            # Si la forme est vraiment incompatible, on ignore pour le white
+                            pass
+
+                    # traces dans les métadonnées
+                    self.metadata["dark_correction"] = True
+                    self.metadata["dark_shape"] = np.array(dark_cube.data.shape, dtype=int)
+
+                except ValueError as e:
+                    QMessageBox.warning(
+                        None, "Dark correction ignored",
+                        f"Dark cube is incompatible with main cube:\n{e}"
+                    )
+
+            # --- 1) White reference + mode de calibration ---
             white_ref_name = dialog.get_white_ref_name()
             if white_ref_name == "Constant value (from field)":
                 white_ref_values = dialog.ui.doubleSpinBox_R_manual.value()
-            elif 'Personal' in white_ref_name:
-                white_ref_values = self.get_ref_white(
-                    white_ref_name, dialog.wl_white, dialog.reflectance_white
-                )
             else:
                 white_ref_values = self.get_ref_white(white_ref_name)
 
@@ -1437,6 +1606,44 @@ class Hypercube:
 
             if ans == QMessageBox.Yes:
                 self.save_calib = True
+
+    def _make_dark_map(self, dark_data: np.ndarray, target_shape):
+        """
+        Construit une carte de dark (H, W, B) compatible avec target_shape
+        à partir de dark_data, selon les règles :
+          - si même H, W, B -> carte complète
+          - si même H et W=1 -> profil vertical répété (horizontal flat)
+          - si même W et H=1 -> profil horizontal répété (vertical flat)
+          - sinon -> spectre moyen (H,W,B) identique partout
+        """
+        if dark_data is None or dark_data.ndim != 3:
+            raise ValueError("Dark cube must be 3D (H, W, B).")
+
+        H, W, B = target_shape
+        Hd, Wd, Bd = dark_data.shape
+
+        if Bd != B:
+            raise ValueError(
+                f"Incompatible dark cube: {Bd} bands vs cube {B} bands."
+            )
+
+        # Cas 1 : dimensions identiques -> carte complète
+        if Hd == H and Wd == W:
+            return dark_data.astype(np.float32)
+
+        # Cas 2 : même hauteur, largeur=1 -> horizontal flat field
+        if Hd == H and Wd == 1:
+            line = dark_data[:, 0, :]  # (H, B)
+            return np.repeat(line[:, None, :], W, axis=1)  # (H, W, B)
+
+        # Cas 2 bis : même largeur, hauteur=1 -> vertical flat field
+        if Wd == W and Hd == 1:
+            col = dark_data[0, :, :]  # (W, B)
+            return np.repeat(col[None, :, :], H, axis=0)  # (H, W, B)
+
+        # Cas 3 : ni largeur ni hauteur -> spectre moyen global
+        spec = dark_data.mean(axis=(0, 1))  # (B,)
+        return np.broadcast_to(spec[None, None, :], (H, W, B)).astype(np.float32)
 
     def get_ref_white(self,white_name,_wl_white=None,_reflectance_white=None):
         from scipy.io import loadmat
@@ -1873,32 +2080,13 @@ if __name__ == '__main__':
 
     # folder = r'C:\Users\Usuario\Documents\DOC_Yannick\HYPERDOC Database_TEST\Samples\minicubes/'
     # fname = '00279-VNIR-mock-up.h5'
-    folder=(r'C:\Users\Usuario\Documents\DOC_Yannick\HYPERDOC Database_TEST\From_Cameras\Specim-IQ\IQ_185\results/')
-    fname='REFLECTANCE_IQ_185.hdr'
+    folder=(r'C:\Users\Usuario\Documents\DOC_Yannick\HYPERDOC Database_TEST\From_Cameras\Javierille 19_11_2025\Javierille 19_11_2025\white light 0, only UV')
+    fname='unmix_scan_0338_calib_app.hdr'
+    # fname='unmix_scan_0338.hdr'
+
 
     import os
     filepath = os.path.join(folder, fname)
 
-    # cube = Hypercube(filepath=filepath, load_init=True)
     cube = Hypercube(filepath=filepath, cube_info=None, load_init=True)
-    # img = cube.get_rgb_image([50, 30, 10])
 
-    # app = QApplication(sys.argv)
-
-    # window = QMainWindow()
-    # central_widget = QWidget()
-    # layout = QVBoxLayout(central_widget)
-    #
-    # mpl = MatplotlibCanvas()
-    # toolbar = NavigationToolbar(mpl, window)
-    # layout.addWidget(toolbar)
-    # layout.addWidget(mpl)
-    #
-    # window.setCentralWidget(central_widget)
-    #
-    # # Affichage de l'image
-    # mpl.ax.imshow(img)
-    # mpl.draw()
-    #
-    # window.show()
-    # sys.exit(app.exec_())

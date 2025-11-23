@@ -39,6 +39,8 @@ from interface.some_widget_for_interface import ZoomableGraphicsView
 from identification.load_cube_dialog import Ui_Dialog
 
 # <editor-fold desc="To do">
+#todo : put Fran parametros
+#todo : Check calibration of full flat field if white file loaded
 #todo : color map of abundance map
 #todo : export results en h5 or multiple png
 #todo : open and vizualize previous unmix analysis saved
@@ -1350,6 +1352,7 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
 
         # connection
         self.load_btn.clicked.connect(self.open_load_cube_dialog)
+        self.pushButton_load_FTIR.clicked.connect(self.load_ftir_spectrum)
         self.sliders_rgb = [
             self.horizontalSlider_red_channel,
             self.horizontalSlider_green_channel,
@@ -2813,6 +2816,174 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
                 return False
 
         return False
+
+    def load_ftir_spectrum(self):
+        """
+        Charge un spectre FTIR (fichier 1D : wl, valeur) et l’ajoute à l’hypercube :
+        - demande si les wl sont en nm ou en cm-1
+        - convertit en nm si besoin
+        - diffuse ce spectre unique à tous les pixels
+        - concatène SANS CROP au cube actuel (puis tri par longueur d’onde)
+        """
+        if self.cube is None or self.data is None or self.wl is None:
+            QMessageBox.warning(self, "FTIR", "Charge d’abord un hypercube.")
+            return
+
+        # On vérifie qu’on ne garde pas des jobs incohérents
+        if self.no_reset_jobs_on_new_cube():
+            # l’utilisateur a choisi d’annuler si des jobs existent
+            return
+
+        # --- Choix du fichier ---
+        path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Load FTIR spectrum",
+            "",
+            "Spectral files (*.csv *.txt *.dat);;All files (*)"
+        )
+        if not path:
+            return
+
+        # --- Lecture du fichier (wl, valeur) ---
+        try:
+            import pandas as pd
+
+            wl_raw = None
+            val_raw = None
+
+            # 1) tentative avec pandas (gère entêtes, etc.)
+            try:
+                df = pd.read_csv(path)
+                num = df.select_dtypes(include=[np.number])
+                if num.shape[1] >= 2:
+                    wl_raw = num.iloc[:, 0].to_numpy(dtype=float)
+                    val_raw = num.iloc[:, 1].to_numpy(dtype=float)
+            except Exception:
+                wl_raw = None
+                val_raw = None
+
+            # 2) fallback avec loadtxt si pandas n’a pas réussi
+            if wl_raw is None or val_raw is None:
+                arr = np.loadtxt(path)
+                arr = np.asarray(arr, dtype=float)
+                if arr.ndim == 1 or arr.shape[1] < 2:
+                    raise ValueError("File must contain at least two numeric columns (wl, value).")
+                wl_raw = arr[:, 0]
+                val_raw = arr[:, 1]
+
+            # Nettoyage basique
+            m = np.isfinite(wl_raw) & np.isfinite(val_raw)
+            wl_raw = wl_raw[m]
+            val_raw = val_raw[m]
+
+            if wl_raw.size < 2:
+                raise ValueError("Not enough valid points in FTIR spectrum.")
+        except Exception as e:
+            QMessageBox.warning(
+                self, "FTIR load error",
+                f"Could not read FTIR spectrum from:\n{os.path.basename(path)}\n\n{e}"
+            )
+            return
+
+        # --- Demander l’unité : nm ou cm-1 ? ---
+        msg = QMessageBox(self)
+        msg.setIcon(QMessageBox.Question)
+        msg.setWindowTitle("Unité des longueurs d’onde (FTIR)")
+        msg.setText(
+            "Le fichier FTIR contient un seul spectre (1D).\n\n"
+            "Dans quelle unité sont exprimées les longueurs d’onde ?"
+        )
+        btn_nm = msg.addButton("nanomètres (nm)", QMessageBox.AcceptRole)
+        btn_cm = msg.addButton("nombre d'onde (cm⁻¹)", QMessageBox.ActionRole)
+        btn_cancel = msg.addButton(QMessageBox.Cancel)
+        msg.setDefaultButton(btn_nm)
+        msg.exec_()
+        clicked = msg.clickedButton()
+
+        if clicked is btn_cancel:
+            return
+
+        if clicked is btn_cm:
+            # λ(nm) = 1e7 / ν(cm⁻¹)
+            wl_nm = 1e7 / wl_raw
+        else:
+            wl_nm = wl_raw.copy()
+
+        # On trie wl et le spectre
+        order = np.argsort(wl_nm)
+        wl_nm = wl_nm[order]
+        val_raw = val_raw[order]
+
+        # --- Fusion avec le cube existant, sans crop ---
+        wl_cube = np.asarray(self.wl, dtype=float)
+        data = np.asarray(self.cube.data)
+        H, W, Lc = data.shape
+        Lf = wl_nm.size
+
+        # On diffuse le spectre FTIR sur tous les pixels
+        orig_dtype = data.dtype
+        N = H * W
+        cube_flat = data.reshape(N, Lc).astype(float)
+        spec_rep = np.tile(val_raw.reshape(1, Lf), (N, 1))  # (N, Lf)
+
+        merged = np.concatenate([cube_flat, spec_rep], axis=1)  # (N, Lc + Lf)
+        wl_comb = np.concatenate([wl_cube, wl_nm])
+
+        # Pour être propre, on trie toutes les bandes par longueur d’onde
+        order2 = np.argsort(wl_comb)
+        wl_new = wl_comb[order2]
+        merged_sorted = merged[:, order2]
+
+        data_new = merged_sorted.reshape(H, W, -1).astype(orig_dtype, copy=False)
+
+        # --- Mise à jour du cube & de l’UI ---
+        self.cube.data = data_new
+        self.cube.wl = wl_new
+        self.data = self.cube.data
+        self.wl = self.cube.wl
+
+        # Petit tag dans les metadata
+        md = getattr(self.cube, "metadata", None)
+        if not isinstance(md, dict):
+            md = {}
+            self.cube.metadata = md
+        lst = md.get("ftir_source_files", [])
+        if not isinstance(lst, list):
+            lst = [lst]
+        lst.append(os.path.basename(path))
+        md["ftir_source_files"] = lst
+
+        # Réinitialiser les sélections / EM (comme lors d’un nouveau cube)
+        H, W = self.data.shape[:2]
+        self.selection_mask_map_manual = np.full((H, W), -1, np.int32)
+        self.selection_mask_map_auto = np.full((H, W), -1, np.int32)
+        self.selection_mask_map_lib = np.full((H, W), -1, np.int32)
+        self.samples = {}
+        self.sample_coords = {}
+        self.class_means = {}
+        self.class_stds = {}
+        self.regions = {}
+
+        self.E_manual = {}
+        self.class_info_manual = {}
+        self.param_manual = {}
+        self.wl_manual = None
+
+        self.E_auto = {}
+        self.class_info_auto = {}
+        self.param_auto = {}
+        self.wl_auto = None
+
+        # On garde la librairie telle quelle (E_lib), wl_lib reste cohérente pour l’unmixing
+        self.update_rgb_controls()
+        self.update_overlay()
+
+        QMessageBox.information(
+            self, "FTIR",
+            f"Spectrum from '{os.path.basename(path)}' was added to the cube\n"
+            f"({Lf} new bands, total = {self.wl.size})."
+        )
+
     # </editor-fold>
 
     # <editor-fold desc="Endmembers">
