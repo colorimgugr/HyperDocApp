@@ -1552,7 +1552,13 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         return QPixmap.fromImage(qimg).copy()
 
     def load_classifier(self,path):
-        models_dir = "identification/data"
+
+        if getattr(sys, 'frozen', False):  # pynstaller case
+            BASE_DIR = sys._MEIPASS
+        else:
+            BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+
+        models_dir =  os.path.join(BASE_DIR,"identification/data")
 
         if "CNN 1D" in path:
             import torch

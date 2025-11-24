@@ -4,9 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="[MINI CUBE] : &#10;- Bugg fixed with non classic spectral range for false rgb channels (float to int)">
+    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="[MINI CUBE] : &#10;- Bugg fixed for clip R to 0..1">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hypercubes/hypercube.py" beforeDir="false" afterPath="$PROJECT_DIR$/hypercubes/hypercube.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/MainWindow.py" beforeDir="false" afterPath="$PROJECT_DIR$/MainWindow.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -135,14 +135,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1744020944801</updated>
-    </task>
-    <task id="LOCAL-00090" summary="[IDENTIFICATION] : ROI selection, add from disk, traint/predict with reduces channels cube OK FOR INK AND SUBSTRATE">
-      <option name="closed" value="true" />
-      <created>1758208417129</created>
-      <option name="number" value="00090" />
-      <option name="presentableId" value="LOCAL-00090" />
-      <option name="project" value="LOCAL" />
-      <updated>1758208417130</updated>
     </task>
     <task id="LOCAL-00091" summary="[IDENTIFICATION] : Loading Dialog prefilled with current value (if opened with dialog)">
       <option name="closed" value="true" />
@@ -528,7 +520,15 @@
       <option name="project" value="LOCAL" />
       <updated>1763976005932</updated>
     </task>
-    <option name="localTasksCounter" value="139" />
+    <task id="LOCAL-00139" summary="[MINI CUBE] : &#10;- Bugg fixed for clip R to 0..1">
+      <option name="closed" value="true" />
+      <created>1763997469666</created>
+      <option name="number" value="00139" />
+      <option name="presentableId" value="LOCAL-00139" />
+      <option name="project" value="LOCAL" />
+      <updated>1763997469668</updated>
+    </task>
+    <option name="localTasksCounter" value="140" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -580,7 +580,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="[unmixing] : &#10;- endmmembers editing name for saving abd color for temporal visualization.&#10;- saving automatic abd manual endmmbers to csv. &#10;- Loading dispersive endmmbers like with multiple spectrum" />
     <MESSAGE value="[unmixing] : &#10;- adding ROI selection by rectanlge and state modification when selecting pixels" />
     <MESSAGE value="[unmixing] : implementing unmixing jobs" />
     <MESSAGE value="[unmixing] : implementing unmixing jobs&#10;- run one and all from queue&#10;- check if already in queue" />
@@ -605,6 +604,7 @@
     <MESSAGE value="[HYPERCUBE] : &#10;- Added loading other white file&#10;- Adde dark" />
     <MESSAGE value="[HYPERCUBE] : &#10;- Modif in dark (for line flat field)" />
     <MESSAGE value="[MINI CUBE] : &#10;- Bugg fixed with non classic spectral range for false rgb channels (float to int)" />
-    <option name="LAST_COMMIT_MESSAGE" value="[MINI CUBE] : &#10;- Bugg fixed with non classic spectral range for false rgb channels (float to int)" />
+    <MESSAGE value="[MINI CUBE] : &#10;- Bugg fixed for clip R to 0..1" />
+    <option name="LAST_COMMIT_MESSAGE" value="[MINI CUBE] : &#10;- Bugg fixed for clip R to 0..1" />
   </component>
 </project>

@@ -507,18 +507,24 @@ class MainApp(QtWidgets.QMainWindow):
         hc = self.hypercube_manager.get_loaded_cube(filepath, cube_info=ci)
         hc.calibrating_from_image_extract()
 
-    def _send_to_metadata(self,filepath):
+    def _send_to_metadata(self,filepath,show_tab=True):
         widget = self.meta_dock.widget()
         ci = self.hypercube_manager.add_or_sync_cube(filepath)
         hc = self.hypercube_manager.get_loaded_cube(filepath, cube_info=ci)
 
+        if show_tab:
+            self.meta_dock.raise_()
+
         widget.set_cube_info(ci)
         widget.update_combo_meta(init=True)
 
-    def _send_to_gt(self,filepath):
+    def _send_to_gt(self,filepath,show_tab=True):
         widget = self.gt_dock.widget()
         ci = self.hypercube_manager.add_or_sync_cube(filepath)
         hc = self.hypercube_manager.get_loaded_cube(filepath, cube_info=ci)
+
+        if show_tab:
+            self.gt_dock.raise_()
 
         # print(f'[send GT] ci.filepath : {ci.filepath}')
         # print(f'[send GT] hc.ci.filepath : {ci.filepath}')
@@ -528,22 +534,29 @@ class MainApp(QtWidgets.QMainWindow):
         else:
             widget.load_cube(cube_info=ci,cube=hc)
 
-    def _send_to_data_viz(self,filepath):
+    def _send_to_data_viz(self,filepath,show_tab=True):
         widget = self.data_viz_dock.widget()
         ci = self.hypercube_manager.add_or_sync_cube(filepath)
         hc = self.hypercube_manager.get_loaded_cube(filepath, cube_info=ci)
         print(f'[send VIZ] ci.filepath : {ci.filepath}')
         print(f'[send VIZ] hc.ci.filepath : {ci.filepath}')
+
+        if show_tab:
+            self.data_viz_dock.raise_()
+
         if hc.data is None:
             widget.open_hypercubes_and_GT(filepath=ci.filepath, cube_info=ci)
         else:
             hc.cube_info = ci
             widget.open_hypercubes_and_GT(filepath=ci.filepath, cube_info=ci, cube=hc)
 
-    def _send_to_registration(self,filepath,imov):
+    def _send_to_registration(self,filepath,imov,show_tab=True):
         widget = self.reg_dock.widget()
         ci = self.hypercube_manager.add_or_sync_cube(filepath)
         hc = self.hypercube_manager.get_loaded_cube(filepath, cube_info=ci)
+
+        if show_tab:
+            self.reg_dock.raise_()
 
         print(f'[send REG] ci.filepath : {ci.filepath}')
         print(f'[send REG] hc.ci.filepath : {ci.filepath}')
@@ -554,12 +567,15 @@ class MainApp(QtWidgets.QMainWindow):
             hc.cube_info = ci
             widget.load_cube(filepath=ci.filepath,cube_info=ci,i_mov=imov,cube=hc)
 
-    def _send_to_identification(self,filepath,icube):
+    def _send_to_identification(self,filepath,icube,show_tab=True):
         widget = self.identification_dock.widget()
         ci = self.hypercube_manager.add_or_sync_cube(filepath)
         hc = self.hypercube_manager.get_loaded_cube(filepath, cube_info=ci)
 
         range=['VNIR','SWIR'][icube]
+
+        if show_tab:
+            self.identification_dock.raise_()
 
         if hc.data is None:
             widget.load_cube(filepath=ci.filepath,cube_info=ci,range=range)
@@ -570,20 +586,26 @@ class MainApp(QtWidgets.QMainWindow):
             print(f'[SEND TO IDENT] path : {filepath} of range {range}')
         pass
 
-    def _send_to_minicube(self,filepath):
+    def _send_to_minicube(self,filepath,show_tab=True):
         widget = self.minicube_dock.widget()
         ci = self.hypercube_manager.add_or_sync_cube(filepath)
         hc = self.hypercube_manager.get_loaded_cube(filepath, cube_info=ci)
+
+        if show_tab:
+            self.minicube_dock.raise_()
 
         if hc.data is None:
             widget.load_cube(cube_info=ci)
         else:
             widget.load_cube(cube_info=ci, cube=hc)
 
-    def _send_to_browser(self, filepath):
+    def _send_to_browser(self, filepath,show_tab=True):
         ci = self.hypercube_manager.add_or_sync_cube(filepath)
         hc = self.hypercube_manager.get_loaded_cube(filepath, cube_info=ci)
         widget = self.file_browser_dock.widget()
+
+        if show_tab:
+            self.file_browser_dock.raise_()
 
          # 1) Ré-associe l'objet métier et le filepath
         widget.cube_info = ci
@@ -603,30 +625,33 @@ class MainApp(QtWidgets.QMainWindow):
         # 4) Affichage du dock
         # widget.show()
 
-    def _send_to_illumination(self, filepath):
+    def _send_to_illumination(self, filepath,show_tab=True):
         print('Send to illumination')
         widget = self.illumination_dock.widget()
         ci = self.hypercube_manager.add_or_sync_cube(filepath)
         hc = self.hypercube_manager.get_loaded_cube(filepath, cube_info=ci)
+
+        if show_tab:
+            self.illumination_dock.raise_()
 
         if hc.data is None:
             widget.on_load_cube(cube_info=ci)
         else:
             widget.on_load_cube(cube_info=ci, cube=hc)
 
-
     def _send_to_all(self,filepath):
 
         ci = self.hypercube_manager.add_or_sync_cube(filepath)
         hc = self.hypercube_manager.get_loaded_cube(filepath, cube_info=ci)
 
-        self._send_to_data_viz(filepath)
-        self._send_to_gt(filepath)
-        self._send_to_metadata(filepath)
-        self._send_to_registration(filepath,1)
-        self._send_to_browser(filepath)
-        self._send_to_minicube(filepath)
-        self._send_to_illumination(filepath)
+        self._send_to_data_viz(filepath,show_tab=False)
+        self._send_to_gt(filepath,show_tab=False)
+        self._send_to_metadata(filepath,show_tab=False)
+        self._send_to_registration(filepath,1,show_tab=False)
+        self._send_to_browser(filepath,show_tab=False)
+        self._send_to_minicube(filepath,show_tab=False)
+        self._send_to_illumination(filepath,show_tab=False)
+        self._send_to_minicube(filepath,show_tab=False)
 
     def _on_tool_loaded_cube(self, hc: Hypercube, tool_widget):
         # Chemin résolu du cube
@@ -892,7 +917,7 @@ def check_resolution_change():
 
 if __name__ == "__main__":
 
-    # sys.excepthook = excepthook #set the exception handler
+    sys.excepthook = excepthook #set the exception handler
 
     app = QtWidgets.QApplication(sys.argv)
 
