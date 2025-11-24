@@ -25,9 +25,6 @@ from hypercubes.hypercube import *
 from interface.some_widget_for_interface import *
 
 # TODO : Manual outling features
-# TODO : Clean Cache to to well od close and save as.
-# TODO : Trier les save depuis tool et depuis main -> Metadatas a bien reflechir.
-# TODO : automatic fill name for saving
 
 from registration.registration_window import*
 from hypercubes.hypercube import*
@@ -407,8 +404,6 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
             self.viewer_label[i_mov].setText(self.cube[i_mov].filepath.split('/')[-1] + suffixe_label)
 
             loading.close()
-
-#todo [Auto-load] Aucun cube équivalent trouvé pour : C:/Users/Usuario/Documents/DOC_Yannick/HYPERDOC Database_TEST/hypspex/P1A_SWIR_384_SN3189_2335us_2023-09-05T205402_raw_rad.hdr
 
         if not self.auto_load_lock and paired_path is not None and self.checkBox_auto_load_complental.isChecked():
             self.auto_load_lock = True
@@ -868,7 +863,6 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
 
         # Crop
         if opts['crop_cube']:
-            #todo : add metadata position, name, parent,cube_info
 
             if self.viewer_aligned.get_rect_coords() is not None:
                 y, x, dy, dx = self.viewer_aligned.get_rect_coords()

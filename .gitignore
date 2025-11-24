@@ -1,0 +1,16 @@
+/identification/data/
+.idea/
+__pycache__/
+venv/
+identification/data/
+datasets/
+outputs/
+*.mat
+*.joblib
+*.h5
+*.tif
+*.tiff
+*.zip
+*.pkl
+*.pt
+*.pth

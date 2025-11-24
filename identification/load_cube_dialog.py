@@ -70,13 +70,13 @@ class Ui_Dialog(object):
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate
         Dialog.setWindowTitle(_translate("Dialog", "Dialog"))
-        self.pushButton_load_cube_2.setText(_translate("Dialog", "Load cube SWIR"))
+        self.pushButton_load_cube_2.setText(_translate("Dialog", "Load second cube"))
         self.label_spectral_range.setText(_translate("Dialog", "<html><head/><body><p align=\"center\"><span style=\" font-weight:600;\">Spectral range</span></p></body></html>"))
         self.label_filepath_cube_1.setText(_translate("Dialog", "path cube"))
         self.label_filepaths.setText(_translate("Dialog", "<html><head/><body><p align=\"center\"><span style=\" font-weight:600;\">Filepath of cube</span></p></body></html>"))
         self.label_spec_range_cube_2.setText(_translate("Dialog", "range"))
         self.label_spec_range_cube_1.setText(_translate("Dialog", "range"))
-        self.pushButton_load_cube_1.setText(_translate("Dialog", "Load cube VNIR"))
+        self.pushButton_load_cube_1.setText(_translate("Dialog", "Load first cube"))
         self.label_filepath_cube_2.setText(_translate("Dialog", "path cube"))
         self.label_instructions.setText(_translate("Dialog", "Instructions"))
         self.pushButton_valid.setText(_translate("Dialog", "Valid cubes"))

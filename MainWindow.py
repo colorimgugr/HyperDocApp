@@ -8,12 +8,18 @@
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtCore import QTimer
 from PyQt5.QtGui import QFont,QIcon, QPalette
-from PyQt5.QtWidgets import (QStyleFactory, QAction, QSizePolicy,
+from PyQt5.QtWidgets import (QStyleFactory, QAction, QSizePolicy,QPushButton,
                              QTextEdit)
 
 ## Python import
 import traceback
 import logging
+
+
+## bloc non important warning
+import warnings
+warnings.filterwarnings("ignore", message="Parameters with non-lowercase names")
+
 
 # projects import
 from hypercubes.hypercube import *
@@ -23,6 +29,8 @@ from interface.hypercube_manager import HypercubeManager
 from metadata.metadata_tool import MetadataTool
 from ground_truth.ground_truth_tool import GroundTruthWidget
 from minicube.minicube_tool import MiniCubeTool
+from identification.identification_tool import IdentificationWidget
+from illumination.illumination_tool import IlluminationWidget
 
 # grafics to control changes
 import matplotlib.pyplot as plt
@@ -31,7 +39,7 @@ def apply_fusion_border_highlight(app,
                                   border_color: str = "#888888",
                                   title_bg:      str = "#E0E0E0",
                                   separator_hover: str = "#AAAAAA",
-                                  window_bg:     str = "#F5F5F5",   # ← ton nouveau fond
+                                  window_bg:     str = "#F5F5F5",
                                   base_bg:       str = "#EFEFEF"):  # ← pour QTextEdit, etc.
     # 1) Fusion
     app.setStyle(QStyleFactory.create("Fusion"))
@@ -232,9 +240,14 @@ class MainApp(QtWidgets.QMainWindow):
         self.reg_dock=self._add_dock("Registration",   RegistrationApp,     QtCore.Qt.RightDockWidgetArea)
         self.gt_dock=self._add_dock("Ground Truth",   GroundTruthWidget,     QtCore.Qt.RightDockWidgetArea)
         self.minicube_dock=self._add_dock("Minicube Extract",   MiniCubeTool,     QtCore.Qt.RightDockWidgetArea)
+        self.identification_dock=self._add_dock("Identification", IdentificationWidget, QtCore.Qt.RightDockWidgetArea)
+        self.illumination_dock=self._add_dock("Illumination", IlluminationWidget, QtCore.Qt.RightDockWidgetArea)
         self.tabifyDockWidget(self.reg_dock, self.gt_dock)
         self.tabifyDockWidget(self.reg_dock, self.data_viz_dock)
         self.tabifyDockWidget(self.reg_dock, self.minicube_dock)
+        self.tabifyDockWidget(self.reg_dock, self.identification_dock)
+        self.tabifyDockWidget(self.reg_dock, self.illumination_dock)
+
         self.gt_dock.raise_()
 
         # Tool menu
@@ -252,9 +265,11 @@ class MainApp(QtWidgets.QMainWindow):
         self.toolbar.addSeparator()
         act_mini=self.onToolButtonPress(self.minicube_dock, "minicube_icon.png", "Minicube Extract")
         act_data = self.onToolButtonPress(self.data_viz_dock, "icon_data_viz.svg", "Data Vizualisation")
+        act_illumination = self.onToolButtonPress(self.illumination_dock, "illumination_icon.png", "Illumination")
         act_reg = self.onToolButtonPress(self.reg_dock, "registration_icon.png", "Registration")
         act_gt =self.onToolButtonPress(self.gt_dock, "GT_icon_1.png", "Ground Truth")
-
+        self.toolbar.addSeparator()
+        act_ident=self.onToolButtonPress(self.identification_dock,"Ident_icon.png","Identification")
         self.toolbar.addSeparator()
 
         # Cubes "list"
@@ -275,13 +290,11 @@ class MainApp(QtWidgets.QMainWindow):
 
         # signal from register tool
         reg_widget = self.reg_dock.widget()
-        # todo : signal if registered cube save -> check if working
 
         # Save with menu
         self.saveBtn = QtWidgets.QToolButton(self)
         self.saveBtn.setText("Save Cube")
         # self.saveBtn.setIcon(QIcon(os.path.join(self.ICONS_DIR, "save_icon.png")))
-        # todo : add icon for save cube
         self.saveBtn.setPopupMode(QtWidgets.QToolButton.InstantPopup)
         self.saveMenu = QtWidgets.QMenu(self)
         self.saveBtn.setMenu(self.saveMenu)
@@ -541,6 +554,22 @@ class MainApp(QtWidgets.QMainWindow):
             hc.cube_info = ci
             widget.load_cube(filepath=ci.filepath,cube_info=ci,i_mov=imov,cube=hc)
 
+    def _send_to_identification(self,filepath,icube):
+        widget = self.identification_dock.widget()
+        ci = self.hypercube_manager.add_or_sync_cube(filepath)
+        hc = self.hypercube_manager.get_loaded_cube(filepath, cube_info=ci)
+
+        range=['VNIR','SWIR'][icube]
+
+        if hc.data is None:
+            widget.load_cube(filepath=ci.filepath,cube_info=ci,range=range)
+        else:
+            print('Try registered with cube sended')
+            hc.cube_info = ci
+            widget.load_cube(filepath=ci.filepath,cube_info=ci,range=range,cube=hc)
+            print(f'[SEND TO IDENT] path : {filepath} of range {range}')
+        pass
+
     def _send_to_minicube(self,filepath):
         widget = self.minicube_dock.widget()
         ci = self.hypercube_manager.add_or_sync_cube(filepath)
@@ -574,6 +603,18 @@ class MainApp(QtWidgets.QMainWindow):
         # 4) Affichage du dock
         # widget.show()
 
+    def _send_to_illumination(self, filepath):
+        print('Send to illumination')
+        widget = self.illumination_dock.widget()
+        ci = self.hypercube_manager.add_or_sync_cube(filepath)
+        hc = self.hypercube_manager.get_loaded_cube(filepath, cube_info=ci)
+
+        if hc.data is None:
+            widget.on_load_cube(cube_info=ci)
+        else:
+            widget.on_load_cube(cube_info=ci, cube=hc)
+
+
     def _send_to_all(self,filepath):
 
         ci = self.hypercube_manager.add_or_sync_cube(filepath)
@@ -585,6 +626,7 @@ class MainApp(QtWidgets.QMainWindow):
         self._send_to_registration(filepath,1)
         self._send_to_browser(filepath)
         self._send_to_minicube(filepath)
+        self._send_to_illumination(filepath)
 
     def _on_tool_loaded_cube(self, hc: Hypercube, tool_widget):
         # Chemin résolu du cube
@@ -662,6 +704,27 @@ class MainApp(QtWidgets.QMainWindow):
             act_gt.triggered.connect(lambda checked, p=path: self._send_to_gt(p))
             sub.addAction(act_gt)
 
+            # Envoyer au dock ident
+            menu_load_ident = QtWidgets.QMenu("Send to Identification Tool", sub)
+            act_ident_vnir = QtWidgets.QAction("VNIR Cube", self)
+            act_ident_vnir.triggered.connect(
+                lambda _, p=path: self._send_to_identification(p, 0)
+            )
+            menu_load_ident.addAction(act_ident_vnir)
+
+            # Envoyer au dock illum
+            act_illum = QtWidgets.QAction("Send to Illumination", self)
+            act_illum.triggered.connect(lambda checked, p=path: self._send_to_illumination(p))
+            sub.addAction(act_illum)
+
+            # Action Moving
+            act_ident_swir = QtWidgets.QAction("SWIR Cube", self)
+            act_ident_swir.triggered.connect(
+                lambda _, p=path: self._send_to_identification(p, 1)
+            )
+            menu_load_ident.addAction(act_ident_swir)
+            sub.addMenu(menu_load_ident)
+
             # White calibration
             sub.addSeparator()
             act_calib = QtWidgets.QAction("Process white calibration", self)
@@ -698,8 +761,6 @@ class MainApp(QtWidgets.QMainWindow):
             event.accept()  # Proceed with closing the app
         else:
             event.ignore()  # Cancel the close event
-
-#todo : ask if cube associated when saving GT
 
 # Configure error logging
 # Get absolute path of log folder (support PyInstaller frozen mode)
@@ -831,7 +892,7 @@ def check_resolution_change():
 
 if __name__ == "__main__":
 
-    sys.excepthook = excepthook #set the exception handler
+    # sys.excepthook = excepthook #set the exception handler
 
     app = QtWidgets.QApplication(sys.argv)
 
@@ -843,7 +904,6 @@ if __name__ == "__main__":
 
     # folder = r'C:\Users\Usuario\Documents\DOC_Yannick\HYPERDOC Database_TEST\Samples\minicubes/'
     # fname = '00189-VNIR-mock-up.h5'
-    #
     # filepath = os.path.join(folder, fname)
     # main._on_add_cube([filepath,filepath.replace('189','191')])
 

@@ -1,10 +1,16 @@
-from PIL import Image
+import joblib
+import numpy as np
+import glob
 import os
 
-folder=r'C:\Users\Usuario\Documents\DOC_Yannick\HYPERDOC Database_TEST\Samples\GT'
-filename='00189-VNIR-mock-up_GT.png'
+wl=np.arange(400,1705,5)
 
-filepath=os.path.join(folder,filename)
-
-im=Image.open(filepath)
-im.getdata()
+for path in glob.glob(r"C:\Users\Usuario\Documents\GitHub\Hypertool\identification\data/*.joblib"):
+    print('*******')
+    model=joblib.load(path)
+    print(path.split('\\')[-1])
+    print(len(model['train_wl']))
+    # joblib.dump(model_temp,path)
+    # print(path)
+    # model=joblib.load(path)
+    # print(len(model['train_wl']))

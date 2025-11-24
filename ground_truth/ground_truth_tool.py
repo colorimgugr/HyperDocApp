@@ -9,10 +9,14 @@ import sys
 
 ## GUI
 from PyQt5 import QtCore
-from PyQt5.QtGui    import QPixmap, QPainter, QColor, QPen
-from PyQt5.QtWidgets import ( QSplitter,
-    QApplication,QSizePolicy, QGraphicsScene, QGraphicsPixmapItem,QRubberBand,QWidget, QFileDialog, QMessageBox,QInputDialog , QSplitter,QGraphicsView,QLabel,
-)
+from PyQt5.QtGui   import QPixmap, QPainter, QColor, QPen
+
+from PyQt5.QtWidgets import ( QSplitter,QVBoxLayout, QListWidget, QListWidgetItem,QDialogButtonBox,
+                              QApplication,QSizePolicy, QGraphicsScene, QGraphicsPixmapItem,QRubberBand,QWidget,
+                              QFileDialog, QMessageBox,QInputDialog , QSplitter,QGraphicsView,QLabel,QDialog,
+                              QScrollArea,QCheckBox,QHBoxLayout,QPushButton,
+                              )
+
 from PyQt5.QtCore import Qt, QEvent, QRect, QRectF, QPoint, QSize
 
 # Graphs
@@ -33,12 +37,6 @@ from hypercubes.hypercube import Hypercube,CubeInfoTemp
 from ground_truth.GT_table_viz import LabelWidget
 from ground_truth.ground_truth_window import Ui_GroundTruthWidget
 from interface.some_widget_for_interface import LoadingDialog
-
-# todo : give GT labels names and number for RGB code ? -> save GT in new dataset of file + png
-# todo : link to cube_info (read and fill)
-# todo : actualize GT_cmp if label added OR load from default GT_table
-# todo : check if cube already hace a GT map done (looking at GT labels for example)
-# todo : upload GT_cmap from csv ?
 
 ## GT colors
 GT_cmap=np.array([[0.        , 1.        , 0.24313725, 0.22745098, 0.37254902,
@@ -238,7 +236,7 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
     cubeLoaded = QtCore.pyqtSignal(Hypercube)
     cube_saved = QtCore.pyqtSignal(CubeInfoTemp)
 
-    def __init__(self, parent=None,cubeInfo=None):
+    def __init__(self, parent=None):
         super().__init__(parent)
         # Set up UI from compiled .py
         self.setupUi(self)
@@ -249,9 +247,11 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         self.erase_selection = False # erase mode on or off
         self._pixel_coords = []  # collected  (x,y) during dragging
         self._preview_mask = None # temp mask during dragging pixel selection
+        self._last_label = 0  # default to 0
+        self.last_class_number = 3
+        self.nclass_box.setValue(self.last_class_number)
         self.class_info = {}         #dictionnary of lists :  {key:[label GT, name GT,(R,G,B)]}
         self.class_colors ={}  # color of each class
-        n0 = self.nclass_box.value()
 
         # transform image
         self.transforms=''
@@ -292,8 +292,8 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         self.hyps_rgb_chan=[0,0,0] #current rgb (in int nm)
         self.class_means = {} #for spectra of classe
         self.class_ncount={} #for npixels classified
-        self.selected_bands=[]
-        self.selected_span_patch=[]
+        self.selected_bands=[] #band selection
+        self.selected_span_patch=[] # rectangle patch of selected bands
 
         # Connect widget signals
         self.load_btn.clicked.connect(lambda: self.load_cube())
@@ -308,6 +308,8 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         self.pushButton_save_GT.clicked.connect(self.save_GT)
         self.pushButton_reset.clicked.connect(self.reset_all)
         self.pushButton_load_GT.clicked.connect(self.load_gt_from_png)
+        self.nclass_box.valueChanged.connect(self.update_nclasses)
+        self.update_nclasses(self.nclass_box.value())  # initialize once
 
         # RGB sliders <-> spinboxes
         self.sliders_rgb = [self.horizontalSlider_red_channel, self.horizontalSlider_green_channel,
@@ -353,6 +355,193 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         self.splitter_2.setStyleSheet("""QSplitter::handle {background-color: darkgray;}""")
 
         self.set_mode()
+
+    def update_nclasses(self, n: int):
+        # --- gather classes present (ALL will be offered) ------------------------
+        def uniq_nonneg(a):
+            if a is None: return np.array([], dtype=int)
+            m = a >= 0
+            return np.unique(a[m]).astype(int) if np.any(m) else np.array([], dtype=int)
+
+        present = set(uniq_nonneg(getattr(self, 'cls_map', None))) | \
+                  set(uniq_nonneg(getattr(self, 'selection_mask_map', None)))
+        candidates = sorted(present)
+
+        offending = sorted(c for c in present if c >= n)
+        if not offending:
+            # No need to erase/reassign (either n is the same or larger, or no high labels are used)
+            # Just refresh UI and clamp last-label if you use it
+            if hasattr(self, '_last_label') and n > 0:
+                self._last_label = max(0, min(int(getattr(self, '_last_label', 0)), n - 1))
+            if hasattr(self, 'update_counts'): self.update_counts()
+            if hasattr(self, 'update_legend'): self.update_legend()
+            if hasattr(self, 'show_image'): self.show_image()
+            self.last_class_number=n
+            return
+
+        # --- DIALOG 1: checkboxes for classes -----------------------------------
+        dlg = QDialog(self);
+        dlg.setWindowTitle("Select classes to erase or reassign")
+        v = QVBoxLayout(dlg)
+        hi = max(0, n - 1)
+
+        v.addWidget(QLabel(
+            f"The following classes are present (valid range is 0..{hi}).\n"
+            "Tick the classes you want to ERASE or REASSIGN:"
+        ))
+
+        # Scrollable area (useful when many classes)
+        scroll = QScrollArea(dlg);
+        scroll.setWidgetResizable(True)
+        holder = QWidget();
+        holder_layout = QVBoxLayout(holder)
+        chkboxes = []
+        for c in candidates:
+            cb = QCheckBox(f"class {c}", holder)
+            if c >= n:
+                cb.setChecked(True)  # pre-check out-of-range by default
+            cb.setProperty("class_id", c)  # store id
+            holder_layout.addWidget(cb)
+            chkboxes.append(cb)
+        holder_layout.addStretch(1)
+        scroll.setWidget(holder)
+        v.addWidget(scroll)
+
+        bb = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel, dlg)
+        v.addWidget(bb)
+        bb.accepted.connect(dlg.accept);
+        bb.rejected.connect(dlg.reject)
+
+        if dlg.exec_() != QDialog.Accepted:
+            # revert spinbox to a coherent value if you had tried to reduce n
+            if hasattr(self, 'nclass_box'):
+                self.nclass_box.blockSignals(True)
+                # if there are any classes >= n, revert to max+1; else keep n
+                self.nclass_box.setValue(self.last_class_number)
+                self.nclass_box.blockSignals(False)
+            return
+
+        selected = [cb.property("class_id") for cb in chkboxes if cb.isChecked()]
+        if not selected:
+            # nothing chosen → behave like cancel
+            if hasattr(self, 'nclass_box'):
+                self.nclass_box.blockSignals(True);
+                self.nclass_box.setValue(n);
+                self.nclass_box.blockSignals(False)
+            return
+
+        # --- DIALOG 2: action choice (Erase/Reassign/Cancel) ---------------------
+        box = QMessageBox(self)
+        box.setWindowTitle("Confirm action");
+        box.setIcon(QMessageBox.Warning)
+        box.setText(
+            "You selected classes: {cl}\n\n"
+            "Choose what to do:\n"
+            "• ERASE: delete pixels and spectra (set to -1)\n"
+            "• REASSIGN: move pixels/spectra into an existing class (0..{hi})"
+            .format(cl=", ".join(map(str, selected)), hi=hi)
+        )
+        erase_btn = box.addButton("Erase", QMessageBox.DestructiveRole)
+        reassign_btn = box.addButton("Reassign", QMessageBox.AcceptRole)
+        cancel_btn = box.addButton("Cancel", QMessageBox.RejectRole)
+        box.setDefaultButton(reassign_btn)
+        box.exec_()
+        clicked = box.clickedButton()
+
+        if clicked is cancel_btn:
+            if hasattr(self, 'nclass_box'):
+                self.nclass_box.blockSignals(True);
+                self.nclass_box.setValue(self.last_class_number);
+                self.nclass_box.blockSignals(False)
+            return
+
+        # --- Apply ---------------------------------------------------------------
+        self.setUpdatesEnabled(False)
+        try:
+            if clicked is erase_btn:
+                # maps: set to -1
+                for arr_name in ('cls_map', 'selection_mask_map'):
+                    arr = getattr(self, arr_name, None)
+                    if arr is not None:
+                        for c in selected:
+                            arr[arr == c] = -1
+                # dicts: remove keys
+                for dname in ('class_colors', 'class_info', 'samples', 'sample_coords', 'class_means', 'class_stds'):
+                    d = getattr(self, dname, None)
+                    if isinstance(d, dict):
+                        for c in selected:
+                            d.pop(c, None)
+
+            elif clicked is reassign_btn:
+                # ask target per selected class
+                mapping = {}
+                for src in selected:
+                    tgt, ok = QInputDialog.getInt(
+                        self, "Reassign class",
+                        f"Reassign class {src} to (0..{hi})",
+                        0, 0, hi, 1
+                    )
+                    if not ok:
+                        # abort
+                        if hasattr(self, 'nclass_box'):
+                            self.nclass_box.blockSignals(True);
+                            self.nclass_box.setValue(n);
+                            self.nclass_box.blockSignals(False)
+                        return
+                    mapping[src] = int(tgt)
+
+                # maps: remap
+                for arr_name in ('cls_map', 'selection_mask_map'):
+                    arr = getattr(self, arr_name, None)
+                    if arr is not None:
+                        for src, dst in mapping.items():
+                            arr[arr == src] = dst
+
+                # dicts: simple merge (lists concat); otherwise keep target
+                def merge_dict(d):
+                    if not isinstance(d, dict): return
+                    for src, dst in mapping.items():
+                        if src in d:
+                            if dst in d and isinstance(d[dst], list) and isinstance(d[src], list):
+                                d[dst].extend(d[src])
+                            elif dst not in d:
+                                d[dst] = d[src]
+                            d.pop(src, None)
+
+                for dname in ('samples', 'sample_coords', 'class_info', 'class_means', 'class_stds'):
+                    merge_dict(getattr(self, dname, None))
+
+                col = getattr(self, 'class_colors', None)
+                if isinstance(col, dict):
+                    for src in mapping.keys():
+                        col.pop(src, None)
+
+            # final cleanup: drop dict keys ≥ n
+            for dname in ('class_colors', 'class_info', 'samples', 'sample_coords', 'class_means', 'class_stds'):
+                d = getattr(self, dname, None)
+                if isinstance(d, dict):
+                    for k in list(d.keys()):
+                        try:
+                            if int(k) >= n:
+                                d.pop(k, None)
+                        except Exception:
+                            pass
+
+            # keep last label valid
+            if hasattr(self, '_last_label') and n > 0:
+                self._last_label = max(0, min(int(getattr(self, '_last_label', 0)), n - 1))
+
+            # refresh UI
+            if hasattr(self, 'update_counts'): self.update_counts()
+            if hasattr(self, 'update_legend'): self.update_legend()
+            if hasattr(self, 'show_image'): self.show_image()
+
+            self.last_class_number=n
+
+
+        finally:
+            self.setUpdatesEnabled(True)
+            self.last_class_number=n
 
     def eventFilter(self, source, event):
         mode = self.comboBox_pixel_selection_mode.currentText()
@@ -1077,7 +1266,6 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         self.spec_ax.set_title('Spectra')
         self.spec_ax.grid()
 
-
         self.span_selector = SpanSelector(
             ax=self.spec_ax,  # votre axe “Spectrum”
             onselect=self._on_bandselect,  # callback
@@ -1180,8 +1368,10 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
 
     def _handle_selection(self, coords):
         """Prompt for class and store spectra of the given coordinates."""
-        max_cls = self.nclass_box.value() - 1
-        labels = [str(i) for i in range(max_cls + 1)]
+        n = self.nclass_box.value() - 1
+        labels = [str(i) for i in range(n + 1)]
+
+        default_label = max(0, min(self._last_label, n)) if n > 0 else 0
 
         # 2) Ouvrir un QInputDialog.getItem() au lieu de getInt()
         #    - on force l’édition à se faire via la liste déroulante
@@ -1190,7 +1380,7 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
             "Class",
             "Choose class label:",
             labels,
-            0,  # index initial (par défaut on sélectionne “0”)
+            default_label,  # index initial (par défaut on sélectionne “0”)
             False  # False = l’utilisateur ne peut pas taper autre chose que la liste
         )
 
@@ -1198,10 +1388,9 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
             return
 
         cls = int(cls_str)
+        self._last_label = cls
         if cls not in self.class_colors:
             self._assign_initial_colors(cls)
-        else:
-            print({self.class_colors[cls]})
 
         # append spectra
 
@@ -1403,9 +1592,7 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         self.cube.cube_info = ci
 
     def reset_state(self):
-        """
-        Réinitialise tous les états liés au cube courant pour repartir d'un état vierge.
-        """
+
         # 1. Segmentation algorithmique
         self.cls_map = None
         # 2. Sélection manuelle
@@ -1472,9 +1659,7 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         else:
 
             # 1) Construire seg_color (H x W x 3) en BGR
-
             H, W = self.cls_map.shape
-
             seg_color = np.zeros((H, W, 3), dtype=np.uint8)
 
             for cls, (b, g, r) in self.class_colors.items():
@@ -1485,20 +1670,15 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
                 seg_color[mask] = [b, g, r]
 
             # 2) Si vous avez défini une classe “other” (indice = n_classes),
-
             #    et que vous n’avez pas de couleur pour elle, vous pouvez la mettre en grisé, ex.:
 
             other_idx = set(np.unique(self.cls_map)) - set(self.class_colors.keys())
-
             for cls in other_idx:
                 gray = 128
-
                 mask = (self.cls_map == cls)
-
                 seg_color[mask] = [gray, gray, gray]
 
             # 3) Faire l’overlay final avec la transparence
-
             overlay = cv2.addWeighted(rgb, 1 - self.alpha, seg_color, self.alpha, 0)
 
         if self.cls_map is None:
@@ -1568,7 +1748,7 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
                 b, g, r = self.class_colors[c]
                 txt=str(c)
                 if self.class_ncount is not None :
-                    txt+='-'+str(self.class_ncount[c])+'px'
+                    txt += '-' + str(self.class_ncount.get(c, 0)) + 'px'
 
                 lbl = QLabel(txt)
                 # lbl.setFixedSize(30, 20)
@@ -1729,7 +1909,7 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
             full_means = {}
             full_stds = {}
 
-            for c in range(len(classes)):
+            for c in np.unique(self.cls_map):
                 mask_c = (self.cls_map == c)  # True pour tous les pixels de la classe c
                 pixels_spectre_complet = self.data[mask_c]  # shape = (N_pixels_classe, F)
                 if pixels_spectre_complet.size == 0:
@@ -1756,17 +1936,20 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         self.update_spectra()
 
     def update_counts(self):
-        self.class_ncount = {}
+        """Recompute number of pixels per class from cls_map."""
+        # reset all to 0
+        self.class_ncount = {c: 0 for c in range(self.nclass_box.value())}
 
-        if self.cls_map is not None:
-            labels, counts = np.unique(self.cls_map, return_counts=True)
-        elif self.selection_mask_map is not None:
-            labels, counts = np.unique(self.selection_mask_map[self.selection_mask_map >= 0], return_counts=True)
-        else:
-            labels, counts = [], []
+        if self.cls_map is None:
+            return
 
-        for cls, cnt in zip(labels, counts):
-            self.class_ncount[cls] = cnt
+        # count valid labels only
+        valid = self.cls_map[self.cls_map >= 0]
+        if valid.size:
+            unique, counts = np.unique(valid, return_counts=True)
+            for u, cnt in zip(unique, counts):
+                if 0 <= int(u) < self.nclass_box.value():
+                    self.class_ncount[int(u)] = int(cnt)
 
     def _np2pixmap(self, img):
         from PyQt5.QtGui import QImage, QPixmap

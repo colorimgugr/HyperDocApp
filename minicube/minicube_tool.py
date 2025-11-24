@@ -11,6 +11,11 @@ from minicube.extract_minicube_window import Ui_Form
 from hypercubes.hypercube import Hypercube,CubeInfoTemp
 from interface.some_widget_for_interface import ZoomableGraphicsView
 
+## bloc non important warning
+import warnings
+warnings.filterwarnings("ignore", message="Parameters with non-lowercase names")
+
+
 class MiniCubeTool(QWidget, Ui_Form):
 
     cube_saved = pyqtSignal(CubeInfoTemp)
@@ -115,16 +120,16 @@ class MiniCubeTool(QWidget, Ui_Form):
         self.wl = self.cube.wl
         self.cubes_path=filepath
 
-        # Choix intelligent des canaux par défaut
-        if self.wl[-1] < 1100 and self.wl[0] > 350:
+        # Choix des canaux par défaut
+        if self.wl[-1] < 1100 and not self.wl[0] > 435:
             self.hyps_rgb_chan_DEFAULT = [610, 540, 435]
             self.range='-VNIR-'
-        elif self.wl[-1] >= 1100:
+        elif self.wl[-1] >= 1100 and not self.wl[0]> 1005:
             self.hyps_rgb_chan_DEFAULT = [1605, 1205, 1005]
             self.range = '-SWIR-'
         else:
             mid = int(len(self.wl) / 2)
-            self.hyps_rgb_chan_DEFAULT = [self.wl[0], self.wl[mid], self.wl[-1]]
+            self.hyps_rgb_chan_DEFAULT = [int(self.wl[0]), int(self.wl[mid]), int(self.wl[-1])]
             self.range = '-'
 
         self.modif_sliders(force_defaults=True)

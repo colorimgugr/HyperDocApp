@@ -158,3 +158,150 @@ Traceback (most recent call last):
     ^^^^^^^^^^^^^^^^^^^
 AttributeError: 'NoneType' object has no attribute 'cube_info'
 
+2025-09-12 09:55:19,183 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\data_vizualisation\data_vizualisation_tool.py", line 571, in search_gt_in_files
+    self.update_widgets()
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\data_vizualisation\data_vizualisation_tool.py", line 422, in update_widgets
+    self.modif_sliders(default=True)
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\data_vizualisation\data_vizualisation_tool.py", line 814, in modif_sliders
+    max_wl=int(hyp.wl[-1])
+               ~~~~~~^^^^
+TypeError: 'NoneType' object is not subscriptable
+
+2025-09-19 11:41:12,428 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\MainWindow.py", line 693, in <lambda>
+    lambda _, p=path: self._send_to_identification(p, 0)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\MainWindow.py", line 564, in _send_to_identification
+    widget.load_cube(filepath=ci.filepath,cube_info=ci,range=range,cube=hc)
+TypeError: RegistrationApp.load_cube() got an unexpected keyword argument 'range'
+
+2025-09-19 11:42:14,662 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\MainWindow.py", line 693, in <lambda>
+    lambda _, p=path: self._send_to_identification(p, 0)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\MainWindow.py", line 564, in _send_to_identification
+    widget.load_cube(filepath=ci.filepath,cube_info=ci,range=range,cube=hc)
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\identification\identification_tool.py", line 1119, in load_cube
+    mask = (self.TRAIN_WL >= float(self.wl.min())) & (self.TRAIN_WL <= float(self.wl.max()))
+                                   ^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'min'
+
+2025-09-19 18:06:46,016 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\MainWindow.py", line 354, in open_suggestion_box
+    self.suggestion_window = SuggestionWidget()
+                             ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\MainWindow.py", line 780, in __init__
+    self.submit_button = QPushButton("Submit")
+                         ^^^^^^^^^^^
+NameError: name 'QPushButton' is not defined
+
+2025-09-19 18:06:46,971 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\MainWindow.py", line 354, in open_suggestion_box
+    self.suggestion_window = SuggestionWidget()
+                             ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\MainWindow.py", line 780, in __init__
+    self.submit_button = QPushButton("Submit")
+                         ^^^^^^^^^^^
+NameError: name 'QPushButton' is not defined
+
+2025-09-19 18:07:46,491 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\MainWindow.py", line 354, in open_suggestion_box
+    self.suggestion_window = SuggestionWidget()
+                             ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\MainWindow.py", line 780, in __init__
+    self.submit_button = QPushButton("Submit")
+                         ^^^^^^^^^^^
+NameError: name 'QPushButton' is not defined
+
+2025-10-01 11:50:46,250 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\ground_truth\ground_truth_tool.py", line 473, in eventFilter
+    self._handle_selection(coords) # close selection
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\ground_truth\ground_truth_tool.py", line 1228, in _handle_selection
+    self.update_legend()
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\ground_truth\ground_truth_tool.py", line 1565, in update_legend
+    txt+='-'+str(self.class_ncount[c])+'px'
+                 ~~~~~~~~~~~~~~~~~^^^
+KeyError: 2
+
+2025-10-01 11:50:59,947 - ERROR - User comment: SELECTING class 2
+
+2025-10-01 11:51:18,258 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\ground_truth\ground_truth_tool.py", line 473, in eventFilter
+    self._handle_selection(coords) # close selection
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\ground_truth\ground_truth_tool.py", line 1228, in _handle_selection
+    self.update_legend()
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\ground_truth\ground_truth_tool.py", line 1565, in update_legend
+    txt+='-'+str(self.class_ncount[c])+'px'
+                 ~~~~~~~~~~~~~~~~~^^^
+KeyError: 2
+
+2025-10-01 11:51:22,731 - ERROR - User comment: same
+
+2025-10-01 11:51:28,145 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\ground_truth\ground_truth_tool.py", line 473, in eventFilter
+    self._handle_selection(coords) # close selection
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\ground_truth\ground_truth_tool.py", line 1228, in _handle_selection
+    self.update_legend()
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\ground_truth\ground_truth_tool.py", line 1565, in update_legend
+    txt+='-'+str(self.class_ncount[c])+'px'
+                 ~~~~~~~~~~~~~~~~~^^^
+KeyError: 2
+
+2025-10-01 11:51:45,776 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\ground_truth\ground_truth_tool.py", line 473, in eventFilter
+    self._handle_selection(coords) # close selection
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\ground_truth\ground_truth_tool.py", line 1228, in _handle_selection
+    self.update_legend()
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\ground_truth\ground_truth_tool.py", line 1565, in update_legend
+    txt+='-'+str(self.class_ncount[c])+'px'
+                 ~~~~~~~~~~~~~~~~~^^^
+KeyError: 2
+
+2025-11-24 09:40:21,863 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\minicube\minicube_tool.py", line 119, in load_cube
+    if self.wl[-1] < 1100 and self.wl[0] > 350:
+       ~~~~~~~^^^^
+TypeError: 'NoneType' object is not subscriptable
+
+2025-11-24 09:40:42,472 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\minicube\minicube_tool.py", line 130, in load_cube
+    self.modif_sliders(force_defaults=True)
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\minicube\minicube_tool.py", line 189, in modif_sliders
+    sliders[i].setValue(value)
+TypeError: setValue(self, a0: int): argument 1 has unexpected type 'numpy.float32'
+
+2025-11-24 09:40:48,174 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\minicube\minicube_tool.py", line 189, in modif_sliders
+    sliders[i].setValue(value)
+TypeError: setValue(self, a0: int): argument 1 has unexpected type 'numpy.float32'
+
+2025-11-24 09:40:51,418 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\minicube\minicube_tool.py", line 189, in modif_sliders
+    sliders[i].setValue(value)
+TypeError: setValue(self, a0: int): argument 1 has unexpected type 'numpy.float32'
+
+2025-11-24 09:40:55,934 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\minicube\minicube_tool.py", line 189, in modif_sliders
+    sliders[i].setValue(value)
+TypeError: setValue(self, a0: int): argument 1 has unexpected type 'numpy.float32'
+

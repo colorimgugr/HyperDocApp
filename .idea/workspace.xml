@@ -4,11 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="[Identification] : Added saving in h5 and png &#10;with dialog options.">
+    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="[HYPERCUBE] : &#10;- Modif in dark (for line flat field)">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/identification/identification_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/identification/identification_tool.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/identification/identification_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/identification/identification_window.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/identification/identification_window.ui" beforeDir="false" afterPath="$PROJECT_DIR$/identification/identification_window.ui" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/MainWindow.py" beforeDir="false" afterPath="$PROJECT_DIR$/MainWindow.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/log/error.log" beforeDir="false" afterPath="$PROJECT_DIR$/log/error.log" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/minicube/minicube_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/minicube/minicube_tool.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -138,399 +138,399 @@
       <option name="presentableId" value="Default" />
       <updated>1744020944801</updated>
     </task>
-    <task id="LOCAL-00035" summary="doublons de selection gerer">
+    <task id="LOCAL-00089" summary="[IDENTIFICATION] : ROI uptaded for jobs and blinking overlay fixed">
       <option name="closed" value="true" />
-      <created>1748439385139</created>
-      <option name="number" value="00035" />
-      <option name="presentableId" value="LOCAL-00035" />
+      <created>1758183124061</created>
+      <option name="number" value="00089" />
+      <option name="presentableId" value="LOCAL-00089" />
       <option name="project" value="LOCAL" />
-      <updated>1748439385139</updated>
+      <updated>1758183124062</updated>
     </task>
-    <task id="LOCAL-00036" summary="Merging GT and manual added&#10;add legend of color class when selecting">
+    <task id="LOCAL-00090" summary="[IDENTIFICATION] : ROI selection, add from disk, traint/predict with reduces channels cube OK FOR INK AND SUBSTRATE">
       <option name="closed" value="true" />
-      <created>1748488219203</created>
-      <option name="number" value="00036" />
-      <option name="presentableId" value="LOCAL-00036" />
+      <created>1758208417129</created>
+      <option name="number" value="00090" />
+      <option name="presentableId" value="LOCAL-00090" />
       <option name="project" value="LOCAL" />
-      <updated>1748488219203</updated>
+      <updated>1758208417130</updated>
     </task>
-    <task id="LOCAL-00037" summary="QSplitter OK&#10;Loading cube with reste state OK">
+    <task id="LOCAL-00091" summary="[IDENTIFICATION] : Loading Dialog prefilled with current value (if opened with dialog)">
       <option name="closed" value="true" />
-      <created>1748517410329</created>
-      <option name="number" value="00037" />
-      <option name="presentableId" value="LOCAL-00037" />
+      <created>1758209527520</created>
+      <option name="number" value="00091" />
+      <option name="presentableId" value="LOCAL-00091" />
       <option name="project" value="LOCAL" />
-      <updated>1748517410329</updated>
+      <updated>1758209527520</updated>
     </task>
-    <task id="LOCAL-00038" summary="GT_table_viz works now very nice. To be inserted in GT tool.">
+    <task id="LOCAL-00092" summary="[IDENTIFICATION] : Inserted in the MainWindow Correctly">
       <option name="closed" value="true" />
-      <created>1748618417812</created>
-      <option name="number" value="00038" />
-      <option name="presentableId" value="LOCAL-00038" />
+      <created>1758275492539</created>
+      <option name="number" value="00092" />
+      <option name="presentableId" value="LOCAL-00092" />
       <option name="project" value="LOCAL" />
-      <updated>1748618417812</updated>
+      <updated>1758275492539</updated>
     </task>
-    <task id="LOCAL-00039" summary="Supression of .ui previous try of class assignment">
+    <task id="LOCAL-00093" summary="[IDENTIFICATION] : Fixed loading parameters, icon, fusion, and defauts rgb parameters">
       <option name="closed" value="true" />
-      <created>1748618728900</created>
-      <option name="number" value="00039" />
-      <option name="presentableId" value="LOCAL-00039" />
+      <created>1758283799871</created>
+      <option name="number" value="00093" />
+      <option name="presentableId" value="LOCAL-00093" />
       <option name="project" value="LOCAL" />
-      <updated>1748618728900</updated>
+      <updated>1758283799872</updated>
     </task>
-    <task id="LOCAL-00040" summary="Connection table and GT tools. &#10;right click interaction added on table.">
+    <task id="LOCAL-00094" summary="[IDENTIFICATION] : Traning status added, no rectangle roi on right viewer, security and restet on load new cube">
       <option name="closed" value="true" />
-      <created>1748866354558</created>
-      <option name="number" value="00040" />
-      <option name="presentableId" value="LOCAL-00040" />
+      <created>1758293782826</created>
+      <option name="number" value="00094" />
+      <option name="presentableId" value="LOCAL-00094" />
       <option name="project" value="LOCAL" />
-      <updated>1748866354558</updated>
+      <updated>1758293782826</updated>
     </task>
-    <task id="LOCAL-00041" summary="handle of classe suppresion ok">
+    <task id="LOCAL-00095" summary="[IDENTIFICATION] : Modif savig path and learning thread.&#10;Added crop spectral in hypercube class">
       <option name="closed" value="true" />
-      <created>1748866959279</created>
-      <option name="number" value="00041" />
-      <option name="presentableId" value="LOCAL-00041" />
+      <created>1758544886116</created>
+      <option name="number" value="00095" />
+      <option name="presentableId" value="LOCAL-00095" />
       <option name="project" value="LOCAL" />
-      <updated>1748866959279</updated>
+      <updated>1758544886117</updated>
     </task>
-    <task id="LOCAL-00042" summary="Add, suppres and reset bands working (on the graph)">
+    <task id="LOCAL-00096" summary="[GROUND TRUTH] :&#10;-&gt; Gestion of diminution of class numbers : erase or reassign with choice. &#10;-&gt; Save last label choice when selecting">
       <option name="closed" value="true" />
-      <created>1748944467930</created>
-      <option name="number" value="00042" />
-      <option name="presentableId" value="LOCAL-00042" />
+      <created>1759409194306</created>
+      <option name="number" value="00096" />
+      <option name="presentableId" value="LOCAL-00096" />
       <option name="project" value="LOCAL" />
-      <updated>1748944467930</updated>
+      <updated>1759409194306</updated>
     </task>
-    <task id="LOCAL-00043" summary="Added normalizarion for Unsupervised">
+    <task id="LOCAL-00097" summary="[GROUND TRUTH] :&#10;-&gt; Gestion of diminution of class numbers : erase or reassign with choice. &#10;-&gt; Save last label choice when selecting&#10;-&gt; Fixed except si les numeros de classes ne se suivent pas.">
       <option name="closed" value="true" />
-      <created>1748964150591</created>
-      <option name="number" value="00043" />
-      <option name="presentableId" value="LOCAL-00043" />
+      <created>1759410689873</created>
+      <option name="number" value="00097" />
+      <option name="presentableId" value="LOCAL-00097" />
       <option name="project" value="LOCAL" />
-      <updated>1748964150591</updated>
+      <updated>1759410689873</updated>
     </task>
-    <task id="LOCAL-00044" summary="pixel_averaged added + saving GT started">
+    <task id="LOCAL-00098" summary="[HYPERCUBE] : Calibration -&gt; added than user can load ref reflectance file">
       <option name="closed" value="true" />
-      <created>1749819042738</created>
-      <option name="number" value="00044" />
-      <option name="presentableId" value="LOCAL-00044" />
+      <created>1759491318156</created>
+      <option name="number" value="00098" />
+      <option name="presentableId" value="LOCAL-00098" />
       <option name="project" value="LOCAL" />
-      <updated>1749819042738</updated>
+      <updated>1759491318157</updated>
     </task>
-    <task id="LOCAL-00045" summary="Bugg of metadata loading finally fixed :-p">
+    <task id="LOCAL-00099" summary="Icon_illumination">
       <option name="closed" value="true" />
-      <created>1750075741719</created>
-      <option name="number" value="00045" />
-      <option name="presentableId" value="LOCAL-00045" />
+      <created>1759831965939</created>
+      <option name="number" value="00099" />
+      <option name="presentableId" value="LOCAL-00099" />
       <option name="project" value="LOCAL" />
-      <updated>1750075741719</updated>
+      <updated>1759831965940</updated>
     </task>
-    <task id="LOCAL-00046" summary="Loading GT_tool with cubeInfo&#10;GT tool inserted in main">
+    <task id="LOCAL-00100" summary="[unmixing] : &#10;- unmixing_backend with pyspotools and laars&#10;- ui -&gt; OK for cube viz and end members auto extraction">
       <option name="closed" value="true" />
-      <created>1750081807480</created>
-      <option name="number" value="00046" />
-      <option name="presentableId" value="LOCAL-00046" />
+      <created>1761208565286</created>
+      <option name="number" value="00100" />
+      <option name="presentableId" value="LOCAL-00100" />
       <option name="project" value="LOCAL" />
-      <updated>1750081807480</updated>
+      <updated>1761208565288</updated>
     </task>
-    <task id="LOCAL-00047" summary="Back to main organisation&#10;Ground Truth tool operationnel">
+    <task id="LOCAL-00101" summary="[unmixing] : &#10;- unmixing_backend with pyspotools and laars&#10;- ui -&gt; OK for cube viz and end members auto extraction">
       <option name="closed" value="true" />
-      <created>1750774362538</created>
-      <option name="number" value="00047" />
-      <option name="presentableId" value="LOCAL-00047" />
+      <created>1761208589433</created>
+      <option name="number" value="00101" />
+      <option name="presentableId" value="LOCAL-00101" />
       <option name="project" value="LOCAL" />
-      <updated>1750774362538</updated>
+      <updated>1761208589433</updated>
     </task>
-    <task id="LOCAL-00048" summary="added">
+    <task id="LOCAL-00102" summary="[unmixing] : &#10;- spectra canvas added">
       <option name="closed" value="true" />
-      <created>1750774382912</created>
-      <option name="number" value="00048" />
-      <option name="presentableId" value="LOCAL-00048" />
+      <created>1761209206613</created>
+      <option name="number" value="00102" />
+      <option name="presentableId" value="LOCAL-00102" />
       <option name="project" value="LOCAL" />
-      <updated>1750774382912</updated>
+      <updated>1761209206613</updated>
     </task>
-    <task id="LOCAL-00049" summary="added">
+    <task id="LOCAL-00103" summary="[unmixing] : &#10;- changing menu with endmemebers method">
       <option name="closed" value="true" />
-      <created>1750778641386</created>
-      <option name="number" value="00049" />
-      <option name="presentableId" value="LOCAL-00049" />
+      <created>1761226614902</created>
+      <option name="number" value="00103" />
+      <option name="presentableId" value="LOCAL-00103" />
       <option name="project" value="LOCAL" />
-      <updated>1750778641386</updated>
+      <updated>1761226614902</updated>
     </task>
-    <task id="LOCAL-00050" summary="fixed bugg meta wl with register cube&#10;fixed rgb save bugg register">
+    <task id="LOCAL-00104" summary="[unmixing] : &#10;- manual selection implemented. Few buggs of vizualisation to fix.">
       <option name="closed" value="true" />
-      <created>1750844767242</created>
-      <option name="number" value="00050" />
-      <option name="presentableId" value="LOCAL-00050" />
+      <created>1761274875805</created>
+      <option name="number" value="00104" />
+      <option name="presentableId" value="LOCAL-00104" />
       <option name="project" value="LOCAL" />
-      <updated>1750844767242</updated>
+      <updated>1761274875805</updated>
     </task>
-    <task id="LOCAL-00051" summary="plein de trucs :-p">
+    <task id="LOCAL-00105" summary="[unmixing] : &#10;- manual selection implemented&#10;- auto selection implemented&#10;- from lib selection implemented">
       <option name="closed" value="true" />
-      <created>1751039617101</created>
-      <option name="number" value="00051" />
-      <option name="presentableId" value="LOCAL-00051" />
+      <created>1761307532687</created>
+      <option name="number" value="00105" />
+      <option name="presentableId" value="LOCAL-00105" />
       <option name="project" value="LOCAL" />
-      <updated>1751039617101</updated>
+      <updated>1761307532687</updated>
     </task>
-    <task id="LOCAL-00052" summary="ouverture des cubes dans data_viz elargie en format, ajout de la hash_up table pour association de cube, depandance UV differentes">
+    <task id="LOCAL-00106" summary="[unmixing] : &#10;- Spectral legend dynamic&#10;- Graphical gestion of colors and names of EM&#10;- Table and job queued of unmixing algo init">
       <option name="closed" value="true" />
-      <created>1751284917961</created>
-      <option name="number" value="00052" />
-      <option name="presentableId" value="LOCAL-00052" />
+      <created>1761661862366</created>
+      <option name="number" value="00106" />
+      <option name="presentableId" value="LOCAL-00106" />
       <option name="project" value="LOCAL" />
-      <updated>1751284917961</updated>
+      <updated>1761661862366</updated>
     </task>
-    <task id="LOCAL-00053" summary="ouverture des cubes dans data_viz elargie en format, ajout de la hash_up table pour association de cube, depandance UV differentes">
+    <task id="LOCAL-00107" summary="[unmixing] : &#10;- working on endmembers location and normalisation">
       <option name="closed" value="true" />
-      <created>1751372677413</created>
-      <option name="number" value="00053" />
-      <option name="presentableId" value="LOCAL-00053" />
+      <created>1761741992588</created>
+      <option name="number" value="00107" />
+      <option name="presentableId" value="LOCAL-00107" />
       <option name="project" value="LOCAL" />
-      <updated>1751372677413</updated>
+      <updated>1761741992588</updated>
     </task>
-    <task id="LOCAL-00054" summary="ouverture des cubes dans data_viz elargie en format, ajout de la hash_up table pour association de cube, depandance UV differentes">
+    <task id="LOCAL-00108" summary="[unmixing] : &#10;- working on endmembers location and normalisation">
       <option name="closed" value="true" />
-      <created>1751372738567</created>
-      <option name="number" value="00054" />
-      <option name="presentableId" value="LOCAL-00054" />
+      <created>1761743198706</created>
+      <option name="number" value="00108" />
+      <option name="presentableId" value="LOCAL-00108" />
       <option name="project" value="LOCAL" />
-      <updated>1751372738567</updated>
+      <updated>1761743198706</updated>
     </task>
-    <task id="LOCAL-00055" summary="syncronize Drag and scroll for images and GT&#10;Open non h5&#10;live spectrum initiate if no GT">
+    <task id="LOCAL-00109" summary="[unmixing] : &#10;- affichages des endmembers auto et manual OK">
       <option name="closed" value="true" />
-      <created>1751572928997</created>
-      <option name="number" value="00055" />
-      <option name="presentableId" value="LOCAL-00055" />
+      <created>1761819544132</created>
+      <option name="number" value="00109" />
+      <option name="presentableId" value="LOCAL-00109" />
       <option name="project" value="LOCAL" />
-      <updated>1751572928997</updated>
+      <updated>1761819544133</updated>
     </task>
-    <task id="LOCAL-00056" summary="Main added all tools and open cube with dialog">
+    <task id="LOCAL-00110" summary="[unmixing] : &#10;- unifier parametres dans class_info. gestion des couleurs OK">
       <option name="closed" value="true" />
-      <created>1751621833902</created>
-      <option name="number" value="00056" />
-      <option name="presentableId" value="LOCAL-00056" />
+      <created>1761825800628</created>
+      <option name="number" value="00110" />
+      <option name="presentableId" value="LOCAL-00110" />
       <option name="project" value="LOCAL" />
-      <updated>1751621833902</updated>
+      <updated>1761825800628</updated>
     </task>
-    <task id="LOCAL-00057" summary="Metadata tool with generate meta first step.&#10;Much robust for lokking at changes keep save etc...">
+    <task id="LOCAL-00111" summary="[unmixing] : &#10;- implementando forms to show endmembers params">
       <option name="closed" value="true" />
-      <created>1751732511279</created>
-      <option name="number" value="00057" />
-      <option name="presentableId" value="LOCAL-00057" />
+      <created>1761828442929</created>
+      <option name="number" value="00111" />
+      <option name="presentableId" value="LOCAL-00111" />
       <option name="project" value="LOCAL" />
-      <updated>1751732511281</updated>
+      <updated>1761828442929</updated>
     </task>
-    <task id="LOCAL-00058" summary="Metadata tool copy from other cube et add/remove metadatum">
+    <task id="LOCAL-00112" summary="[unmixing] : &#10;- scrolable labels for endmembers&#10;- dynamic cross to visualize automatic endmembers&#10;- get Raw endmembers spectrum and normalisation to save of before unmixing&#10;- transforms extended to selection_mask&#10;- radiobuttons and stecked tabs for result_viz">
       <option name="closed" value="true" />
-      <created>1751836389143</created>
-      <option name="number" value="00058" />
-      <option name="presentableId" value="LOCAL-00058" />
+      <created>1761921019704</created>
+      <option name="number" value="00112" />
+      <option name="presentableId" value="LOCAL-00112" />
       <option name="project" value="LOCAL" />
-      <updated>1751836389143</updated>
+      <updated>1761921019705</updated>
     </task>
-    <task id="LOCAL-00059" summary="[Metadata] copy from other cube -&gt; type keep for non editable like numpy&#10;open cube possibility&#10;[Registration] all metadata seems OK. Gestion des croped parent etc....">
+    <task id="LOCAL-00113" summary="[unmixing] : &#10;- endmmembers editing name for saving abd color for temporal visualization.&#10;- saving automatic abd manual endmmbers to csv. &#10;- Loading dispersive endmmbers like with multiple spectrum">
       <option name="closed" value="true" />
-      <created>1751917857950</created>
-      <option name="number" value="00059" />
-      <option name="presentableId" value="LOCAL-00059" />
+      <created>1762265390626</created>
+      <option name="number" value="00113" />
+      <option name="presentableId" value="LOCAL-00113" />
       <option name="project" value="LOCAL" />
-      <updated>1751917857950</updated>
+      <updated>1762265390626</updated>
     </task>
-    <task id="LOCAL-00060" summary="Cube info loading and saving are syncronized with all tools (except visualize)&#10;[registration] manual features supression">
+    <task id="LOCAL-00114" summary="[unmixing] : &#10;- adding ROI selection by rectanlge and state modification when selecting pixels">
       <option name="closed" value="true" />
-      <created>1751934056860</created>
-      <option name="number" value="00060" />
-      <option name="presentableId" value="LOCAL-00060" />
+      <created>1762349697300</created>
+      <option name="number" value="00114" />
+      <option name="presentableId" value="LOCAL-00114" />
       <option name="project" value="LOCAL" />
-      <updated>1751934056862</updated>
+      <updated>1762349697300</updated>
     </task>
-    <task id="LOCAL-00061" summary="[main] correction of suggestions suprresion">
+    <task id="LOCAL-00115" summary="[unmixing] : implementing unmixing jobs">
       <option name="closed" value="true" />
-      <created>1751935369122</created>
-      <option name="number" value="00061" />
-      <option name="presentableId" value="LOCAL-00061" />
+      <created>1762521941719</created>
+      <option name="number" value="00115" />
+      <option name="presentableId" value="LOCAL-00115" />
       <option name="project" value="LOCAL" />
-      <updated>1751935369122</updated>
+      <updated>1762521941719</updated>
     </task>
-    <task id="LOCAL-00062" summary="[main] open all bugg fixed&#10;[register] modif features, sliders bugg and labels and groups, click to select, auto load other, progress bar reset all, cubeinfo unique and parent cube editable at save.">
+    <task id="LOCAL-00116" summary="[unmixing] : implementing unmixing jobs&#10;- run one and all from queue&#10;- check if already in queue">
       <option name="closed" value="true" />
-      <created>1752005647626</created>
-      <option name="number" value="00062" />
-      <option name="presentableId" value="LOCAL-00062" />
+      <created>1762532648706</created>
+      <option name="number" value="00116" />
+      <option name="presentableId" value="LOCAL-00116" />
       <option name="project" value="LOCAL" />
-      <updated>1752005647626</updated>
+      <updated>1762532648707</updated>
     </task>
-    <task id="LOCAL-00063" summary="Lot of things but most of all matlab.engine">
+    <task id="LOCAL-00117" summary="[unmixing] : implementing unmixing jobs&#10;- ask confirm on supress if job done &#10;- only one job at a time&#10;- unmix simple view of abondance map">
       <option name="closed" value="true" />
-      <created>1752109688328</created>
-      <option name="number" value="00063" />
-      <option name="presentableId" value="LOCAL-00063" />
+      <created>1762784783506</created>
+      <option name="number" value="00117" />
+      <option name="presentableId" value="LOCAL-00117" />
       <option name="project" value="LOCAL" />
-      <updated>1752109688330</updated>
+      <updated>1762784783507</updated>
     </task>
-    <task id="LOCAL-00064" summary="Ground Truth Features fixed.&#10;- cursor cross interference fixed,&#10;- updating spectra fixed&#10;- max R fixed &#10;- groups of widgets in tabs to have more space&#10;- add check box for live toggle&#10;- all made again because of a fucking error of merging :-/">
+    <task id="LOCAL-00118" summary="[unmixing] : implementing unmixing jobs&#10;- fixed lable of library bugg&#10;- fixed bug of EM sources for multiples jobs&#10;- progress bar implemented to dynamic 5%">
       <option name="closed" value="true" />
-      <created>1752509077761</created>
-      <option name="number" value="00064" />
-      <option name="presentableId" value="LOCAL-00064" />
+      <created>1762858556158</created>
+      <option name="number" value="00118" />
+      <option name="presentableId" value="LOCAL-00118" />
       <option name="project" value="LOCAL" />
-      <updated>1752509077761</updated>
+      <updated>1762858556158</updated>
     </task>
-    <task id="LOCAL-00065" summary="[Register]ui + [Main] save on exit + [GT] keep GT_label_map in metadata y png with palette">
+    <task id="LOCAL-00119" summary="[unmixing] : implementing unmixing jobs&#10;- same normalization for cube and EM OK">
       <option name="closed" value="true" />
-      <created>1752580162251</created>
-      <option name="number" value="00065" />
-      <option name="presentableId" value="LOCAL-00065" />
+      <created>1762867998016</created>
+      <option name="number" value="00119" />
+      <option name="presentableId" value="LOCAL-00119" />
       <option name="project" value="LOCAL" />
-      <updated>1752580162252</updated>
+      <updated>1762867998016</updated>
     </task>
-    <task id="LOCAL-00066" summary="[Hypercube] matlab files with browser OK for v7.3 and v old without hypercube.&#10;Load and save envie.">
+    <task id="LOCAL-00120" summary="[unmixing] : implementing unmixing jobs&#10;- same normalization for cube and EM OK&#10;- update abundance map OK">
       <option name="closed" value="true" />
-      <created>1752596856477</created>
-      <option name="number" value="00066" />
-      <option name="presentableId" value="LOCAL-00066" />
+      <created>1762869868164</created>
+      <option name="number" value="00120" />
+      <option name="presentableId" value="LOCAL-00120" />
       <option name="project" value="LOCAL" />
-      <updated>1752596856477</updated>
+      <updated>1762869868166</updated>
     </task>
-    <task id="LOCAL-00067" summary="[METADATA]+[DATAVIZ] : update of metadada simflification display">
+    <task id="LOCAL-00121" summary="[unmixing] : implementing unmixing jobs&#10;- ROI bugg fixed">
       <option name="closed" value="true" />
-      <created>1752648484201</created>
-      <option name="number" value="00067" />
-      <option name="presentableId" value="LOCAL-00067" />
+      <created>1762870489924</created>
+      <option name="number" value="00121" />
+      <option name="presentableId" value="LOCAL-00121" />
       <option name="project" value="LOCAL" />
-      <updated>1752648484201</updated>
+      <updated>1762870489924</updated>
     </task>
-    <task id="LOCAL-00068" summary="Cube_info.pathS homogene pour tous les outils -&gt; mise en memoire choix browser&#10;Envi files ok for reading">
+    <task id="LOCAL-00122" summary="[unmixing] : implementing unmixing jobs&#10;- ROI bugg fixed">
       <option name="closed" value="true" />
-      <created>1752679512168</created>
-      <option name="number" value="00068" />
-      <option name="presentableId" value="LOCAL-00068" />
+      <created>1762870504487</created>
+      <option name="number" value="00122" />
+      <option name="presentableId" value="LOCAL-00122" />
       <option name="project" value="LOCAL" />
-      <updated>1752679512169</updated>
+      <updated>1762870504487</updated>
     </task>
-    <task id="LOCAL-00069" summary="[Hypercube] -&gt; Calibration window OK.&#10;Add : white from norway and load file .txt">
+    <task id="LOCAL-00123" summary="[unmixing] : working on merging manual selection and library">
       <option name="closed" value="true" />
-      <created>1752984886939</created>
-      <option name="number" value="00069" />
-      <option name="presentableId" value="LOCAL-00069" />
+      <created>1762955149538</created>
+      <option name="number" value="00123" />
+      <option name="presentableId" value="LOCAL-00123" />
       <option name="project" value="LOCAL" />
-      <updated>1752984886940</updated>
+      <updated>1762955149538</updated>
     </task>
-    <task id="LOCAL-00070" summary="[Main]+[Hypercube]&#10;Gestion du cache a priori sans nouveau bugg - cubeLoaded.emit(Hyeprcube)&#10;Calibration white OK with graph to vizualize.">
+    <task id="LOCAL-00124" summary="[unmixing] : working on merging manual selection and library&#10;-&gt; OK if same wl">
       <option name="closed" value="true" />
-      <created>1753105422412</created>
-      <option name="number" value="00070" />
-      <option name="presentableId" value="LOCAL-00070" />
+      <created>1762961349997</created>
+      <option name="number" value="00124" />
+      <option name="presentableId" value="LOCAL-00124" />
       <option name="project" value="LOCAL" />
-      <updated>1753105422412</updated>
+      <updated>1762961349997</updated>
     </task>
-    <task id="LOCAL-00071" summary="[Data Viz] : one or three iamges + transorm">
+    <task id="LOCAL-00125" summary="[unmixing] : working on merging manual selection and library&#10;-&gt; OK if wl different with dialog box">
       <option name="closed" value="true" />
-      <created>1753362586592</created>
-      <option name="number" value="00071" />
-      <option name="presentableId" value="LOCAL-00071" />
+      <created>1762964253129</created>
+      <option name="number" value="00125" />
+      <option name="presentableId" value="LOCAL-00125" />
       <option name="project" value="LOCAL" />
-      <updated>1753362586593</updated>
+      <updated>1762964253129</updated>
     </task>
-    <task id="LOCAL-00072" summary="plein de truc.">
+    <task id="LOCAL-00126" summary="[unmixing] : &#10;- wl cossitancey when adding unmixig job OK&#10;- local or global norm for abundace vizualisation&#10;- added dialog for erasing part when loading cube&#10;- reinit part when loading cube">
       <option name="closed" value="true" />
-      <created>1753458546823</created>
-      <option name="number" value="00072" />
-      <option name="presentableId" value="LOCAL-00072" />
+      <created>1763122237368</created>
+      <option name="number" value="00126" />
+      <option name="presentableId" value="LOCAL-00126" />
       <option name="project" value="LOCAL" />
-      <updated>1753458546825</updated>
+      <updated>1763122237370</updated>
     </task>
-    <task id="LOCAL-00073" summary="Refonte totale de hypercube manager -&gt; Ordered dic au lieu de liste&#10;MAIS attention : filepath pour trouver GT seul bugg...a revoir">
+    <task id="LOCAL-00127" summary="[unmixing] : &#10;- derivative added&#10;- live viz of abundance value of pixels">
       <option name="closed" value="true" />
-      <created>1753484018347</created>
-      <option name="number" value="00073" />
-      <option name="presentableId" value="LOCAL-00073" />
+      <created>1763446297281</created>
+      <option name="number" value="00127" />
+      <option name="presentableId" value="LOCAL-00127" />
       <option name="project" value="LOCAL" />
-      <updated>1753484018347</updated>
+      <updated>1763446297281</updated>
     </task>
-    <task id="LOCAL-00074" summary="path problems with .splt('/') fixed with os.path">
+    <task id="LOCAL-00128" summary="[unmixing] : &#10;- savitzky-golay added">
       <option name="closed" value="true" />
-      <created>1753529659680</created>
-      <option name="number" value="00074" />
-      <option name="presentableId" value="LOCAL-00074" />
+      <created>1763458569770</created>
+      <option name="number" value="00128" />
+      <option name="presentableId" value="LOCAL-00128" />
       <option name="project" value="LOCAL" />
-      <updated>1753529659680</updated>
+      <updated>1763458569770</updated>
     </task>
-    <task id="LOCAL-00075" summary="check if loaded GT good size">
+    <task id="LOCAL-00129" summary="[unmixing] : &#10;- metric cGFC added">
       <option name="closed" value="true" />
-      <created>1753530080860</created>
-      <option name="number" value="00075" />
-      <option name="presentableId" value="LOCAL-00075" />
+      <created>1763469109634</created>
+      <option name="number" value="00129" />
+      <option name="presentableId" value="LOCAL-00129" />
       <option name="project" value="LOCAL" />
-      <updated>1753530080860</updated>
+      <updated>1763469109634</updated>
     </task>
-    <task id="LOCAL-00076" summary="[registration] -&gt; individual transforms OK">
+    <task id="LOCAL-00130" summary="[unmixing] : &#10;- implementing show all">
       <option name="closed" value="true" />
-      <created>1753536974936</created>
-      <option name="number" value="00076" />
-      <option name="presentableId" value="LOCAL-00076" />
+      <created>1763470652191</created>
+      <option name="number" value="00130" />
+      <option name="presentableId" value="LOCAL-00130" />
       <option name="project" value="LOCAL" />
-      <updated>1753536974936</updated>
+      <updated>1763470652191</updated>
     </task>
-    <task id="LOCAL-00077" summary="[Minicube] : v1 finished">
+    <task id="LOCAL-00131" summary="[unmixing] : &#10;- show all window OK for first working version">
       <option name="closed" value="true" />
-      <created>1753543852604</created>
-      <option name="number" value="00077" />
-      <option name="presentableId" value="LOCAL-00077" />
+      <created>1763530338971</created>
+      <option name="number" value="00131" />
+      <option name="presentableId" value="LOCAL-00131" />
       <option name="project" value="LOCAL" />
-      <updated>1753543852604</updated>
+      <updated>1763530338971</updated>
     </task>
-    <task id="LOCAL-00078" summary="[DataViz] &amp; [Metadata] : DataViz updated on metadata change. Quick change to all files ending with .h5, .hdr and .mat">
+    <task id="LOCAL-00132" summary="[Calibration] : &#10;- load personnal ref file more robust and OK">
       <option name="closed" value="true" />
-      <created>1753785992254</created>
-      <option name="number" value="00078" />
-      <option name="presentableId" value="LOCAL-00078" />
+      <created>1763637188799</created>
+      <option name="number" value="00132" />
+      <option name="presentableId" value="LOCAL-00132" />
       <option name="project" value="LOCAL" />
-      <updated>1753785992255</updated>
+      <updated>1763637188801</updated>
     </task>
-    <task id="LOCAL-00079" summary="[Identification] : first step for binarisation OK">
+    <task id="LOCAL-00133" summary="[IDENTIFICATION] : &#10;- load_map added">
       <option name="closed" value="true" />
-      <created>1753961761713</created>
-      <option name="number" value="00079" />
-      <option name="presentableId" value="LOCAL-00079" />
+      <created>1763643301067</created>
+      <option name="number" value="00133" />
+      <option name="presentableId" value="LOCAL-00133" />
       <option name="project" value="LOCAL" />
-      <updated>1753961761714</updated>
+      <updated>1763643301067</updated>
     </task>
-    <task id="LOCAL-00080" summary="[Identification] : Queue of classifier. OK if all queue.">
+    <task id="LOCAL-00134" summary="[UNMIXING] : &#10;- One spectrum IR.&#10;- check if cm-1 o nm">
       <option name="closed" value="true" />
-      <created>1756825147938</created>
-      <option name="number" value="00080" />
-      <option name="presentableId" value="LOCAL-00080" />
+      <created>1763706364159</created>
+      <option name="number" value="00134" />
+      <option name="presentableId" value="LOCAL-00134" />
       <option name="project" value="LOCAL" />
-      <updated>1756825147939</updated>
+      <updated>1763706364159</updated>
     </task>
-    <task id="LOCAL-00081" summary="[Identification] : Queue of classifier. Probleme with done jobs fixed">
+    <task id="LOCAL-00135" summary="[HYPERCUBE] : &#10;- Added crop refletance to calibration&#10;- Added possibility of calibration without white in image&#10;- Checked for IQ camera (results, REFLECTANCE.hdr)">
       <option name="closed" value="true" />
-      <created>1756893056645</created>
-      <option name="number" value="00081" />
-      <option name="presentableId" value="LOCAL-00081" />
+      <created>1763721773797</created>
+      <option name="number" value="00135" />
+      <option name="presentableId" value="LOCAL-00135" />
       <option name="project" value="LOCAL" />
-      <updated>1756893056646</updated>
+      <updated>1763721773797</updated>
     </task>
-    <task id="LOCAL-00082" summary="[Identification] : Added streaming, all images, false rgb sliders fixed, reinit and lauch selected">
+    <task id="LOCAL-00136" summary="[HYPERCUBE] : &#10;- Added loading other white file&#10;- Adde dark">
       <option name="closed" value="true" />
-      <created>1756910122507</created>
-      <option name="number" value="00082" />
-      <option name="presentableId" value="LOCAL-00082" />
+      <created>1763886734612</created>
+      <option name="number" value="00136" />
+      <option name="presentableId" value="LOCAL-00136" />
       <option name="project" value="LOCAL" />
-      <updated>1756910122507</updated>
+      <updated>1763886734612</updated>
     </task>
-    <task id="LOCAL-00083" summary="[Identification] : Added saving in h5 and png &#10;with dialog options.">
+    <task id="LOCAL-00137" summary="[HYPERCUBE] : &#10;- Modif in dark (for line flat field)">
       <option name="closed" value="true" />
-      <created>1756919365643</created>
-      <option name="number" value="00083" />
-      <option name="presentableId" value="LOCAL-00083" />
+      <created>1763962739208</created>
+      <option name="number" value="00137" />
+      <option name="presentableId" value="LOCAL-00137" />
       <option name="project" value="LOCAL" />
-      <updated>1756919365643</updated>
+      <updated>1763962739208</updated>
     </task>
-    <option name="localTasksCounter" value="84" />
+    <option name="localTasksCounter" value="138" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -582,31 +582,31 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="[Metadata] copy from other cube -&gt; type keep for non editable like numpy&#10;open cube possibility&#10;[Registration] all metadata seems OK. Gestion des croped parent etc...." />
-    <MESSAGE value="Cube info loading and saving are syncronized with all tools (except visualize)&#10;[registration] manual features supression" />
-    <MESSAGE value="[main] correction of suggestions suprresion" />
-    <MESSAGE value="[main] open all bugg fixed&#10;[register] modif features, sliders bugg and labels and groups, click to select, auto load other, progress bar reset all, cubeinfo unique and parent cube editable at save." />
-    <MESSAGE value="Lot of things but most of all matlab.engine" />
-    <MESSAGE value="Ground Truth Features fixed.&#10;- cursor cross interference fixed,&#10;- updating spectra fixed&#10;- max R fixed &#10;- groups of widgets in tabs to have more space&#10;- add check box for live toggle&#10;- all made again because of a fucking error of merging :-/" />
-    <MESSAGE value="[Register]ui + [Main] save on exit + [GT] keep GT_label_map in metadata y png with palette" />
-    <MESSAGE value="[Hypercube] matlab files with browser OK for v7.3 and v old without hypercube.&#10;Load and save envie." />
-    <MESSAGE value="[METADATA]+[DATAVIZ] : update of metadada simflification display" />
-    <MESSAGE value="Cube_info.pathS homogene pour tous les outils -&gt; mise en memoire choix browser&#10;Envi files ok for reading" />
-    <MESSAGE value="[Hypercube] -&gt; Calibration window OK.&#10;Add : white from norway and load file .txt" />
-    <MESSAGE value="[Main]+[Hypercube]&#10;Gestion du cache a priori sans nouveau bugg - cubeLoaded.emit(Hyeprcube)&#10;Calibration white OK with graph to vizualize." />
-    <MESSAGE value="[Data Viz] : one or three iamges + transorm" />
-    <MESSAGE value="plein de truc." />
-    <MESSAGE value="Refonte totale de hypercube manager -&gt; Ordered dic au lieu de liste&#10;MAIS attention : filepath pour trouver GT seul bugg...a revoir" />
-    <MESSAGE value="path problems with .splt('/') fixed with os.path" />
-    <MESSAGE value="check if loaded GT good size" />
-    <MESSAGE value="[registration] -&gt; individual transforms OK" />
-    <MESSAGE value="[Minicube] : v1 finished" />
-    <MESSAGE value="[DataViz] &amp; [Metadata] : DataViz updated on metadata change. Quick change to all files ending with .h5, .hdr and .mat" />
-    <MESSAGE value="[Identification] : first step for binarisation OK" />
-    <MESSAGE value="[Identification] : Queue of classifier. OK if all queue." />
-    <MESSAGE value="[Identification] : Queue of classifier. Probleme with done jobs fixed" />
-    <MESSAGE value="[Identification] : Added streaming, all images, false rgb sliders fixed, reinit and lauch selected" />
-    <MESSAGE value="[Identification] : Added saving in h5 and png &#10;with dialog options." />
-    <option name="LAST_COMMIT_MESSAGE" value="[Identification] : Added saving in h5 and png &#10;with dialog options." />
+    <MESSAGE value="[unmixing] : &#10;- scrolable labels for endmembers&#10;- dynamic cross to visualize automatic endmembers&#10;- get Raw endmembers spectrum and normalisation to save of before unmixing&#10;- transforms extended to selection_mask&#10;- radiobuttons and stecked tabs for result_viz" />
+    <MESSAGE value="[unmixing] : &#10;- endmmembers editing name for saving abd color for temporal visualization.&#10;- saving automatic abd manual endmmbers to csv. &#10;- Loading dispersive endmmbers like with multiple spectrum" />
+    <MESSAGE value="[unmixing] : &#10;- adding ROI selection by rectanlge and state modification when selecting pixels" />
+    <MESSAGE value="[unmixing] : implementing unmixing jobs" />
+    <MESSAGE value="[unmixing] : implementing unmixing jobs&#10;- run one and all from queue&#10;- check if already in queue" />
+    <MESSAGE value="[unmixing] : implementing unmixing jobs&#10;- ask confirm on supress if job done &#10;- only one job at a time&#10;- unmix simple view of abondance map" />
+    <MESSAGE value="[unmixing] : implementing unmixing jobs&#10;- fixed lable of library bugg&#10;- fixed bug of EM sources for multiples jobs&#10;- progress bar implemented to dynamic 5%" />
+    <MESSAGE value="[unmixing] : implementing unmixing jobs&#10;- same normalization for cube and EM OK" />
+    <MESSAGE value="[unmixing] : implementing unmixing jobs&#10;- same normalization for cube and EM OK&#10;- update abundance map OK" />
+    <MESSAGE value="[unmixing] : implementing unmixing jobs&#10;- ROI bugg fixed" />
+    <MESSAGE value="[unmixing] : working on merging manual selection and library" />
+    <MESSAGE value="[unmixing] : working on merging manual selection and library&#10;-&gt; OK if same wl" />
+    <MESSAGE value="[unmixing] : working on merging manual selection and library&#10;-&gt; OK if wl different with dialog box" />
+    <MESSAGE value="[unmixing] : &#10;- wl cossitancey when adding unmixig job OK&#10;- local or global norm for abundace vizualisation&#10;- added dialog for erasing part when loading cube&#10;- reinit part when loading cube" />
+    <MESSAGE value="[unmixing] : &#10;- derivative added&#10;- live viz of abundance value of pixels" />
+    <MESSAGE value="[unmixing] : &#10;- savitzky-golay added" />
+    <MESSAGE value="[unmixing] : &#10;- metric cGFC added" />
+    <MESSAGE value="[unmixing] : &#10;- implementing show all" />
+    <MESSAGE value="[unmixing] : &#10;- show all window OK for first working version" />
+    <MESSAGE value="[Calibration] : &#10;- load personnal ref file more robust and OK" />
+    <MESSAGE value="[IDENTIFICATION] : &#10;- load_map added" />
+    <MESSAGE value="[UNMIXING] : &#10;- One spectrum IR.&#10;- check if cm-1 o nm" />
+    <MESSAGE value="[HYPERCUBE] : &#10;- Added crop refletance to calibration&#10;- Added possibility of calibration without white in image&#10;- Checked for IQ camera (results, REFLECTANCE.hdr)" />
+    <MESSAGE value="[HYPERCUBE] : &#10;- Added loading other white file&#10;- Adde dark" />
+    <MESSAGE value="[HYPERCUBE] : &#10;- Modif in dark (for line flat field)" />
+    <option name="LAST_COMMIT_MESSAGE" value="[HYPERCUBE] : &#10;- Modif in dark (for line flat field)" />
   </component>
 </project>

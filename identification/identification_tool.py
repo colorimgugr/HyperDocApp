@@ -7,75 +7,118 @@ import cv2
 from PIL import Image
 import h5py
 
-from PyQt5.QtWidgets import (QApplication, QSizePolicy, QSplitter,QTableWidgetItem,QHeaderView,QProgressBar,
+from PyQt5.QtWidgets import (QApplication, QSizePolicy, QSplitter,QHeaderView,QProgressBar,
                             QDialog, QVBoxLayout, QHBoxLayout, QFormLayout, QLabel, QLineEdit, QPushButton,
-                             QDialogButtonBox, QCheckBox, QScrollArea, QWidget, QFileDialog, QMessageBox
+                             QDialogButtonBox, QCheckBox, QScrollArea, QWidget, QFileDialog, QMessageBox,
+                             QRadioButton,QInputDialog,QTableWidget, QTableWidgetItem,QHeaderView,
                              )
 
-from PyQt5.QtGui import QPixmap, QImage
-from PyQt5.QtCore import Qt,QObject, pyqtSignal, QRunnable, QThreadPool, pyqtSlot
+from PyQt5.QtGui import QPixmap, QImage,QGuiApplication,QStandardItemModel, QStandardItem,QColor
+from PyQt5.QtCore import Qt,QObject, pyqtSignal, QRunnable, QThreadPool, pyqtSlot, QRectF
 
 from dataclasses import dataclass, field
 from typing import List, Optional, Dict
 import time
 import traceback
 
-from pandas.core.common import count_not_none
-
 from identification.identification_window import Ui_IdentificationWidget
 from hypercubes.hypercube import Hypercube
-from ground_truth.ground_truth_tool import ZoomableGraphicsView
+from interface.some_widget_for_interface  import ZoomableGraphicsView
 from identification.load_cube_dialog import Ui_Dialog
 
-# todo : parfaire le chargement des cubes
-# todo : crop cube before binarization/classification
-# todo : save classification (h5p ou image classique avec meta)
-# todo : save in temp classification app in progress ?
-# todo : add QDialogs before remove, launch selected, reinit selected if DONE
-# todo : check if h5 save OK.
-# todo : adapt overlay to
-# todo : think better metadata saving
-# todo : adapt transform to class map too
+#todo : load map !!!!
 
+def _safe_name_from(cube) -> str:
+    md = getattr(cube, "metadata", {}) or {}
+    if isinstance(md, dict):
+        name = md.get("name")
+        if name:
+            return str(name)
+    ci = getattr(cube, "cube_info", None)
+    mt = getattr(ci, "metadata_temp", None) if ci else None
+    if isinstance(mt, dict):
+        name = mt.get("name")
+        if name:
+            return str(name)
+    fp = getattr(ci, "filepath", "") if ci else ""
+    if fp:
+        path=os.path.splitext(os.path.basename(fp))[0]
+        name=path.split('/')[-1]
+        return name
+    return "unknown"
 
-def fused_cube(cube1,cube2):
-    cubes={}
-    if cube1.wl[0]<500 and  cube2.wl[0]>800:
-        cubes['VNIR']=cube1
-        cubes['SWIR']=cube2
-    elif cube1.wl[0]>800 and  cube2.wl[0]<500:
-        cubes['VNIR'] = cube2
-        cubes['SWIR'] = cube1
+def _safe_filename_from(cube) -> str:
+    ci = getattr(cube, "cube_info", None)
+    fp = getattr(ci, "filepath", "") if ci else ""
+    return os.path.basename(fp) if fp else ""
+
+def fused_cube(cube1, cube2, *, copy_common_meta: bool = True):
+    """
+    Return a fused Hypercube (VNIR+SWIR) with provenance metadata:
+      metadata['source_roles'] = ['VNIR','SWIR' or single role]
+      metadata['source_files'] = [...]
+      metadata['source_names'] = [...]
+    Also crops to VNIR[400–950] and SWIR[955–1700] before concatenation.
+    """
+    if cube1 is None and cube2 is None:
+        raise ValueError("fused_cube: at least one cube is required")
+
+    # Decide roles from wavelength starts
+    if cube1 is None or cube2 is None:
+        parent = cube1 or cube2
+        fused = parent.__class__(data=parent.data.copy(), wl=parent.wl.copy(), cube_info=parent.cube_info)
+        fused.metadata = dict(getattr(parent, "metadata", {}) or {})
+        role = "VNIR" if (cube1 is not None and cube1.wl[0] < 800) or (cube2 is None and parent.wl[0] < 800) else "SWIR"
+        fused.metadata["source_roles"]  = [role]
+        fused.metadata["source_files"]  = [_safe_filename_from(parent)]
+        fused.metadata["source_names"]  = [_safe_name_from(parent)]
+        return fused
+
+    # Classify inputs as VNIR/SWIR with a simple heuristic
+    if cube1.wl[0] < 500 and cube2.wl[0] > 800:
+        VNIR, SWIR = cube1, cube2
+    elif cube1.wl[0] > 800 and cube2.wl[0] < 500:
+        VNIR, SWIR = cube2, cube1
     else:
-        print('error with cubes range')
-        return
+        raise ValueError("fused_cube: could not infer VNIR/SWIR from wavelength ranges")
 
-    target_ranges = {'VNIR': (400, 950), 'SWIR': (955, 1700)}
+    target = {'VNIR': (400, 950), 'SWIR': (955, 1700)}
 
-    # Vérification couverture
-    full_covered = all(
-        key in cubes and
-        cubes[key].wl[0] <= target_ranges[key][0] and
-        cubes[key].wl[-1] >= target_ranges[key][1]
-        for key in target_ranges
-    )
+    # Crop both ranges
+    hyps_cut = {}
+    for role, cube in (("VNIR", VNIR), ("SWIR", SWIR)):
+        wl = cube.wl
+        data = cube.data
+        start_idx = int(np.argmin(np.abs(wl - target[role][0])))
+        end_idx   = int(np.argmin(np.abs(wl - target[role][1])))
+        data_cut = data[:, :, start_idx:end_idx + 1]
+        wl_cut   = wl[start_idx:end_idx + 1]
+        hyps_cut[role] = Hypercube(data=data_cut, wl=wl_cut, cube_info=cube.cube_info)
 
-    if full_covered:
-        hyps_cut = {}
-        for key in target_ranges:
-            wl = cubes[key].wl
-            data = cubes[key].data
-            start_idx = np.argmin(np.abs(wl - target_ranges[key][0]))
-            end_idx = np.argmin(np.abs(wl - target_ranges[key][1]))
-            data_cut = data[:, :, start_idx:end_idx + 1]
-            wl_cut = wl[start_idx:end_idx + 1]
-            hyps_cut[key] = Hypercube(data=data_cut, wl=wl_cut,
-                                      cube_info=cubes[key].cube_info)
+    # Spatial check
+    h1, w1, _ = hyps_cut["VNIR"].data.shape
+    h2, w2, _ = hyps_cut["SWIR"].data.shape
+    if (h1 != h2) or (w1 != w2):
+        raise ValueError(f"fused_cube: incompatible spatial dims VNIR={h1}x{w1}, SWIR={h2}x{w2}")
 
-        data_fused = np.concatenate((hyps_cut['VNIR'].data, hyps_cut['SWIR'].data), axis=2)
-        wl_fused = np.concatenate((hyps_cut['VNIR'].wl, hyps_cut['SWIR'].wl))
+    data_fused = np.concatenate((hyps_cut['VNIR'].data, hyps_cut['SWIR'].data), axis=2)
+    wl_fused   = np.concatenate((hyps_cut['VNIR'].wl,   hyps_cut['SWIR'].wl))
 
-        return data_fused,wl_fused
+    fused = Hypercube(data=data_fused, wl=wl_fused, cube_info=VNIR.cube_info)
+    fused.metadata = {}
+
+    if copy_common_meta:
+        for src in (VNIR, SWIR):
+            md = dict(getattr(src, "metadata", {}) or {})
+            for k, v in md.items():
+                fused.metadata.setdefault(k, v)
+
+    # Provenance (lists for HDF5-friendliness)
+    fused.metadata["source_roles"]  = ["VNIR", "SWIR"]
+    fused.metadata["source_files"]  = [_safe_filename_from(VNIR), _safe_filename_from(SWIR)]
+    fused.metadata["source_names"]  = [_safe_name_from(VNIR),     _safe_name_from(SWIR)]
+
+    return fused
 
 class ClassifySignals(QObject):
     finished = pyqtSignal()                          # fin (toujours émis)
@@ -87,14 +130,13 @@ class ClassifySignals(QObject):
 class ClassifyWorker(QRunnable):
     """
     Exécute une classification sur 'spectra' (np.ndarray [N_pixels, N_bands]) en CHUNKS.
-    - classifier: scikit-learn pipeline/estim. OU modèle PyTorch (eval).
+    - classifier: scikit-learn pipeline/estim.
     - classifier_type: "sklearn" ou "cnn".
     - chunk_size: nb de pixels par batch (équilibre RAM/vitesse).
     - emit_partial: si True, émet result_partial(start, end, preds_chunk) à chaque chunk.
       -> permet d'afficher la class_map PROGRESSIVEMENT.
     """
-    def __init__(self, spectra: np.ndarray, classifier, classifier_type: str,
-                 chunk_size: int = 100_000, emit_partial: bool = True):
+    def __init__(self, spectra, classifier, classifier_type,chunk_size= 100_000, emit_partial= True):
         super().__init__()
         self.spectra = spectra
         self.classifier = classifier
@@ -171,129 +213,381 @@ class ClassifyWorker(QRunnable):
         finally:
             self.signals.finished.emit()
 
+class TrainSignals(QObject):
+    finished = pyqtSignal()           # always emitted
+    error = pyqtSignal(str)
+    progress = pyqtSignal(int)        # 0..100
+    saved = pyqtSignal(str)           # path to saved model
+    progress_indeterminate = pyqtSignal(bool)
+
+class TrainWorker(QRunnable):
+    """
+    Trains a model for (clf_type, kind) on the local training set, then saves it to savepath.
+    Emits .saved(savepath) on success.
+    """
+    def __init__(self, clf_type: str, kind: str, savepath: str, train_wl: np.ndarray):
+        super().__init__()
+        self.clf_type = (clf_type or "").upper()
+        self.kind = kind
+        self.savepath = savepath
+        self.train_wl = np.asarray(train_wl, float)
+        self.signals = TrainSignals()
+        self._cancel = False
+
+    def cancel(self): self._cancel = True
+
+    def crop_training_to_target_wl(self,X_train):
+        """
+        Crops columns of X_train (assumed to be on 400..1700 nm @ 5 nm) so they match wl_tgt.
+        Returns (X_crop, wl_used) with wl_used == wl_tgt.
+        """
+        BASE_MIN_NM = 400.0
+        BASE_MAX_NM = 1700.0
+        BASE_STEP_NM = 5.0
+
+        wl_tgt=self.train_wl
+
+        # quick sanity checks
+        if wl_tgt.size == 0:
+            raise ValueError("wl_tgt is empty.")
+        if (wl_tgt.min() < BASE_MIN_NM - 1e-9) or (wl_tgt.max() > BASE_MAX_NM + 1e-9):
+            raise ValueError(f"wl_tgt must be within [{BASE_MIN_NM}, {BASE_MAX_NM}] nm.")
+
+        # Expected source wavelengths for the training dataset
+        wl_src = np.arange(BASE_MIN_NM, BASE_MAX_NM + BASE_STEP_NM, BASE_STEP_NM, dtype=float)
+
+        # Map target wavelengths to integer indices on the 5 nm grid
+        # idx = (wl - 400) / 5  -> integer
+        idx = np.rint((wl_tgt - BASE_MIN_NM) / BASE_STEP_NM).astype(int)
+
+        # Bounds check
+        if (idx < 0).any() or (idx >= wl_src.size).any():
+            raise ValueError("Some target wavelengths are outside the training grid.")
+
+        # Shape check: X_train columns must match full wl_src length
+        if X_train.shape[1] != wl_src.size:
+            raise ValueError(
+                f"X_train has {X_train.shape[1]} bands but expected {wl_src.size} "
+                "for 400..1700 nm @ 5 nm. Ensure you load the full training feature set."
+            )
+
+        X_crop = X_train[:, idx]
+        # wl_src[idx] should equal wl_tgt (numerically)
+        return X_crop, wl_tgt
+
+    @pyqtSlot()
+    def run(self):
+        try:
+            import joblib
+            from pathlib import Path
+            base = Path(__file__).resolve().parents[1] / "identification" / "data"
+
+            # --- early bail
+            if self._cancel:
+                self.signals.error.emit("Training canceled.")
+                return
+
+            X_train = None; y_train = None
+            if "background" in self.kind.lower():
+                import h5py
+                fname = "XY_train_background_10pct.h5" if "10pct" in self.kind.lower() else "XY_train_background.mat"
+                f = h5py.File(base / fname, "r")
+                X_train = np.array(f['X']).T
+                y_train = np.array(f['Y'][0])
+            else:
+                import scipy.io
+                data = scipy.io.loadmat(base / "XY_train_3classes.mat")
+                X_train = data['X']
+                y_train = data['Y'].ravel()
+
+            if self._cancel:
+                self.signals.error.emit("Training canceled.")
+                return
+
+            X_aligned, wl_used = self.crop_training_to_target_wl(X_train)
+
+            if self._cancel:
+                self.signals.error.emit("Training canceled.")
+                return
+
+            # ---- Build model pipeline (same choices as your UI) ----
+            if self.clf_type == "KNN":
+                from sklearn.pipeline import make_pipeline
+                from sklearn.preprocessing import StandardScaler
+                from sklearn.neighbors import KNeighborsClassifier
+                model = make_pipeline(StandardScaler(),
+                                      KNeighborsClassifier(n_neighbors=1, metric='cosine', weights='uniform'))
+            elif self.clf_type == "SVM":
+                from sklearn.pipeline import make_pipeline
+                from sklearn.preprocessing import StandardScaler
+                from sklearn.svm import SVC
+                model = make_pipeline(StandardScaler(),
+                                      SVC(kernel='rbf', C=10, gamma='scale', decision_function_shape='ovo'))
+            elif self.clf_type == "LDA":
+                from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+                model = LinearDiscriminantAnalysis(solver='svd')
+
+            elif self.clf_type == "RDF":
+                from sklearn.ensemble import RandomForestClassifier
+                rf = RandomForestClassifier(
+                    n_estimators=0, max_features=None, max_leaf_nodes=751266,
+                    bootstrap=True, warm_start=True, n_jobs=-1
+                )
+                # incremental build like your script
+                import math
+                n_total = 30
+                for i in range(1, n_total+1):
+                    if self._cancel:
+                        self.signals.error.emit("Training canceled.")
+                        self.signals.finished.emit()
+                        return
+                    rf.set_params(n_estimators=i)
+                    rf.fit(X_train, y_train)
+                    self.signals.progress.emit(int(i*100/n_total))
+                model = rf
+            else:
+                raise ValueError(f"Training not supported for '{self.clf_type}'.")
+
+            if self._cancel:
+                self.signals.error.emit("Training canceled.")
+                return
+
+            if self.clf_type != "RDF":
+                self.signals.progress_indeterminate.emit(True)
+                model.fit(X_aligned, y_train)
+                self.signals.progress_indeterminate.emit(False)
+                self.signals.progress.emit(100)
+
+            if self._cancel:
+                self.signals.error.emit("Training canceled.")
+                return
+
+            # Save a payload that mirrors what load_classifier() expects
+            payload = {
+                "pipeline": model,
+                "train_wl": wl_used.astype(float)
+            }
+
+            os.makedirs(os.path.dirname(self.savepath), exist_ok=True)
+            joblib.dump(payload, self.savepath)
+
+            self.signals.saved.emit(self.savepath)
+
+        except Exception as e:
+            import traceback
+            self.signals.error.emit(f"{e}\n{traceback.format_exc()}")
+        finally:
+            self.signals.finished.emit()
+
 @dataclass
 class ClassificationJob:
     name: str                 # unique key shown in table (e.g., "SVM (RBF)")
     clf_type: str             # "knn" | "cnn" | "svm" etc...
-    kind: List[str]           # e.g., ["Substrate","Ink 3 classes" ...]
-    status: str = "Queued"    # "Queued" | "Running" | "Done" | "Canceled" | "Error"
+    kind: str                 # e.g., ["Substrate","Ink 3 classes" ...]
+    status: str = "Queued"    # "Queued" | "Running" | "Done" | "Canceled" | "Error" | "To Train" | "Training..."
+    trained = True
+    trained_path = 'Default'
     progress: int = 0         # 0..100
-    duration_s: Optional[float] = None
-    class_map: Optional[np.ndarray] = None
     _t0: Optional[float] = field(default=None, repr=False)  # internal start time
+    duration_s: Optional[float] = None    # whole classification duration
+    class_map: Optional[np.ndarray] = None     # raw classification map
+    rect=None                  # y, x, h, w of selected rectangle. None if no selection
+    clean_map : Optional[np.ndarray] = None     # cleaned classification map
+    clean_param= None           # clean parameters
+    binary_algo= None           # binary algo
+    binary_param = None         # binary param
+    spectral_range_used = None  # to save
+    substrate_name = 'Unknown Substrate'
 
     def reinit(self):
-        self.status = "Queued"
-        self.progress = 0
-        self.duration_s = None
-        self._t0 = None
-        self.class_map: Optional[np.ndarray] = None
+        if self.trained:
+            self.status = "Queued"
+            self.progress = 0
+            self.duration_s = None
+            self._t0 = None
+            self.class_map: Optional[np.ndarray] = None
 
-class LoadCubeDialog(QDialog, Ui_Dialog):
-    def __init__(self, parent=None, wl_step=5):
+class LoadCubeDialog(QDialog):
+    """
+    Simple dialog to load exactly two cubes (VNIR + SWIR),
+    show their filepaths and spectral ranges, and validate coverage softly.
+    """
+    def __init__(self, parent=None,vnir_cube=None, swir_cube=None):
         super().__init__(parent)
-        self.setupUi(self)
+        self.ui = Ui_Dialog()
+        self.ui.setupUi(self)
 
-        self.cubes = {}  # {"VNIR": cube_obj, "SWIR": cube_obj, ...}
-        self.wl_step = wl_step  # pas spectral pour interpolation
+        # Internal state
+        self.cubes = {"VNIR": None, "SWIR": None}
+        self._wl_ranges = {"VNIR": None, "SWIR": None}
 
-        # Connexion des boutons
-        self.pushButton_load_cube_1.clicked.connect(lambda: self.load_cube("VNIR"))
-        self.pushButton_load_cube_2.clicked.connect(lambda: self.load_cube("SWIR"))
-        self.pushButton_valid.clicked.connect(self.validate_cubes)
+        # Prefill from provided cubes (if any)
+        def _set(kind, cube):
+            if cube is None:
+                return
+            self.cubes[kind] = cube
+            wl = getattr(cube, "wl", None)
+            if isinstance(wl, np.ndarray) and wl.size > 0:
+                self._wl_ranges[kind] = (float(wl.min()), float(wl.max()))
 
-        self.update_instructions()
+        _set("VNIR", vnir_cube)
+        _set("SWIR", swir_cube)
 
-    def load_cube(self, key,filepath=None):
-        """Charge un cube hyperspectral et le stocke interpolé."""
+        # Wire buttons
+        self.ui.pushButton_load_cube_1.clicked.connect(lambda: self._load("VNIR"))
+        self.ui.pushButton_load_cube_2.clicked.connect(lambda: self._load("SWIR"))
+        self.ui.pushButton_valid.clicked.connect(self._on_accept)
 
-        # Charger cube brut
+        # Reset labels
+        self._update_labels()
+
+    # ---------------------- public API ----------------------
+    def get_cubes(self):
+        """Return (vnir_cube, swir_cube) or (None, None) if cancelled."""
+        if self.exec_() == QDialog.Accepted:
+            return self.cubes["VNIR"], self.cubes["SWIR"]
+        return None, None
+
+    # ---------------------- internals -----------------------
+    def _load(self, kind: str):
+        """
+        Load VNIR or SWIR cube. On error, cleans state and UI.
+        """
+        start_dir = ""
+        path, _ = QFileDialog.getOpenFileName(
+            self,
+            f"Load {kind} cube",
+            start_dir,
+            "Hypercube files (*.mat *.h5 *.hdr)"
+        )
+        if not path:
+            return
+
         cube = Hypercube()
-        cube.open_hyp(default_path=filepath, ask_calib=False)
-        filepath=cube.cube_info.filepath
+        try:
+            cube.open_hyp(default_path=path, open_dialog=False)
+            # WL can be None for some sources; we tolerate that
+            wl = cube.wl if cube.wl is not None else np.array([])
+            self.cubes[kind] = cube
+            self._wl_ranges[kind] = (float(wl.min()), float(wl.max())) if wl.size > 0 else None
+        except Exception as e:
+            # Robustness: clear state on failure
+            QMessageBox.warning(self, "Load error",
+                                f"Could not load {kind} cube:\n{e}")
+            self.cubes[kind] = None
+            self._wl_ranges[kind] = None
 
-        if cube.data is None or cube.wl is None:
-            QMessageBox.warning(self, "Error", "Failed to load cube or missing wavelengths.")
-            return
+        self._update_labels()
 
-        # Interpolation
-        data_interp, wl_interp = cube.get_interpolate_cube(self.wl_step)
-        cube.data = data_interp
-        cube.wl = wl_interp
+    def _update_labels(self):
+        """
+        Updates filepath + spectral range labels for both cubes.
+        """
+        def fmt_path(c):
+            return c.cube_info.filepath if c and c.cube_info and c.cube_info.filepath else "—"
 
-        # Stockage
-        self.cubes[key] = cube
+        def fmt_range(r):
+            if r is None:
+                return "—"
+            lo, hi = r
+            return f"{int(round(lo))}–{int(round(hi))} nm"
 
-        # Mise à jour affichage
-        if key == "VNIR":
-            self.label_filepath_cube_1.setText(filepath)
-            self.label_spec_range_cube_1.setText(f"{wl_interp[0]:.0f} - {wl_interp[-1]:.0f} nm")
-        elif key == "SWIR":
-            self.label_filepath_cube_2.setText(filepath)
-            self.label_spec_range_cube_2.setText(f"{wl_interp[0]:.0f} - {wl_interp[-1]:.0f} nm")
+        # VNIR labels
+        self.ui.label_filepath_cube_1.setText(fmt_path(self.cubes["VNIR"]))
+        self.ui.label_spec_range_cube_1.setText(fmt_range(self._wl_ranges["VNIR"]))
 
-        self.update_instructions()
+        # SWIR labels
+        self.ui.label_filepath_cube_2.setText(fmt_path(self.cubes["SWIR"]))
+        self.ui.label_spec_range_cube_2.setText(fmt_range(self._wl_ranges["SWIR"]))
 
-    def update_instructions(self):
-        """Affiche l'état actuel de la couverture spectrale."""
-        ranges = []
-        for key, cube in self.cubes.items():
-            ranges.append((cube.wl[0], cube.wl[-1]))
+        # Instruction summary
+        instr = self._coverage_message()
+        self.ui.label_instructions.setText(instr)
 
-        if not ranges:
-            self.label_instructions.setText("No cubes loaded yet.")
-            return
+    def _coverage_message(self) -> str:
+        """
+        Build a human-readable coverage message. Does not block anything.
+        """
+        vnir = self._wl_ranges["VNIR"]
+        swir = self._wl_ranges["SWIR"]
 
-        ranges.sort()
-        text_ranges = " + ".join([f"{r[0]:.0f}-{r[1]:.0f}nm" for r in ranges])
-        self.label_instructions.setText(f"Currently covered: {text_ranges}")
+        parts = []
+        if vnir:
+            parts.append(f"VNIR: {int(vnir[0])}–{int(vnir[1])} nm")
+        else:
+            parts.append("VNIR: —")
 
-    def validate_cubes(self):
-        """Vérifie la couverture et fusionne si possible."""
-        target_ranges = {'VNIR': (400, 950), 'SWIR': (955, 1700)}
+        if swir:
+            parts.append(f"SWIR: {int(swir[0])}–{int(swir[1])} nm")
+        else:
+            parts.append("SWIR: —")
 
-        # Vérification couverture
-        full_covered = all(
-            key in self.cubes and
-            self.cubes[key].wl[0] <= target_ranges[key][0] and
-            self.cubes[key].wl[-1] >= target_ranges[key][1]
-            for key in target_ranges
+        # Expected nominal coverage (soft check)
+        expected = (400, 1700)
+        covered_lo = min([vnir[0] for vnir in [vnir] if vnir] + [swir[0] for swir in [swir] if swir], default=None)
+        covered_hi = max([vnir[1] for vnir in [vnir] if vnir] + [swir[1] for swir in [swir] if swir], default=None)
+
+        if covered_lo is not None and covered_hi is not None:
+            covered = f"Currently covered: {int(covered_lo)}–{int(covered_hi)} nm"
+        else:
+            covered = "Currently covered: —"
+
+        return (
+            "<html><body><p align='center'>"
+            + " | ".join(parts)
+            + "<br>"
+            + covered
+            + "</p></body></html>"
         )
 
-        if full_covered:
-            hyps_cut = {}
-            for key in target_ranges:
-                wl = self.cubes[key].wl
-                data = self.cubes[key].data
-                start_idx = np.argmin(np.abs(wl - target_ranges[key][0]))
-                end_idx = np.argmin(np.abs(wl - target_ranges[key][1]))
-                data_cut = data[:, :, start_idx:end_idx + 1]
-                wl_cut = wl[start_idx:end_idx + 1]
-                hyps_cut[key] = Hypercube(data=data_cut, wl=wl_cut,
-                                          cube_info=self.cubes[key].cube_info)
+    def _soft_validate_and_warn(self) -> None:
+        """
+        Show a non-blocking warning if coverage is partial, missing wl, or cubes missing.
+        """
+        vnir = self._wl_ranges["VNIR"]
+        swir = self._wl_ranges["SWIR"]
 
-            data_fused = np.concatenate((hyps_cut['VNIR'].data, hyps_cut['SWIR'].data), axis=2)
-            wl_fused = np.concatenate((hyps_cut['VNIR'].wl, hyps_cut['SWIR'].wl))
+        missing = []
+        if self.cubes["VNIR"] is None:
+            missing.append("VNIR")
+        if self.cubes["SWIR"] is None:
+            missing.append("SWIR")
 
-            self.accept()  # ferme la boîte
-            self.result_data = (hyps_cut, data_fused, wl_fused)
-
-        else:
-            choice = QMessageBox.question(
-                self, "Incomplete range",
-                "The full range 400–1700nm is not covered.\nDo you want to add a new cube?",
-                QMessageBox.Yes | QMessageBox.No
+        if missing:
+            QMessageBox.information(
+                self, "Heads-up",
+                f"The whole spectral range is not covered.\n"
+                f"You can still proceed, but classification performance may be degraded."
             )
-            if choice == QMessageBox.Yes:
-                # Ajoute un nouveau bouton pour un cube supplémentaire
-                btn = QPushButton(f"Load cube {len(self.cubes) + 1}", self.frame)
-                btn.clicked.connect(lambda: self.load_cube(f"extra_{len(self.cubes)+1}"))
-                row = len(self.cubes) + 1
-                self.gridLayout.addWidget(btn, row, 2, 1, 1)
-            else:
-                # Retourne les cubes incomplets
-                self.accept()
-                self.result_data = (self.cubes, None, None)
+            return
+
+        # Any wl missing?
+        if vnir is None or swir is None:
+            QMessageBox.information(
+                self, "Spectral coverage",
+                "At least one cube has no wavelength axis available.\n"
+                "You can proceed, but classification performance may be degraded."
+            )
+            return
+
+        # Soft range check: nominal expectation only
+        nominal = (400, 1700)
+        lo = min(vnir[0], swir[0])
+        hi = max(vnir[1], swir[1])
+        # If there is a gap between VNIR and SWIR
+        gap = (vnir[1] + 1) < swir[0] or (swir[1] + 1) < vnir[0]
+        if lo > nominal[0] or hi < nominal[1] or gap:
+            QMessageBox.information(
+                self, "Spectral coverage",
+                "The spectral range does not fully cover the nominal 400–1700 nm, "
+                "or there is a gap between VNIR and SWIR.\n\n"
+                "You can proceed, but classification performance may be reduced."
+            )
+
+    def _on_accept(self):
+        # Only warn (never block)
+        self._soft_validate_and_warn()
+        self.accept()
 
 class SaveClassMapDialog(QDialog):
     """
@@ -311,6 +605,14 @@ class SaveClassMapDialog(QDialog):
         self.chk_png = QCheckBox("PNG (.png)")
         self.chk_h5.setChecked(True)
         self.chk_png.setChecked(True)
+
+        self.radio_raw = QRadioButton("RAW map")
+        self.radio_clean = QRadioButton("Cleaned map")
+        self.radio_raw.setChecked(True)  # valeur par défaut
+
+        row_maptype = QHBoxLayout()
+        row_maptype.addWidget(self.radio_raw)
+        row_maptype.addWidget(self.radio_clean)
 
         # Base name input
         self.base_name_edit = QLineEdit(default_base_name)
@@ -344,6 +646,9 @@ class SaveClassMapDialog(QDialog):
         form.addRow(row_fmt)
         form.addRow("Base name:", self.base_name_edit)
 
+        form.addRow(QLabel("<b>Map to save</b>"))
+        form.addRow(row_maptype)
+
         main = QVBoxLayout(self)
         main.addLayout(form)
         main.addWidget(QLabel("<b>Models</b>"))
@@ -354,6 +659,7 @@ class SaveClassMapDialog(QDialog):
         self._base_name = None
         self._want_h5 = True
         self._want_png = True
+        self._want_clean = True
 
     def _on_accept(self):
         base = self.base_name_edit.text().strip()
@@ -374,6 +680,7 @@ class SaveClassMapDialog(QDialog):
         self._base_name = base
         self._want_h5 = self.chk_h5.isChecked()
         self._want_png = self.chk_png.isChecked()
+        self._want_clean = self.radio_clean.isChecked()
         self.accept()
 
     @property
@@ -392,6 +699,10 @@ class SaveClassMapDialog(QDialog):
     def want_png(self):
         return self._want_png
 
+    @property
+    def want_clean(self):
+        return self._want_clean
+
 def _ensure_unique_path(folder, filename_no_ext, ext):
     """Ensure unique filename by appending (n) if needed."""
     candidate = os.path.join(folder, f"{filename_no_ext}{ext}")
@@ -404,26 +715,52 @@ def _ensure_unique_path(folder, filename_no_ext, ext):
             return candidate
         n += 1
 
-def _write_h5_class_map(path, class_map, classifier_name, classifier_type,
-                        class_labels, palette_rgb):
-    """Write class_map + metadata into HDF5 file."""
-    class_map = np.asarray(class_map)
+def _write_h5_class_map(path, class_map, metadata: dict):
+    """Sauvegarde une carte de classification + métadonnées unifiées."""
+    str_dt = h5py.string_dtype(encoding='utf-8')
+
     with h5py.File(path, "w") as f:
-        dset = f.create_dataset("class_map", data=class_map.astype(np.int32), compression="gzip")
-        f.attrs["classifier_name"] = str(classifier_name)
-        f.attrs["classifier_type"] = str(classifier_type)
+        # dataset principal
+        f.create_dataset("class_map", data=np.asarray(class_map, dtype=np.int32), compression="gzip")
 
-        # Labels
-        if isinstance(class_labels, dict):
-            max_idx = int(np.max(class_map)) if class_map.size else -1
-            labels_list = [class_labels.get(i, f"class_{i}") for i in range(max_idx+1)]
+        # groupe unique pour toutes les métadonnées
+        meta = f.require_group("Metadata")
+
+        for key, val in (metadata or {}).items():
+            try:
+                if isinstance(val, str):
+                    meta.attrs.create(key, val, dtype=str_dt)
+                elif isinstance(val, np.ndarray) and val.dtype.kind in ("U", "O"):
+                    meta.create_dataset(key, data=np.array(val, dtype=object), dtype=str_dt)
+                elif isinstance(val, (list, tuple)):
+                    if all(isinstance(x, str) for x in val):
+                        meta.create_dataset(key, data=np.array(val, dtype=object), dtype=str_dt)
+                    else:
+                        meta.create_dataset(key, data=np.asarray(val))
+                elif isinstance(val, (int, float, np.integer, np.floating, bool, np.bool_)):
+                    meta.attrs[key] = val
+                elif isinstance(val, np.ndarray):
+                    meta.create_dataset(key, data=val)
+                elif isinstance(val, dict):
+                    sub = meta.require_group(key)
+                    _write_dict_to_group(sub, val, str_dt)  # récursion
+                else:
+                    # fallback : texte
+                    meta.attrs.create(key, str(val), dtype=str_dt)
+            except Exception as e:
+                s = str(val)
+                meta.attrs.create(key, s, dtype=str_dt)
+
+def _write_dict_to_group(group, d: dict, str_dt):
+    for k, v in d.items():
+        # même logique que ci-dessus, mais récursive
+        if isinstance(v, dict):
+            sub = group.require_group(k)
+            _write_dict_to_group(sub, v, str_dt)
+        elif isinstance(v, str):
+            group.attrs.create(k, v, dtype=str_dt)
         else:
-            labels_list = list(class_labels)
-        f.attrs["class_labels"] = np.array(labels_list, dtype=object)
-
-        # Palette
-        pal = np.asarray(palette_rgb, dtype=np.uint8)
-        f.attrs["palette"] = pal
+            group.create_dataset(k, data=v)
 
 def _write_indexed_png(path, class_map, palette_rgb):
     """Write class_map as indexed PNG with palette."""
@@ -440,6 +777,12 @@ def _write_indexed_png(path, class_map, palette_rgb):
     img.putpalette(pal.reshape(-1).tolist())
     img.save(path, format="PNG")
 
+CLEAN_PRESETS = {
+    "Soft":      {"window_pct": 0, "iterations": 1, "min_area": 2},
+    "Balanced":  {"window_pct": 2, "iterations": 10, "min_area": 5},
+    "Strong":    {"window_pct": 5, "iterations": 15,  "min_area": 10},
+}
+
 class IdentificationWidget(QWidget, Ui_IdentificationWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -451,7 +794,8 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         self.jobs: Dict[str, ClassificationJob] = {}  # name -> job
 
         # Table init
-        self._init_classification_table()
+        self._init_classification_table(self.tableWidget_classificationList)
+        self._init_cleaning_list()
 
         # Classifiy as thread init
         self.threadpool = QThreadPool()
@@ -468,22 +812,36 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         # Remplacer placeholders par ZoomableGraphicsView
         self._replace_placeholder('viewer_left', ZoomableGraphicsView)
         self._replace_placeholder('viewer_right', ZoomableGraphicsView)
+        self.viewer_left.enable_rect_selection = True
+        self.viewer_right.enable_rect_selection = False # no rectangle selection for right view
 
+        self._last_vnir = None
+        self._last_swir = None
         self.cube = None
         self.data = None
         self.wl = None
         self.binary_map = None
+        self.saved_rec= None
+        self.binary_algo = None
+        self.binary_param = None
+        self.substrate_label= 'Unknown Substrate'
         self.alpha = self.horizontalSlider_overlay_transparency.value() / 100.0
+
+        self.TRAIN_WL=np.arange(400, 1705, 5)
+        self.whole_range = None
 
         # Connections
         self.pushButton_load.clicked.connect(self.open_load_cube_dialog)
+        self.pushButton_reset.clicked.connect(self.reset_all)
         self.pushButton_launch_bin.clicked.connect(self.launch_binarization)
+        self.pushButton_reset_bin.clicked.connect(self.reset_binary)
         self.horizontalSlider_overlay_transparency.valueChanged.connect(self.update_alpha)
         self.comboBox_bin_algorith_choice.currentIndexChanged.connect(self.update_bin_defaults)
         self.pushButton_clas_add_ink.clicked.connect(
             lambda: self.add_job(self.comboBox_clas_ink_model.currentText()))
+        self.pushButton_clas_classify_substrate.clicked.connect(self.classify_substrate)
         self.pushButton_clas_remove.clicked.connect(self.remove_selected_job)
-        self.pushButton_clas_remove_all.clicked.connect(self.remove_all_jobs)
+        self.pushButton_clas_remove_all.clicked.connect(lambda:self.remove_all_jobs())
         self.pushButton_clas_up.clicked.connect(self.move_selected_job_up)
         self.pushButton_clas_down.clicked.connect(self.move_selected_job_down)
         self.pushButton_clas_start.clicked.connect(self.start_queue)
@@ -492,8 +850,19 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         self.pushButton_clas_reinit.clicked.connect(self.reinit_selected_job)
         self.pushButton_show_all.clicked.connect(self._show_all_results_dialog)
         self.pushButton_save_map.clicked.connect(self.on_click_save_map)
-        self.radioButton_overlay_binary.toggled.connect(lambda _: self.update_overlay())
-        self.radioButton_overlay_identification.toggled.connect(lambda _: self.update_overlay())
+        self.radioButton_overlay_binary.toggled.connect(self.update_overlay)
+        self.radioButton_overlay_identification.toggled.connect(self.update_overlay)
+        self.pushButton_clean_start_selected.clicked.connect(self._on_click_clean_start_selected)
+        self.pushButton_clean_start_all.clicked.connect(self._on_click_clean_start_all)
+        self.pushButton_load_map.clicked.connect(self.load_map)
+
+        self.radioButton_clean_show_raw.toggled.connect(self.update_overlay)
+        self.radioButton_clean_show_cleaned.toggled.connect(self.update_overlay)
+        self.radioButton_clean_show_both.toggled.connect(self.update_rgb_controls)
+        self.radioButton_clean_show_both.toggled.connect(self.update_overlay)
+
+        self.comboBox_clean_preset.currentIndexChanged.connect(self.apply_clean_preset)
+        self.apply_clean_preset(self.comboBox_clean_preset.currentIndex())
 
         self.sliders_rgb = [
             self.horizontalSlider_red_channel,
@@ -516,6 +885,9 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         self.radioButton_rgb_default.toggled.connect(self.update_rgb_controls)
         self.radioButton_grayscale.toggled.connect(self.update_rgb_controls)
 
+        self.radioButton_band_selection_manual.toggled.connect(self.band_viz)
+        self.radioButton_band_selection_auto.toggled.connect(self.band_viz)
+
         self.radioButton_rgb_default.setChecked(True)
         self.update_rgb_controls()
 
@@ -523,7 +895,6 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         self.pushButton_rotate.clicked.connect(lambda: self.transform(np.rot90))
         self.pushButton_flip_h.clicked.connect(lambda: self.transform(np.fliplr))
         self.pushButton_flip_v.clicked.connect(lambda: self.transform(np.flipud))
-
         self.radioButton_overlay_binary.toggled.connect(self.update_overlay)
         self.radioButton_overlay_identification.toggled.connect(self.update_overlay)
 
@@ -534,6 +905,7 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
             2: (0, 255, 255),  # CC (yellow)
             1: (0, 165, 255)  # NCC (orange)
         }
+
         self.labels={
             0: 'Substrate',
             3:  'MGP' ,
@@ -541,28 +913,67 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
             1: 'NCC'
         }
 
+        self.tabWidget_Process.setCurrentIndex(0)
+        self.tabWidget_info_classification.setCurrentIndex(0)
+        self.tabWidget_Image.setCurrentIndex(1)
+
+    def reset_all(self):
+
+        reply = QMessageBox.question(
+            self, "Reset all ?",
+            f"Are you sure to reset all current jobs ?",
+            QMessageBox.Yes | QMessageBox.No
+        )
+        if reply == QMessageBox.No:
+            return
+
+        # Réinit internes
+        self.job_order = []
+        self.jobs = {}
+        self._init_classification_table(self.tableWidget_classificationList)
+        self._init_cleaning_list()
+
+        self.threadpool = QThreadPool()
+        self._running_idx = -1
+        self._current_worker = None
+        self._stop_all = False
+        self.only_selected = False
+
+        self.comboBox_clas_show_model.clear()
+        self._refresh_show_model_combo()
+
+        self._last_vnir = None
+        self._last_swir = None
+        self.cube = None
+        self.data = None
+        self.wl = None
+        self.binary_map = None
+        self.saved_rec = None
+        self.binary_algo = None
+        self.binary_param = None
+        self.substrate_label = 'Unknown Substrate'
+        self.whole_range = None
+
+        # Vider les viewers
+        if hasattr(self, "viewer_left"):
+            self.viewer_left.setImage(QPixmap())  # plus d’image à gauche
+        if hasattr(self, "viewer_right"):
+            self.viewer_right.setImage(QPixmap())  # plus d’image à droite
+
+        self.update_legend()
+        self._set_info_rows()
+
     def bgr_to_rgb(self, bgr):
         return (bgr[2], bgr[1], bgr[0])
 
-    def open_load_cube_dialog(self):
-        dlg = LoadCubeDialog(self)
-        if dlg.exec_() == QDialog.Accepted:
-            hyps_cut, data_fused, wl_fused = dlg.result_data
-
-            if data_fused is not None and wl_fused is not None:
-                # plage complète fusionnée
-                self.cube = Hypercube(data=data_fused,wl=wl_fused)
-                self.data = data_fused
-                self.wl = wl_fused
-            else:
-                # plage incomplète → on prend le premier cube chargé
-                first_key = next(iter(dlg.cubes))
-                self.cube = dlg.cubes[first_key]
-                self.data = self.cube.data
-                self.wl = self.cube.wl
-
-            self.update_rgb_controls()
-            self.show_rgb_image()
+    def band_viz(self):
+        self.radioButton_grayscale.setChecked(True)
+        self.tabWidget_Image.setCurrentIndex(0)
+        if self.radioButton_band_selection_auto.isChecked():
+            best_band=int(self.cube.get_best_band())
+            wl_best=int(self.wl[best_band])
+            self.horizontalSlider_blue_channel.setValue(wl_best)
+        self.update_rgb_controls()
 
     def _replace_placeholder(self, name, widget_cls, **kwargs):
         placeholder = getattr(self, name)
@@ -613,7 +1024,7 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
             element.setMaximum(max_wl)
             element.setSingleStep(wl_step)
             if default:
-                element.setValue(self.default_rgb_channels()[i])
+                element.setValue(int(self.default_rgb_channels()[i]))
                 element.setEnabled(False)
             elif self.radioButton_grayscale.isChecked():
                 element.setEnabled(i == 2)
@@ -624,8 +1035,8 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
             element.setMinimum(min_wl)
             element.setMaximum(max_wl)
             element.setSingleStep(wl_step)
-            if default:
-                element.setValue(self.default_rgb_channels()[i])
+            if default :
+                element.setValue(int(self.default_rgb_channels()[i]))
                 element.setEnabled(False)
             elif self.radioButton_grayscale.isChecked():
                 element.setEnabled(i == 2)
@@ -638,11 +1049,16 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         """Renvoie les canaux RGB par défaut selon plage spectrale"""
         if self.wl[-1] < 1100 and self.wl[0] > 350:
             return [610, 540, 435]
-        elif self.wl[-1] >= 1100:
+        elif self.wl[-1] >= 1100 and self.wl[0] > 800:
             return [1605, 1205, 1005]
         else:
-            mid = int(len(self.wl) / 2)
-            return [self.wl[0], self.wl[mid], self.wl[-1]]
+            if len(self.wl)>7:
+                sixieme=len(self.wl) // 6
+                idx1,idx2,idx3=sixieme,3*sixieme,5*sixieme
+                return [self.wl[idx3], self.wl[idx2], self.wl[idx1]]
+            else:
+                mid = int(len(self.wl) / 2)
+                return [self.wl[-1], self.wl[mid], self.wl[0]]
 
     def transform(self, trans_type):
         """Rotation / Flip du cube"""
@@ -676,14 +1092,85 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         self.show_rgb_image()
         self.update_overlay()
 
-    def load_cube(self,filepath=None,cube=None):
+    def no_reset_jobs_on_new_cube(self):
+        for job in self.jobs:
+            if self.jobs[job].status in ['Done', 'Running']:
+                reply = QMessageBox.question(
+                    self, "Reset Jobs ?",
+                    f"Some jobs have been done and will be loosed.\n Are you sure to continue ? ",
+                    QMessageBox.Yes | QMessageBox.Cancel
+                )
+                if reply == QMessageBox.Cancel:
+                    return True
+
+                self.remove_all_jobs(ask_confirm=False)
+                return False
+
+        return False
+
+    def open_load_cube_dialog(self):
+
+       if self.no_reset_jobs_on_new_cube():
+           return
+
+       dlg = LoadCubeDialog(self, vnir_cube=self._last_vnir, swir_cube=self._last_swir)
+       if dlg.exec_() == QDialog.Accepted:
+            # Prefer fusing VNIR+SWIR if both available; otherwise passthrough a single cube
+            vnir = dlg.cubes.get("VNIR")
+            swir = dlg.cubes.get("SWIR")
+
+            self._last_vnir = vnir
+            self._last_swir = swir
+
+            if vnir is not None or swir is not None:
+                self.cube = fused_cube(vnir, swir)
+            else:
+                QMessageBox.warning(self, "Error", "No cube loaded.")
+                return
+
+            try:
+                self.cube.normalize_spectral(self.TRAIN_WL, min_wl=400, max_wl=1700, interp_kind="linear", in_place=True)
+            except ValueError as e:
+                QMessageBox.warning(self, "Spectral error", str(e))
+                return
+
+            # Ensure UI buffers are in sync
+            self.data = self.cube.data
+            self.wl = self.cube.wl
+            self.update_rgb_controls()
+            self.update_overlay()
+
+    def load_cube(self,filepath=None,cube=None,cube_info=None,range=None):
+
+        if self.no_reset_jobs_on_new_cube():
+            return
+
         flag_loaded=False
         if cube is not None:
             try:
-                self.cube = cube
-                self.data = self.cube.data
-                self.wl = self.cube.wl
-                flag_loaded=True
+                if cube_info is not None:
+                    cube.metadata=cube.cube_info.metadata_temp
+
+                if range is None:
+                    self.cube = cube
+                    flag_loaded=True
+                else:
+                    print('Range : ',range)
+                    if range=='VNIR':
+                        self._last_vnir=cube
+                        self.cube = fused_cube(self._last_vnir, self._last_swir)
+
+                        flag_loaded=True
+
+                    elif range=='SWIR':
+                        self._last_swir=cube
+                        self.cube = fused_cube(self._last_vnir, self._last_swir)
+
+                        flag_loaded = True
+
+                    else :
+                        print('Problem with cube range in parameter')
+
             except:
                 print('Problem with cube in parameter')
 
@@ -695,17 +1182,61 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
                 if not filepath:
                     return
             try:
-                self.cube = Hypercube(filepath=filepath, load_init=True)
-                self.data = self.cube.data
-                self.wl = self.cube.wl
+                cube = Hypercube(filepath=filepath, load_init=True)
+
+                try:
+                    if cube_info is not None:
+                        cube.metadata = cube.cube_info.metadata_temp
+
+                    if range is None:
+                        self.cube = cube
+                    else:
+                        if range == 'VNIR':
+                            self._last_vnir = cube
+                            if self._last_swir is not None:
+                                self.cube = fused_cube(self._last_vnir, self._last_swir)
+                            else:
+                                self.cube = cube
+
+                        elif range == 'SWIR':
+                            self._last_swir = cube
+                            if self._last_vnir is not None:
+                                self.cube = fused_cube(self._last_vnir, self._last_swir)
+                            else:
+                                self.cube = cube
+
+                        else:
+                            print('Problem with cube range in parameter')
+
+                except:
+                    print('Problem with cube in parameter')
+
             except Exception as e:
                 QMessageBox.warning(self, "Error", f"Failed to load cube: {e}")
                 return
 
+        # test spectral range
+
+        try:
+            self.cube.normalize_spectral(
+                self.TRAIN_WL, min_wl=400, max_wl=1700,
+                interp_kind="linear", in_place=True
+            )
+        except ValueError as e:
+            QMessageBox.warning(self, "Spectral error", str(e))
+            return
+
+        self.data = self.cube.data
+        self.wl = self.cube.wl
         self.update_rgb_controls()
         self.show_rgb_image()
+        self.update_overlay()
 
     def show_rgb_image(self):
+
+        if self.radioButton_clean_show_both.isChecked() and self.radioButton_overlay_identification.isChecked() :
+            return
+
         if self.data is None:
             return
         if self.radioButton_rgb_default.isChecked():
@@ -727,7 +1258,14 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         rgb = np.clip(rgb, 0, 255).astype(np.uint8)
 
         self.rgb_image = rgb
+
         self.viewer_left.setImage(self._np2pixmap(rgb))
+        self.viewer_left.fitImage()
+        self._draw_current_rect(surface=False)
+
+    def reset_binary(self):
+        self.binary_map=np.ones((self.data.shape[0],self.data.shape[1]))
+        self.show_binary_result()
 
     def launch_binarization(self):
         if self.cube is None:
@@ -739,15 +1277,53 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
             'window': self.spinBox_bin_window_size.value(),
             'padding': self.comboBox_padding_mode.currentText()
         }
+
+        if self.radioButton_band_selection_manual.isChecked():
+            val_slid=self.horizontalSlider_blue_channel.value()
+            idx = np.argmin(np.abs(val_slid - self.wl))
+        else:
+            idx=None
+
         try:
-            self.binary_map = self.cube.get_binary_from_best_band(algorithm, param)
+            self.saved_rec = None
+            self.binary_map = self.cube.get_binary_from_best_band(algorithm, param, idx)
+            rect = self._get_selected_rect()
+            if rect is not None:
+                y, x, h, w = rect
+                self.saved_rec = rect
+
+            ### Uncomment if want to binarize only selected zone
+
+            # rect = self._get_selected_rect()
+            # if rect is None:
+            #     self.saved_rec=None
+            #     self.binary_map = self.cube.get_binary_from_best_band(algorithm, param,idx)
+            # else:
+            #     y, x, h, w = rect
+            #     self.saved_rec = rect
+            #     sub_data = self.data[y:y + h, x:x + w, :]
+            #     # -> on a besoin d'un petit helper côté Hypercube si tu n'en as pas déjà
+            #     #    (ici on réutilise "best_band" mais en local)
+            #     sub_cube = Hypercube(data=sub_data, wl=self.wl, cube_info=self.cube.cube_info)
+            #     sub_binary = sub_cube.get_binary_from_best_band(algorithm, param,idx)
+            #
+            #     # Recompose une carte binaire pleine taille, remplie de 0 ailleurs
+            #     full_bin = np.zeros(self.data.shape[:2], dtype=sub_binary.dtype)
+            #     full_bin[y:y + h, x:x + w] = sub_binary
+            #     self.binary_map = full_bin
+
         except Exception as e:
             QMessageBox.warning(self, "Error", f"Binarization failed: {e}")
             return
+
+        self.binary_param=param
+        self.binary_algo=algorithm
         self.radioButton_overlay_binary.setChecked(True)
         self.show_binary_result()
+        self.viewer_right.fitImage()
+        self._refresh_clean_sources_list()
 
-    def show_binary_result(self):
+    def show_binary_result(self,only_images=False):
         if self.binary_map is None or not hasattr(self, "rgb_image"):
             return
 
@@ -763,37 +1339,58 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
 
         # Affichage de la carte à droite
         self.viewer_right.setImage(self._np2pixmap(result_bgr))
+        self._draw_current_rect(surface=False)
+
+        if not hasattr(self, "rgb_image") or self.rgb_image is None:
+            self.show_rgb_image()
+
+        # If sizes mismatch (e.g., new cube), rebuild or resize
+        if self.rgb_image is None or self.rgb_image.ndim != 3 or self.rgb_image.shape[:2] != result_bgr.shape[:2]:
+            # Rebuild from current data; if still mismatch, resize the overlay map
+            self.show_rgb_image()
+            if self.rgb_image is None or self.rgb_image.shape[:2] != result_bgr.shape[:2]:
+                result_bgr = cv2.resize(result_bgr, (self.rgb_image.shape[1], self.rgb_image.shape[0]),
+                                        interpolation=cv2.INTER_NEAREST)
+
+        # Alpha default (in case update_alpha wasn't called yet)
+        if not hasattr(self, "alpha") or self.alpha is None:
+            self.alpha = 0.5
 
         # Overlay sur l’image RGB avec alpha (comme la classification)
         overlay = cv2.addWeighted(self.rgb_image, 1 - self.alpha, result_bgr, self.alpha, 0)
         self.viewer_left.setImage(self._np2pixmap(overlay))
+        self._draw_current_rect(surface=False)
 
-        # Mettre à jour la légende (tu gères déjà Binary/Classification dedans)
+        if only_images:
+            return
+
         self.update_legend()
+        self._set_info_rows()
 
-    def update_overlay(self):
+    def update_overlay(self,only_images=False):
         if self.radioButton_overlay_binary.isChecked():
-            self.show_binary_result()
+            self.show_binary_result(only_images)
         elif self.radioButton_overlay_identification.isChecked():
-            self.show_classification_result()
+            self.show_classification_result(only_images)
 
     def update_alpha(self, value):
         self.alpha = value / 100.0
-        self.update_overlay()
+        self.update_overlay(only_images=True)
 
     def _show_all_results_dialog(self):
-
-        # get jobs
-        jobs_with_maps = [(name, job) for name, job in self.jobs.items() if job.class_map is not None]
+        # Récupère les jobs ayant une carte brute
+        jobs_with_maps = [(name, job) for name, job in self.jobs.items() if getattr(job, "class_map", None) is not None]
         if not jobs_with_maps:
             QMessageBox.information(self, "No results", "Aucun résultat de classification disponible pour l’instant.")
             return
 
         dlg = QDialog(self)
         dlg.setWindowTitle("All classification results")
-        dlg.resize(1100, 800)
+        dlg.setWindowFlag(Qt.WindowMaximizeButtonHint, True)
+        dlg.setSizeGripEnabled(True)
+        avail = QGuiApplication.primaryScreen().availableGeometry()
+        dlg.resize(int(avail.width() * 0.6), int(avail.height() * 0.6))
 
-        # Scroll area
         scroll = QScrollArea(dlg)
         scroll.setWidgetResizable(True)
 
@@ -802,61 +1399,109 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         vbox.setContentsMargins(12, 12, 12, 12)
         vbox.setSpacing(12)
 
-        for name, job in jobs_with_maps:
+        # Affichera-t-on une colonne "Cleaned Map" ?
+        any_clean = any(getattr(job, "clean_map", None) is not None for _, job in jobs_with_maps)
 
-            # --- Construire une image couleur BGR à partir de la class_map du job ---
-            cm = job.class_map
+        # --- HEADER -------------------------------------------------------------
+        header = QWidget()
+        hh = QHBoxLayout(header)
+        hh.setContentsMargins(8, 0, 8, 0)
+        hh.setSpacing(16)
+
+        # Largeur de la colonne des titres (identique à celle des lignes)
+        first_col_min_w = 220
+
+        title_hdr = QLabel("<b>Job</b>")
+        title_hdr.setTextFormat(Qt.RichText)
+        title_hdr.setMinimumWidth(first_col_min_w)
+        title_hdr.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        title_hdr.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
+        hh.addWidget(title_hdr, 0)
+
+        raw_hdr = QLabel("<b>Raw Map</b>")
+        raw_hdr.setTextFormat(Qt.RichText)
+        raw_hdr.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
+        raw_hdr.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
+        hh.addWidget(raw_hdr, 1)
+
+        if any_clean:
+            clean_hdr = QLabel("<b>Cleaned Map</b>")
+            clean_hdr.setTextFormat(Qt.RichText)
+            clean_hdr.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
+            clean_hdr.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
+            hh.addWidget(clean_hdr, 1)
+
+        vbox.addWidget(header)
+
+        # --- Helper pour coloriser une carte d’indices en RGB -------------------
+        def colorize(cm: np.ndarray) -> np.ndarray:
             h, w = cm.shape
-
-            # Image couleur (BGR) vide
-            colored = np.zeros((h, w, 3), dtype=np.uint8)
-
-            # Colorisation selon la même palette que le viewer principal
-            # (0=Substrate gris, 1=NCC orange, 2=CC jaune, 3=MGP violet)
+            out = np.zeros((h, w, 3), dtype=np.uint8)
             for val, bgr in self.palette_bgr.items():
-                colored[cm == val] = bgr
+                out[cm == val] = bgr
+            return out
 
-            bgr_img = colored
-            pix = self._np2pixmap(bgr_img)
+        max_w, max_h = 200, 200
 
-            # Ligne = [Titre | Aperçu]
+        # --- LIGNES -------------------------------------------------------------
+        for name, job in jobs_with_maps:
             row = QWidget()
             hl = QHBoxLayout(row)
             hl.setContentsMargins(8, 8, 8, 8)
             hl.setSpacing(16)
 
-            # Titre (nom du job + statut/progrès)
-            title = QLabel(f"<b>{name}</b><br><span style='color:gray'>"
-                           f"{job.clf_type} — {', '.join(job.kind)} — {job.status} ({job.progress}%)</span>")
+            # Colonne gauche : titre + méta (aligné à gauche)
+            title = QLabel(
+                f"<b>{name}</b><br><span style='color:gray'>"
+                f"{getattr(job, 'kind', '')}"
+                f"</span>"
+            )
             title.setTextFormat(Qt.RichText)
+            title.setMinimumWidth(first_col_min_w)
+            title.setAlignment(Qt.AlignLeft | Qt.AlignTop)
             title.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
-            hl.addWidget(title, 0, Qt.AlignTop)
+            hl.addWidget(title, 0, Qt.AlignLeft | Qt.AlignTop)
 
-            # Image (échelle raisonnable pour l’aperçu)
-            img_label = QLabel()
-            max_w = 200
-            max_h = 200
-            pix_small = pix.scaled(max_w, max_h, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-            img_label.setPixmap(pix_small)
+            # Colonne Raw Map : centré horizontalement
+            cm_raw = job.class_map
+            pix_raw = self._np2pixmap(colorize(cm_raw)).scaled(
+                max_w, max_h, Qt.KeepAspectRatio, Qt.SmoothTransformation
+            )
+            raw_label = QLabel()
+            raw_label.setPixmap(pix_raw)
+            raw_label.setAlignment(Qt.AlignHCenter | Qt.AlignTop)
+            raw_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
+            hl.addWidget(raw_label, 1, Qt.AlignHCenter | Qt.AlignTop)
 
-            img_label.setAlignment(Qt.AlignLeft | Qt.AlignTop)
-            img_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
-            hl.addWidget(img_label, 1)
+            # Colonne Cleaned Map (si dispo) : centré horizontalement
+            if getattr(job, "clean_map", None) is not None:
+                cm_clean = job.clean_map
+                pix_clean = self._np2pixmap(colorize(cm_clean)).scaled(
+                    max_w, max_h, Qt.KeepAspectRatio, Qt.SmoothTransformation
+                )
+                clean_label = QLabel()
+                clean_label.setPixmap(pix_clean)
+                clean_label.setAlignment(Qt.AlignHCenter | Qt.AlignTop)
+                clean_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
+                hl.addWidget(clean_label, 1, Qt.AlignHCenter | Qt.AlignTop)
+            else:
+                if any_clean:
+                    # Cellule vide pour garder l’alignement des colonnes
+                    spacer = QWidget()
+                    spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
+                    hl.addWidget(spacer, 1)
 
             vbox.addWidget(row)
 
-            # Ligne séparatrice légère
+            # Séparateur doux entre les lignes
             sep = QLabel("<hr>")
             sep.setTextFormat(Qt.RichText)
             vbox.addWidget(sep)
 
         scroll.setWidget(container)
-
-        # Layout principal du dialog
         main = QVBoxLayout(dlg)
         main.addWidget(scroll)
         dlg.setLayout(main)
-
         dlg.exec_()
 
     def update_bin_defaults(self):
@@ -906,10 +1551,10 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
             qimg = QImage(rgb.data, rgb.shape[1], rgb.shape[0], rgb.strides[0], fmt)
         return QPixmap.fromImage(qimg).copy()
 
-    def load_classifier(self,model_name):
+    def load_classifier(self,path):
         models_dir = "identification/data"
 
-        if model_name == "CNN 1D":
+        if "CNN 1D" in path:
             import torch
             from classifier_train import SpectralCNN1D
             input_length = self.data.shape[2]
@@ -922,9 +1567,196 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
 
         else:
             import joblib
-            filename = f"model_{model_name.lower()}.joblib"
-            self.classifier = joblib.load(os.path.join(models_dir, filename))
+
+            model=joblib.load(path)
+            self.classifier = model['pipeline']
             self.classifier_type = "sklearn"
+            self.classifier_wl=model['train_wl']
+
+    # Loading logic (single point of truth)
+    def _load_substrate_model(self, model_name, trained_path=None):
+        if trained_path:
+            self.load_classifier(trained_path)
+            return
+
+        if model_name == "Add from disk.":
+            path, _ = QFileDialog.getOpenFileName(
+                self, "Load substrate model",
+                os.path.join(os.path.dirname(os.path.dirname(__file__)), "identification/data"),
+                "joblib files (*.joblib)"
+            )
+            if not path:
+                raise RuntimeError("No model selected.")
+            import joblib
+            payload = joblib.load(path)
+            self.classifier = payload["pipeline"]
+            self.classifier_type = "sklearn"
+            self.classifier_wl = payload.get("train_wl", None)
+            return
+
+        # Built-in models
+        if getattr(sys, 'frozen', False):
+            BASE_DIR = sys._MEIPASS
+        else:
+            BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+        filename = f"model_{model_name.lower()}_background_10pct.joblib"
+        self.load_classifier(os.path.join(BASE_DIR, "identification", "data", filename))
+
+    def classify_substrate(self,trained_path=None):
+        model_name=self.comboBox_clas_substrate_model.currentText()
+        rect = self._get_selected_rect()
+
+        SUBSTRATE_LABEL_DIC={11 : 'Parchment',
+                             12 : 'Cotton-Linen',
+                             13 : 'Linen',
+                             14 : 'Paper',
+                             15 : 'Translucent paper'
+        }
+
+        if trained_path:
+            try:
+                self.load_classifier(trained_path)
+            except Exception as e:
+                QMessageBox.critical(self, "Model error", f"Could not load substrate model:\n{e}")
+                return
+
+        if self.binary_map is None:
+            QMessageBox.Warning(self, "No binarization map",
+                                "Launch binarization first")
+            return
+
+        if rect is None:
+
+            sub_map=self.binary_map
+            sub_data=self.data
+
+        else:
+            y, x, h, w = rect
+            self.saved_rec = rect
+            sub_data = self.data[y:y + h, x:x + w, :]
+            sub_map=self.binary_map[y:y + h, x:x + w]
+
+        mask_sub = (sub_map == 0)
+        if mask_sub.sum() == 0:
+            QMessageBox.information(self, "No substrate", "No substrate pixels found in this region.")
+            return
+        X = sub_data[mask_sub, :]  # (N, B)
+
+        try:
+            self._load_substrate_model(model_name, trained_path=trained_path)
+        except Exception as e:
+            QMessageBox.critical(self, "Model error", f"Could not load substrate model:\n{e}")
+            return
+
+        # Check wavelength compatibility & propose training if needed ---
+        ok, msg = self.features_compatible(getattr(self, "classifier_wl", None))
+        if not ok:
+            reply = QMessageBox.question(
+                self, "Train substrate model?",
+                f"{msg}\n\nTrain a new *background (10%)* model for the current spectral range?",
+                QMessageBox.Yes | QMessageBox.No
+            )
+            if reply == QMessageBox.No:
+                return
+
+            if model_name not in ['KNN', 'RDF', 'LDA', 'SVM']:
+                QMessageBox.warning(self, 'Model can be trained',
+                                    'Model can not be trained.\nPlease choose between LDA, KNN, RDF or SVM')
+                return
+
+
+            # Build a filename that embeds the spectral range
+            spectral_tag = f"_{int(self.wl[0])}-{int(self.wl[-1])}"
+            if getattr(sys, 'frozen', False):
+                BASE_DIR = sys._MEIPASS
+            else:
+                BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+
+            out_dir = os.path.join(BASE_DIR, "identification", "data")
+            os.makedirs(out_dir, exist_ok=True)
+            savepath = os.path.join(out_dir, f"model_{model_name.lower()}_background_10pct{spectral_tag}.joblib")
+
+            # Launch TrainWorker (same as ink path)
+            worker = TrainWorker(
+                clf_type=model_name,
+                kind="background_10pct",
+                savepath=savepath,
+                train_wl=self.wl
+            )
+
+            def _on_saved(path):
+                try:
+                    # reload the freshly trained model
+                    print('[SUBSTRATE IDENTIFICATION] : Model trained and saved at : ', path)
+                    self.classify_substrate(trained_path=path)
+                except Exception as e:
+                    QMessageBox.critical(self, "Training", f"Model trained but failed to reload:\n{e}")
+
+            worker.signals.saved.connect(_on_saved)
+            worker.signals.error.connect(lambda msg: QMessageBox.critical(self, "Training error", msg))
+            worker.signals.progress.connect(lambda v: None)  # optional: wire a small progress UI
+            self.threadpool.start(worker)
+            return
+
+        if self.checkBox_classify_substrate_fast.isChecked():
+            '''Make the Mid spectra of all pixels of sub_data where sub_map is 0 and classify with loaded model'''
+            x_mean = X.mean(axis=0, keepdims=True)
+            pred = int(self.classifier.predict(x_mean)[0])
+            self.substrate_label = SUBSTRATE_LABEL_DIC[pred]
+            QMessageBox.information(self, "Substrate (fast)", f'Substrate result of classification : {self.substrate_label}')
+        else :
+            '''Make the classification of all sub_data where sub_map is 0 and get %of each label classified'''
+            try:
+                # détermine un chunk raisonnable
+                N = X.shape[0]
+                target_steps = 50
+                min_chunk, max_chunk = 20, 200000
+                chunk_size = max(1, min(max_chunk, max(min_chunk, N // target_steps)))
+
+                worker = ClassifyWorker(
+                    X, self.classifier, self.classifier_type,
+                    chunk_size=chunk_size, emit_partial=False
+                )
+
+                def _on_err(msg):
+                    QMessageBox.critical(self, "Substrate classification", msg)
+
+                def _on_res(preds: np.ndarray):
+                    # stats
+                    if preds.size == 0:
+                        s = "No predictions."
+                    else:
+                        import numpy as _np
+                        classes = _np.unique(preds)
+                        counts = _np.bincount(preds, minlength=classes.max() + 1)
+                        tot = preds.size
+                        lines = []
+                        for c in classes:
+                            pct = 100.0 * counts[c] / tot
+                            lines.append(f"class {int(c)} : {counts[c]} px  ({pct:.1f}%)")
+                        s = "\n".join(lines)
+                        counts = np.bincount(preds)
+                        tot = counts.sum()
+                        pred = int(np.argmax(counts))
+
+                        self.substrate_label=SUBSTRATE_LABEL_DIC[pred]
+
+                    QMessageBox.information(self, "Substrate (full)", s)
+
+                worker.signals.progress.connect(lambda: None)
+                worker.signals.error.connect(_on_err)
+                worker.signals.result.connect(_on_res)
+                worker.signals.finished.connect(lambda: None)
+
+                self.threadpool.start(worker)
+
+            except Exception as e:
+                QMessageBox.critical(self, "Substrate classification", f"Unexpected error:\n{e}")
+
+        for key in self.jobs:
+            self.jobs[key].substrate_name=self.substrate_label
+
+        self.update_overlay()
 
     def _on_classif_progress(self, value):
         try:
@@ -942,6 +1774,7 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         self.class_map = class_map
         self.radioButton_overlay_identification.setChecked(True)
         self.show_classification_result()
+        self._refresh_clean_sources_list()
 
     def _on_classif_finished(self):
         try:
@@ -971,10 +1804,14 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         # 3) Choisir la palette/labels selon le mode
         if self.radioButton_overlay_binary.isChecked():
             colors = {1: (0, 0, 0), 0: (255, 255, 255)}
-            labels = {0: 'Substrate', 1: 'Ink'}
+            if self.substrate_label is None:
+                sub_name='Substrate'
+            else:
+                sub_name=self.substrate_label
+            labels = {0: sub_name, 1: 'Ink'}
         else:
             colors = self.palette_bgr
-            labels = self.labels  # ➜ gardés centralisés dans l'objet
+            labels = self.labels
 
         # 4) Construire les items de légende
         for key in sorted(labels.keys()):
@@ -1000,26 +1837,100 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         # 5) Pousser le contenu vers le haut
         layout.addStretch(1)
 
-    def show_classification_result(self):
-        if not hasattr(self, "class_map"):
+    def show_classification_result(self,only_images=False):
+
+        def _colorize(cm: np.ndarray) -> np.ndarray:
+            """class_map to RGB using self.palette_bgr."""
+            colors = self.palette_bgr
+            h, w = cm.shape
+            result_rgb = np.zeros((h, w, 3), dtype=np.uint8)
+            for val, bgr in colors.items():
+                result_rgb[cm == val] = bgr
+            return result_rgb
+
+        # Récupère le job actuellement sélectionné (ou abandonne s'il n'y en a pas)
+        job = getattr(self, "_current_job", None)
+        job = job() if callable(job) else self._current_job()
+        if not job or job.class_map is None:
+            self.update_legend()
+            self._set_info_rows()
+            if self.data is not None:
+                cm_clean= np.zeros((self.data.shape[0],self.data.shape[1]))
+            else:
+                cm_clean=np.zeros((1,1))
+            rgb_right = _colorize(cm_clean)
+            self.viewer_right.setImage(self._np2pixmap(rgb_right))
+            self.label_viewer_right.setText("RAW map ")
             return
 
-        # Palette : 0=substrat gris, 1=violet, 2=jaune, 3=orange
-        colors = self.palette_bgr
+        show_raw = self.radioButton_clean_show_raw.isChecked()
+        show_clean =self.radioButton_clean_show_cleaned.isChecked()
+        show_both = self.radioButton_clean_show_both.isChecked()
 
-        h, w = self.class_map.shape
-        result_rgb = np.zeros((h, w, 3), dtype=np.uint8)
+        cm_raw = job.class_map
+        if getattr(job, "clean_map", None) is not None:
+            cm_clean = job.clean_map
+            clean_map_exist=True
+        else :
+            cm_clean =job.class_map
+            clean_map_exist = False
 
-        for val, col in colors.items():
-            result_rgb[self.class_map == val] = col
+        if show_both:
+            # NO Overlay
+            rgb_left = _colorize(cm_raw)
+            rgb_right = _colorize(cm_clean)
+            self.viewer_left.setImage(self._np2pixmap(rgb_left))
+            self.viewer_right.setImage(self._np2pixmap(rgb_right))
+            # Dessine le rectangle associé au job (contour fin)
+            self._draw_current_rect(use_job=True, surface=False)
+            self.label_viewer_left.setText("RAW map ")
+            if clean_map_exist:
+                self.label_viewer_right.setText("CLEANED map ")
+                self.label_viewer_right.setStyleSheet("color: black;")
 
-        self.viewer_right.setImage(self._np2pixmap(result_rgb))
+            else:
+                self.label_viewer_right.setText("RAW map (No cleaning done yet) ")
+                self.label_viewer_right.setStyleSheet("color: red;")
 
-        # Overlay sur image originale
-        overlay = cv2.addWeighted(self.rgb_image, 1 - self.alpha, result_rgb, self.alpha, 0)
-        self.viewer_left.setImage(self._np2pixmap(overlay))
+        else:
 
+            self.label_viewer_left.setText("False RGB")
+
+            if show_clean:
+                cm = cm_clean
+                if clean_map_exist:
+                    self.label_viewer_right.setText("CLEANED map ")
+                    self.label_viewer_right.setStyleSheet("color: black;")
+
+                else:
+                    self.label_viewer_right.setText("RAW map (No cleaning done yet) ")
+                    self.label_viewer_right.setStyleSheet("color: red;")
+
+            else:
+                cm=cm_raw
+                self.label_viewer_right.setText("RAW map ")
+                self.label_viewer_right.setStyleSheet("color: black;")
+
+            rgb_map = _colorize(cm)
+
+            self.viewer_right.setImage(self._np2pixmap(rgb_map))
+
+            if hasattr(self, "rgb_image") and self.rgb_image is not None:
+                overlay = cv2.addWeighted(self.rgb_image, 1 - self.alpha, rgb_map, self.alpha, 0)
+                self.viewer_left.setImage(self._np2pixmap(overlay))
+            else:
+                self.viewer_left.setImage(self._np2pixmap(rgb_map))
+
+            self._draw_current_rect(use_job=True, surface=False)
+
+
+        if only_images:
+            return
+
+        # Légende + infos (inchangés)
+        self.labels[0] = job.substrate_name
         self.update_legend()
+        self._set_info_rows()
 
     def _refresh_show_model_combo(self, select_name: str = None):
         """
@@ -1065,8 +1976,7 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         self.radioButton_overlay_identification.setChecked(True)
         self.show_classification_result()
 
-    def _init_classification_table(self):
-        tw = self.tableWidget_classificationList
+    def _init_classification_table(self,tw):
         tw.setColumnCount(5)
         tw.setHorizontalHeaderLabels(["Model", "Kind", "Status", "Progress", "Duration"])
         tw.setSelectionBehavior(tw.SelectRows)
@@ -1074,15 +1984,12 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         tw.setEditTriggers(tw.NoEditTriggers)
         tw.verticalHeader().setVisible(False)
         header = tw.horizontalHeader()
-        header.setSectionResizeMode(0, QHeaderView.Stretch)  # Model
-        header.setSectionResizeMode(1, QHeaderView.Stretch)  # Kind
-        header.setSectionResizeMode(2, QHeaderView.ResizeToContents)  # Status
-        header.setSectionResizeMode(3, QHeaderView.ResizeToContents)  # Progress
+        self.tableWidget_classificationList.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        header.setSectionResizeMode(0, QHeaderView.Interactive)  # Model
+        header.setSectionResizeMode(1, QHeaderView.Interactive)  # Kind
+        header.setSectionResizeMode(2, QHeaderView.ResizeToContents)  # Status stays auto-sized
+        header.setSectionResizeMode(3, QHeaderView.Stretch)  # Progress stays auto-sized
         header.setSectionResizeMode(4, QHeaderView.ResizeToContents)  # Duration
-
-    def _kind_summary(self, labels: List[str], max_chars: int = 32) -> str:
-        s = "/".join(labels)
-        return s if len(s) <= max_chars else s[:max_chars - 1] + "…"
 
     def _make_progress_bar(self, value: int = 0) -> QProgressBar:
         pb = QProgressBar()
@@ -1104,9 +2011,8 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
             it_model.setToolTip(job.name)
             tw.setItem(row, 0, it_model)
             # Kind
-            kind_text = self._kind_summary(job.kind)
-            it_kind = QTableWidgetItem(kind_text)
-            it_kind.setToolTip(", ".join(job.kind))
+            it_kind = QTableWidgetItem(job.kind)
+            it_kind.setToolTip(job.kind)
             tw.setItem(row, 1, it_kind)
             # Status
             it_status = QTableWidgetItem(job.status)
@@ -1154,31 +2060,203 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
             i += 1
         return name
 
+    def _train_new_model(self,name):
+
+        match name:
+            case 'LDA':
+                from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+                model=LinearDiscriminantAnalysis(solver='svd')
+                pass
+            case 'KNN':
+                from sklearn.pipeline import make_pipeline
+                from sklearn.preprocessing import StandardScaler
+                from sklearn.neighbors import KNeighborsClassifier
+                model = make_pipeline(
+                    StandardScaler(),
+                    KNeighborsClassifier(
+                        n_neighbors=1,
+                        metric='cosine',
+                        weights='uniform'
+                    )
+                )
+                pass
+
+            case 'SVM':
+                from sklearn.pipeline import make_pipeline
+                from sklearn.preprocessing import StandardScaler
+                from sklearn.svm import SVC
+
+                model = make_pipeline(
+                    StandardScaler(),
+                    SVC(
+                        kernel='rbf',  # Gaussian kernel
+                        C=10,  # Box constraint
+                        gamma='scale',  # Automatic kernel scale
+                        decision_function_shape='ovo'
+                    )
+                )
+                pass
+
+            case 'RDF':
+                from sklearn.ensemble import RandomForestClassifier
+                n_trees_total = 30
+                model = RandomForestClassifier(
+                    n_estimators=0,  # Start with 0 tree
+                    max_features=None,  # Use all predictors
+                    max_leaf_nodes=751266,  # Max number of splits
+                    bootstrap=True,
+                    warm_start=True,  # Allow incremental training
+                    n_jobs=-1,
+                )
+                pass
+
+            case _:
+                QMessageBox.warning(self,'Model can be trained','Model can not be trained.\nPlease choose between LDA, KNN, RDF or SVM')
+                return
+
+        return
+
     def add_job(self, name: str):
+
+        trained=False
+
+        if 'SUB_' in name:
+            kind='Substrate'
+        else:
+            kind='Ink 3 classes'
+
         clf_type=name
+        if getattr(sys, 'frozen', False):  # pynstaller case
+            BASE_DIR = sys._MEIPASS
+        else:
+            BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+
+        save_model_folder = os.path.join(BASE_DIR,
+                                         "identification/data")
+
+        filename = f"model_{clf_type.lower()}.joblib"
+        savepath=os.path.join(save_model_folder, filename)
+
+        if clf_type=="Add from disk...":
+            ## dialog to open file
+            path, _ = QFileDialog.getOpenFileName(
+                self,
+                f"Load model",
+                os.path.join(BASE_DIR,"identification/data"),
+                "joblib files (*.joblib)"
+            )
+            if not path:
+                return
+
+            ## check if same number of features with message
+            import joblib
+            model=joblib.load(path)
+            train_wl=model['train_wl']
+
+            print('[Add from disk...] len wl :',len(train_wl))
+
+            ## validate and ask a name (and kind ?)
+            compatible, _ = self.features_compatible(train_wl)
+            print('[Add from disk...] compatible :', compatible)
+            if compatible:
+                try:
+                    clf_type_temp=model['pipeline'].steps[1][0]
+                    print('kind from pipeline : ',clf_type_temp)
+                except:
+                    try:
+                        clf_type_temp = model['pipeline'].__class__.__name__
+                        print('kind from raw : ', clf_type_temp)
+
+                    except:
+                        clf_type_temp='Unkown'
+                        print('kind not found')
+                try:
+                    clf_type={'kneighborsclassifier':'KNN','RandomForestClassifier':'RDF','LinearDiscriminantAnalysis':'LDA','svc':'SVM'}[clf_type_temp]
+                except:
+                    clf_type=clf_type_temp
+
+                model_name, ok = QInputDialog.getText(self, 'Classifier loaded', f'Classifier {clf_type} loaded. Enter name :',text=clf_type)
+                if ok :
+                    if model_name:
+                        print("User entered:", model_name)
+                    else:
+                        model_name='USERS'
+                        print("User No entered name. Default name:", model_name)
+
+                    name = model_name
+                    savepath=path
+                    trained=True
+
+        if not trained :
+            if len(self.wl) != len(self.TRAIN_WL):
+                trained=False
+                reply=QMessageBox.question(self,
+                                     'Train new ?',
+                                     'Spectral range smaller than pretrained model. \nDo you want to train model first ?',
+                                     QMessageBox.Yes | QMessageBox.No)
+                if reply==QMessageBox.No:
+                    return
+                else:
+                    if name not in ['KNN','RDF','LDA','SVM']:
+                        QMessageBox.warning(self, 'Model can be trained',
+                                            'Model can not be trained.\nPlease choose between LDA, KNN, RDF or SVM')
+                        return
+
+                    spectral_range_name=f'_{int(self.wl[0])}-{int(self.wl[-1])}'
+
+                    savepath, _ = QFileDialog.getSaveFileName(
+                        self,
+                        "Choose Model filename",
+                        os.path.join(save_model_folder, name+spectral_range_name),
+                        "joblib (*.joblib)"
+                    )
+
+            else:
+                trained=True
+
         # enforce uniqueness on 'name'
         unique = self._ensure_unique_name(name)
 
         if unique is None:
             return
 
-        if 'sub' in unique:
-            kind=['Substrate']
-        else:
-            kind = ['Ink 3 classes']
-
         job = ClassificationJob(unique, clf_type, kind)
+        if not trained:
+            job.status='To Train'
+        job.binary_param=self.binary_param
+        job.binary_algo=self.binary_algo
+        job.spectral_range_used=[self.wl[0],self.wl[-1]]
+        job.trained=trained
+        job.trained_path=savepath
+        job.substrate_name=self.substrate_label
+
         self.jobs[unique] = job
         self.job_order.append(unique)
         self._refresh_table()
         self._refresh_show_model_combo()
 
-    def remove_all_jobs(self):
+    def remove_all_jobs(self,ask_confirm=True):
+
+        print('[Ask remove confirm : ]',ask_confirm)
+        if ask_confirm:
+            for job in self.jobs:
+                if self.jobs[job].status in ['Done', 'Running']:
+                    reply = QMessageBox.question(
+                        self, "Reset Jobs ?",
+                        f"Some jobs have been done and will be loosed.\n Are you sure to continue ? ",
+                        QMessageBox.Yes | QMessageBox.Cancel
+                    )
+                    if reply == QMessageBox.Cancel:
+                        return
+                    break
+
         table = self.tableWidget_classificationList
         for row in range(table.rowCount()):
-            self.remove_job(-1)
+            self.remove_job(-1, confirm_done=False)
 
-    def remove_job(self,row):
+        self.update_overlay()
+
+    def remove_job(self,row,confirm_done = True):
         table = self.tableWidget_classificationList
         table.size()
         if row < 0:
@@ -1196,6 +2274,12 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
             running_name = self.job_order[self._running_idx]
             if name == running_name:
                 QMessageBox.warning(self, "Busy", "Job is running. Stop it first.")
+                return
+
+        job = self.jobs.get(name)
+        if confirm_done and job and job.status == "Done":
+            if not self._confirm("Confirm removal",
+                                 f"'{name}' is already DONE.\nDo you want to remove it anyway?"):
                 return
 
         # Update data structures by name (not by row index)
@@ -1223,19 +2307,42 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         # Refresh any dependent UI
         self._refresh_show_model_combo()
         self._refresh_table()
+        self.update_overlay()
 
     def remove_selected_job(self):
         table = self.tableWidget_classificationList
         row = table.currentRow()
         self.remove_job(row)
+        self.update_overlay()
 
     def start_selected_job(self):
         table = self.tableWidget_classificationList
         row = table.currentRow()
+        if row < 0 or row >= len(self.job_order):
+            return
+        name = self.job_order[row]
+        job = self.jobs.get(name)
+        if not job:
+            return
+
+        if job.status == "Done":
+            if not self._confirm("Confirm re-run",
+                                 f"'{name}' is already DONE.\nDo you want to run it again?"):
+                return
+            # Reset visible state for a clean re-run
+            job.status = "Queued"
+            job.progress = 0
+            job.duration_s = None
+            self._update_row_from_job(name)
+
+        rec = self._get_selected_rect()
+        self.saved_rec = rec
+        job.rect = rec
+
         self._running_idx = row
         self._stop_all = False
         self._skip_done_on_run = False
-        self.only_selected=True
+        self.only_selected = True
         self._launch_next_job()
 
     def move_selected_job_up(self):
@@ -1263,6 +2370,11 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         self._stop_all = False
         self._skip_done_on_run = False
         self.only_selected=False
+
+        rec=self._get_selected_rect()
+        self.saved_rec=rec
+        for key in self.jobs:
+            self.jobs[key].rect=rec
 
         """Start the queue of jobs, with confirmation if some are already Done."""
         done_exists = any(self.jobs.get(n) and self.jobs[n].status == "Done" for n in self.job_order)
@@ -1293,7 +2405,10 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
                 running_name = self.job_order[self._running_idx]
                 job = self.jobs.get(running_name)
                 if job:
-                    job.status = "Canceled"
+                    if job.status=='Training ...':
+                        job.status = "To Train"
+                    else :
+                        job.status = "Canceled"
                     job.progress = 0
                     job.duration_s = None
                     self._update_row_from_job(running_name)
@@ -1308,6 +2423,9 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
                     job.progress = 0
                     job.duration_s = None
                     self._update_row_from_job(name)
+                elif job and job.status in ("To Train", "Training ..."):
+                    job.status = "To Train"
+                    job.progress = 0
 
     def _launch_next_job(self):
         """Launch the next job in the queue if available."""
@@ -1337,6 +2455,44 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
                     job.duration_s = None
                     self._update_row_from_job(name)
 
+            if job.status == "To Train":
+                # flip to running (training)
+                job.status = "Training..."
+                job.progress = 0
+                job._t0 = time.time()
+                self._update_row_from_job(name)
+
+                # Prepare TrainWorker
+                kind_str = job.kind.lower()  # e.g., "ink 3 classes" or "background"
+                # pick a canonical "kind" token for your datasets
+                train_kind = "3_inks_classes" if "ink" in kind_str else (
+                    "background_10pct" if "10pct" in kind_str else "background")
+                w = TrainWorker(job.clf_type, train_kind, job.trained_path, self.wl)
+                n = job.name
+                w.signals.progress.connect(lambda v, n=n: self._on_job_progress(n, v))
+                w.signals.error.connect(lambda msg, n=n: self._on_job_error(n, msg))
+                w.signals.progress.connect(lambda v, n=n: self._on_job_progress(n, v))
+
+                def _on_saved(path, n=n):
+                    j = self.jobs.get(n)
+                    if not j: return
+                    if self._stop_all or j.status == "Canceled":
+                        return
+                    j.trained = True
+                    j.trained_path = path
+                    j.status = "Queued"  # queue it for classification right away
+                    j.duration_s = None if j._t0 is None else (time.time() - j._t0)
+                    self._update_row_from_job(n)
+                    # Immediately proceed to (re)launch on the same index
+                    self._launch_next_job()
+
+                w.signals.saved.connect(_on_saved)
+                w.signals.finished.connect(lambda n=n: None)  # keep if you need cleanup
+
+                self._current_worker = w
+                self.threadpool.start(w)
+                return
+
             # Check preconditions
             if self.binary_map is None or self.data is None:
                 QMessageBox.warning(self, "Warning", "Run binarization and load a cube first.")
@@ -1353,9 +2509,69 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
             self._update_row_from_job(name)
 
             # Load classifier and create worker
-            self.load_classifier(job.clf_type)
+
+            self.load_classifier(job.trained_path)
+
+            # --- make sure model grid matches current cube; train if needed
+            ok, msg = self.features_compatible(getattr(self, "classifier_wl", None))
+            if not ok:
+                # ask/auto-train a compatible ink model
+                reply = QMessageBox.question(
+                    self, "Train ink model?",
+                    f"{msg}\n\nTrain a new ink classifier for the current spectral range?",
+                    QMessageBox.Yes | QMessageBox.No
+                )
+                if reply == QMessageBox.No:
+                    job.status = "To Train"
+                    self._update_row_from_job(name)
+                    self._running_idx += 1
+                    continue
+
+                # Build a filename that embeds the spectral range
+                spectral_tag = f"_{int(self.wl[0])}-{int(self.wl[-1])}"
+                if getattr(sys, 'frozen', False):
+                    BASE_DIR = sys._MEIPASS
+                else:
+                    BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+                out_dir = os.path.join(BASE_DIR, "identification", "data")
+                os.makedirs(out_dir, exist_ok=True)
+                savepath = os.path.join(out_dir, f"model_{job.clf_type.lower()}{spectral_tag}.joblib")
+
+                # Launch a TrainWorker for the 3-ink-classes training set
+                w = TrainWorker(
+                    clf_type=job.clf_type,
+                    kind="3classes",
+                    savepath=savepath,
+                    train_wl=self.wl
+                )
+
+                # when saved, update the job and immediately relaunch prediction on the same job
+                def _on_saved(path, n=name):
+                    j = self.jobs.get(n)
+                    if not j: return
+                    if self._stop_all or j.status == "Canceled":
+                        return
+                    j.trained = True
+                    j.trained_path = path
+                    j.status = "Queued"
+                    self._update_row_from_job(n)
+                    self._launch_next_job()
+
+                w.signals.saved.connect(_on_saved)
+                w.signals.error.connect(lambda m, n=name: self._on_job_error(n, m))
+                w.signals.finished.connect(lambda n=name: None)
+                self._current_worker = w
+                self.threadpool.start(w)
+                return
 
             mask = self.binary_map.astype(bool)
+
+            if job.rect is not None:
+                x, y, w, h = job.rect
+                roi_mask = np.zeros_like(mask, dtype=bool)
+                roi_mask[x:(x+w), y:(y+h)] = True
+                mask &= roi_mask
+
             job._mask_indices = np.flatnonzero(mask.ravel())  # indices plats des pixels True
             job._shape = mask.shape
             job.class_map = np.zeros(mask.shape, dtype=np.uint8)
@@ -1364,7 +2580,7 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
             N = spectra.shape[0]
             target_steps = 50
             min_chunk = 20
-            max_chunk = 200000
+            max_chunk = 20000
             chunk_size = max(1, min(max_chunk, max(min_chunk, N // target_steps)))
 
             worker = ClassifyWorker(
@@ -1397,7 +2613,7 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         # Progress
         pb = self.tableWidget_classificationList.cellWidget(row, 3)
         if isinstance(pb, QProgressBar):
-            if job.status == "Running":
+            if job.status in ["Running","Training..."]:
                 pb.setVisible(True)
                 pb.setValue(int(job.progress))
             elif job.status in ("Canceled", "Error", "Done"):
@@ -1421,7 +2637,10 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         if not job: return
         # différencier une vraie erreur d’une annulation volontaire
         if "canceled" in message.lower() or "cancelled" in message.lower():
-            job.status = "Canceled"
+            if job.status=='Training ...':
+                job.status = "To Train"
+            else:
+                job.status = "Canceled"
             job.progress = 0
         else:
             job.status = "Error"
@@ -1443,8 +2662,8 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         # show result immediately on viewer
         self.class_map = class_map
         self.radioButton_overlay_identification.setChecked(True)
-        self.show_classification_result()  # reuse your existing renderer
         self._refresh_show_model_combo(select_name=name)
+        self.show_classification_result()
 
     def _on_job_partial(self, name: str, start: int, end: int, preds_chunk: np.ndarray):
         job = self.jobs.get(name)
@@ -1505,6 +2724,7 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
             return
 
         self._advance_and_launch_next()
+        self._refresh_clean_sources_list()
 
     def _advance_and_launch_next(self):
         if self._stop_all or self.only_selected:
@@ -1516,13 +2736,21 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
             self._launch_next_job()
         else:
             self._running_idx = -1  # finished all
-            # (optionnel) self.label_status.setText("All jobs done")
 
     def reinit_selected_job(self):
         table = self.tableWidget_classificationList
         row = table.currentRow()
+        if row < 0 or row >= len(self.job_order):
+            return
         name = self.job_order[row]
         job = self.jobs[name]
+
+        if job.status == "Done":
+            if not self._confirm(
+                    "Confirm reinit",
+                    f"'{name}' is already DONE.\nThis will discard its result and reset it.\nProceed?"
+            ):
+                return
 
         job.reinit()
 
@@ -1537,7 +2765,19 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
             return
 
         # 2) Open dialog
-        dlg = SaveClassMapDialog(models, default_base_name="Base File Name", parent=self)
+        dft_name=self.cube.metadata.get('source_names')
+
+        try:
+            if len(dft_name)==0:
+                dft_name='BaseFileName'
+            elif len(dft_name)==1:
+                dft_name=dft_name[0]
+            elif len(dft_name)==2:
+                dft_name='-'.join(dft_name)
+        except:
+            dft_name = 'BaseFileName'
+
+        dlg = SaveClassMapDialog(models, default_base_name=dft_name, parent=self)
         if dlg.exec_() != QDialog.Accepted:
             return
 
@@ -1545,6 +2785,7 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         selected_models = dlg.selected_models
         want_h5 = dlg.want_h5
         want_png = dlg.want_png
+        want_clean=dlg.want_clean
 
         # 3) Ask output folder
         out_dir = QFileDialog.getExistingDirectory(self, "Select output folder")
@@ -1557,7 +2798,15 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         for model in selected_models:
             try:
                 job = self.jobs[model]
-                class_map = job.class_map
+                if want_clean:
+                    if job.clean_map is not None:
+                        class_map = job.clean_map
+                        print(f'[SAVE] No cleaned map for job {job.name}')
+                    else:
+                        class_map=job.class_map
+                else:
+                    class_map=job.class_map
+
             except Exception as e:
                 QMessageBox.warning(self, "Missing class map", f"No class map for '{model}':\n{e}")
                 continue
@@ -1566,14 +2815,39 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
 
             filename_base = f"{base}_{model}_map"
             labels=self.labels
+            labels[0]=job.substrate_name
             palette_rgb = [0] * (256 * 3)  # init black
             for idx, (b, g, r) in self.palette_bgr.items():
                 palette_rgb[idx * 3:idx * 3 + 3] = [r, g, b]  # PIL wants RGB
             palette_rgb = np.asarray(palette_rgb, dtype=np.uint8).reshape((-1, 3))
 
+            if isinstance(labels, dict):
+                # convertir en liste ordonnée
+                max_idx = max(int(k) for k in labels.keys()) if labels else -1
+                labels = [labels.get(i, labels.get(i, f"class_{i}")) for i in range(max_idx + 1)]
+
+            dic_binaire=job.binary_param
+            dic_binaire['algorithm']=job.binary_algo
+
+            metadata = {
+                "classifier_name": classifier_name,
+                "classifier_type": classifier_type,
+                "class_labels": labels,
+                "palette": palette_rgb,
+                "wl": self.cube.wl,  # optionnel
+                "source_names": self.cube.metadata.get("source_names"),
+                "source_files": self.cube.metadata.get("source_files"),
+                "rect_crop": job.rect,
+                "binary_param": dic_binaire,
+                "spectral_range_used": job.spectral_range_used
+            }
+
+            if want_clean:
+                metadata["clean_param"]=job.clean_param
+
             if want_h5:
                 path_h5 = _ensure_unique_path(out_dir, filename_base, ".h5")
-                _write_h5_class_map(path_h5, class_map, classifier_name, classifier_type, labels, palette_rgb)
+                _write_h5_class_map(path_h5, class_map, metadata)
                 saved_files.append(path_h5)
 
             if want_png:
@@ -1628,6 +2902,611 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
             return str(name), str(backend)
         return model_name, "unknown"
 
+    def _confirm(self, title: str, message: str) -> bool:
+        """Return True if user confirms Yes, otherwise False."""
+        reply = QMessageBox.question(
+            self, title, message, QMessageBox.Yes | QMessageBox.No, QMessageBox.No
+        )
+        return reply == QMessageBox.Yes
+
+    def _get_selected_rect(self):
+        """
+        Renvoie (y, x, h, w) en indices numpy si un rectangle est sélectionné
+        dans viewer_left, sinon None.
+        """
+        rc = getattr(self.viewer_left, "get_rect_coords", None)
+        if not callable(rc):
+            return None
+        coords = rc()
+        if coords is None:
+            return None
+        x_min, y_min, w, h = coords
+        return (y_min, x_min, h, w)
+
+    def _rect_to_qrectf(self, rect_tuple):
+        if not rect_tuple:
+            return None
+        y, x, h, w = rect_tuple
+        return QRectF(float(x), float(y), float(w), float(h))
+
+    def _draw_current_rect(self, *, use_job=False, surface=False):
+        """
+        Dessine le rectangle de sélection sur les deux viewers.
+        - use_job=True : prend le rect du job actuellement sélectionné dans la combo.
+        - sinon : prend self.saved_rec.
+        - surface=False : seulement le contour (plus discret pour l’overlay).
+        """
+        rect_tuple = None
+        if use_job:
+            idx = self.comboBox_clas_show_model.currentIndex()
+            if idx >= 0:
+                name = (self.comboBox_clas_show_model.itemData(idx, Qt.UserRole)
+                        or self.comboBox_clas_show_model.currentText())
+                job = self.jobs.get(name)
+                if job:
+                    rect_tuple = job.rect
+        if rect_tuple is None and not use_job:
+            rect_tuple = self.saved_rec
+
+        qrect = self._rect_to_qrectf(rect_tuple)
+        if qrect is None:
+            # Nettoyer d’anciens overlays s’il y en a
+            if hasattr(self.viewer_left, "clear_selection_overlay"): self.viewer_left.clear_selection_overlay()
+            if hasattr(self.viewer_right, "clear_selection_overlay"): self.viewer_right.clear_selection_overlay()
+            return
+
+        # Affiche sur chaque viewer (méthode dispo dans ZoomableGraphicsView)
+        self.viewer_left.add_selection_overlay(qrect, surface=surface)
+        self.viewer_right.add_selection_overlay(qrect, surface=surface)
+
+    def _current_job(self):
+        """Return the job currently selected in comboBox_clas_show_model (or None)."""
+        idx = self.comboBox_clas_show_model.currentIndex()
+        if idx < 0:
+            return None
+        name = (self.comboBox_clas_show_model.itemData(idx, Qt.UserRole)
+                or self.comboBox_clas_show_model.currentText())
+        return self.jobs.get(name)
+
+    def _fmt_rect(self, rect_tuple):
+        """(y, x, h, w) → 'y:x:h:w' or '—'."""
+        if not rect_tuple:
+            return "—"
+        y, x, h, w = rect_tuple
+        return f"{y}:{x}:{h}:{w}"
+
+    def _set_info_rows(self):
+
+        fl = self.formLayout_Info
+        # 1) clear previous content
+        if fl is None:
+            return
+        while fl.count():
+            item = fl.takeAt(0)
+            w = item.widget()
+            if w:
+                w.deleteLater()
+
+        # 2) collect data depending on mode
+        is_binary = self.radioButton_overlay_binary.isChecked()
+        src_names = []
+        try:
+            src_names = (self.cube.metadata or {}).get("source_names") or []
+        except Exception:
+            src_names = []
+
+        if is_binary:
+            # No specific job; show binary context + selection rect + sources
+            title = QLabel("<b>Binary</b>")
+            title.setTextFormat(Qt.RichText)
+            fl.addRow(title)
+            fl.addRow("Rect :", QLabel(self._fmt_rect(getattr(self, "binary_rec", None))))
+            fl.addRow("Sources :", QLabel(", ".join(map(str, src_names)) or "—"))
+            fl.addRow("Binary algorithm : ", QLabel(str(self.binary_algo)))
+            fl.addRow("Binary parameters : ", QLabel(str(self.binary_param)))
+            return
+
+        # Classification mode → use currently displayed job
+        job = self._current_job()
+        if not job:
+            # Nothing selected / no result yet
+            title = QLabel("<b>Classification</b>")
+            title.setTextFormat(Qt.RichText)
+            fl.addRow(title)
+            fl.addRow("Sources :", QLabel(", ".join(map(str, src_names)) or "—"))
+            return
+
+        # 3) Fill rows for the selected job
+        title = QLabel(f"<b>{job.name}</b>")
+        title.setTextFormat(Qt.RichText)
+        fl.addRow(title)
+        fl.addRow("Type :", QLabel(str(job.clf_type)))
+        fl.addRow("Kind :",QLabel(str(job.kind)))
+        fl.addRow("Rect :", QLabel(self._fmt_rect(getattr(job, "rect", None))))
+        fl.addRow("Sources :", QLabel(", ".join(map(str, src_names)) or "—"))
+        fl.addRow("Spectral range used :",QLabel(f'{job.spectral_range_used[0]} - {job.spectral_range_used[-1]}'))
+        fl.addRow("Binary algorithm : ", QLabel(str(job.binary_algo)))
+        fl.addRow("Binary parameters : ", QLabel(str(job.binary_param)))
+        fl.addRow("Clean parameters : ", QLabel(str(job.clean_param)))
+
+    def apply_clean_preset(self, _index: int):
+        """
+        Read the selected preset name and push its values
+        into: spinBox_clean_window_size, spinBox_clean_iterations,
+        spinBox_clean_min_area.
+        """
+        name = self.comboBox_clean_preset.currentText().strip()
+        cfg = CLEAN_PRESETS.get(name)
+        if not cfg:
+            return
+
+        # Block signals so we don't trigger other slots while updating
+        widgets = [
+            self.spinBox_clean_window_size,
+            self.spinBox_clean_iterations,
+            self.spinBox_clean_min_area,
+        ]
+        for w in widgets:
+            w.blockSignals(True)
+
+        try:
+            # Window size (% of min(H,W)) – your spinBox range is [1..10]
+            self.spinBox_clean_window_size.setValue(int(cfg["window_pct"]))
+
+            # Iterations
+            self.spinBox_clean_iterations.setValue(int(cfg["iterations"]))
+
+            # Min object area (px)
+            self.spinBox_clean_min_area.setValue(int(cfg["min_area"]))
+
+        finally:
+            for w in widgets:
+                w.blockSignals(False)
+
+    def _init_cleaning_list(self):
+        """Initialize the model for listView_classificationList_clean."""
+        self.clean_list_model = QStandardItemModel(self.listView_classificationList_clean)
+        self.listView_classificationList_clean.setModel(self.clean_list_model)
+
+    def _refresh_clean_sources_list(self):
+        """
+        Rebuild the Cleaning list with:
+          - Binary map (if exists)
+          - All jobs with status 'Done' and a non-None class_map
+        """
+        self.clean_list_model.clear()
+
+        # 1) Binary map entry
+        if getattr(self, "binary_map", None) is not None:
+            item = QStandardItem("Binary map")
+            item.setData(("binary", None), Qt.UserRole)
+            self.clean_list_model.appendRow(item)
+
+        # 2) DONE jobs
+        for name in self.job_order:
+            job = self.jobs.get(name)
+            if not job:
+                continue
+            if job.status == "Done" and getattr(job, "class_map", None) is not None:
+                item = QStandardItem(name)
+                item.setData(("job", name), Qt.UserRole)
+                self.clean_list_model.appendRow(item)
+
+    def _get_selected_clean_source(self):
+        """Return (class_map, label) from the current selection in the list."""
+        idx = self.listView_classificationList_clean.currentIndex()
+        if not idx.isValid():
+            raise ValueError("Please select a source in the Cleaning list.")
+        tag = idx.data(Qt.UserRole)
+        if not tag:
+            raise ValueError("Internal selection error.")
+
+        kind, name = tag
+        if kind == "binary":
+            if self.binary_map is None:
+                raise ValueError("Binary map not available.")
+            return self.binary_map, "Binary"
+        elif kind == "job":
+            job = self.jobs.get(name)
+            if not job or job.class_map is None:
+                raise ValueError(f"No class map for '{name}'.")
+            return job, name
+        else:
+            raise ValueError("Unknown selection type.")
+
+    def _iter_all_clean_sources(self):
+        """
+        Itère sur TOUTES les lignes du ListView et yield (class_map, label).
+        Saute les entrées invalides.
+        """
+        model = self.clean_list_model
+        for row in range(model.rowCount()):
+            idx = model.index(row, 0)
+            tag = idx.data(Qt.UserRole)
+            if not tag:
+                continue
+            kind, name = tag
+            if kind == "binary":
+                if self.binary_map is not None:
+                    yield self.binary_map, "Binary"
+            elif kind == "job":
+                job = self.jobs.get(name)
+                if job is not None and getattr(job, "class_map", None) is not None:
+                    yield job, name
+
+    def _on_click_clean_start_selected(self):
+        """Handler for pushButton_clean_start_selected."""
+        try:
+            class_map, src_label = self._get_selected_clean_source()
+        except Exception as e:
+            QMessageBox.warning(self, "Cleaning", str(e))
+            return
+
+        params = self._collect_clean_params()
+        self._apply_cleaning_pipeline(class_map, src_label, params)
+
+    def _on_click_clean_start_all(self):
+        params = self._collect_clean_params()
+        n_total, n_ok, n_err = 0, 0, 0
+
+        for obj, src_label in self._iter_all_clean_sources():
+            n_total += 1
+            try:
+                self._apply_cleaning_pipeline(obj, src_label, params)
+                n_ok += 1
+            except Exception as e:
+                n_err += 1
+                print(f"[Cleaning][{src_label}] ERROR: {e}")
+
+        QMessageBox.information(
+            self, "Cleaning (batch)",
+            f"Processed: {n_total}\nOK: {n_ok}\nErrors: {n_err}"
+        )
+
+    def _collect_clean_params(self):
+        """
+        Lit les paramètres UI et renvoie un dict prêt pour ta pipeline de cleaning.
+        """
+        return {
+            "window_pct": self.spinBox_clean_window_size.value(),  # %
+            "iterations": self.spinBox_clean_iterations.value(),  # int
+            "min_area": self.spinBox_clean_min_area.value(),  # px
+        }
+
+    def _odd_ksize_from_pct(self, window_pct: int, shape_hw):
+        """Convert a percentage of min(H,W) to an odd kernel size >= 3."""
+        H, W = shape_hw
+        k = max(3, int(round((window_pct / 100.0) * min(H, W))))
+        if k % 2 == 0:
+            k += 1
+        return k
+
+    def _majority_filter_labels(self, cls: np.ndarray, k: int, iterations: int, foreground_only: bool) -> np.ndarray:
+        """
+        Fast sliding-window majority over labels using per-class counts via cv2.filter2D.
+        Only considers classes > 0. Background (0) is kept if foreground_only=True.
+        """
+        out = cls.copy()
+        H, W = out.shape
+        # classes (exclude 0)
+        classes = np.unique(out)
+        classes = classes[classes > 0]
+        if classes.size == 0:
+            return out
+
+        kernel = np.ones((k, k), dtype=np.uint8)  # uniform window
+        for _ in range(int(iterations)):
+            # Build per-class count maps
+            counts = []
+            for c in classes:
+                mask = (out == c).astype(np.uint8)
+                csum = cv2.filter2D(mask, -1, kernel, borderType=cv2.BORDER_REPLICATE)
+                counts.append(csum.astype(np.int32))
+            # Stack counts -> (H, W, C)
+            stack = np.stack(counts, axis=-1)  # int32
+            # Winner = argmax along classes axis
+            winner_idx = np.argmax(stack, axis=-1)  # (H, W), 0..C-1
+            winner_labels = classes[winner_idx]  # map back to labels
+
+            # Update only where original was foreground
+            fg = out > 0
+            out[fg] = winner_labels[fg]
+
+        return out
+
+    def _remove_small_components_per_class(self, cls: np.ndarray, min_area: int) -> np.ndarray:
+        """
+        Remove connected components smaller than min_area for each class > 0.
+        Components removed are set to background (0).
+        """
+        if min_area <= 0:
+            return cls
+        out = cls.copy()
+        classes = np.unique(out)
+        for c in classes:
+            if c == 0:
+                continue
+            mask = (out == c).astype(np.uint8)
+            if mask.max() == 0:
+                continue
+            num, lab, stats, _ = cv2.connectedComponentsWithStats(mask, connectivity=8)
+            # stats rows: 0 is background of this mask
+            for comp_id in range(1, num):
+                area = int(stats[comp_id, cv2.CC_STAT_AREA])
+                if area < min_area:
+                    out[lab == comp_id] = 0
+        return out
+
+    def run_cleaning(self, class_map: np.ndarray, params: dict) -> np.ndarray:
+        """
+        Main entry point:
+        - window_pct, iterations,  in_area
+        Returns a cleaned class_map with same dtype as input.
+        """
+        cls = class_map.copy()
+        dtype = cls.dtype
+        H, W = cls.shape[:2]
+        fg_only = True
+
+        min_area = int(params.get("min_area", 0))
+
+        k = self._odd_ksize_from_pct(int(params.get("window_pct", 3)), (H, W))
+        iters = int(params.get("iterations", 2))
+        cls = self._majority_filter_labels(cls, k=k, iterations=iters, foreground_only=fg_only)
+
+        # Remove small islands per class (>0)
+        cls = self._remove_small_components_per_class(cls, min_area=min_area)
+
+        # Keep dtype
+        return cls.astype(dtype, copy=False)
+
+    def _apply_cleaning_pipeline(self, obj, label: str, params: dict):
+        if label=='Binary':
+            class_map=obj
+            self.binary_map = self.run_cleaning(class_map, params)
+            self.show_binary_result()
+        else:
+            class_map=obj.class_map
+            obj.clean_map=self.run_cleaning(class_map, params)
+            obj.clean_param=params
+            self.show_classification_result()
+
+    def features_compatible(self,wl_ref, tol_nm: float = 1):
+
+        if wl_ref is not None:
+            wl_ref = np.asarray(wl_ref, dtype=float)
+
+            if wl_ref.shape == self.wl.shape and np.allclose(wl_ref, self.wl, atol=tol_nm, rtol=0):
+                return True, "Exact wavelength grid match."
+            else:
+                return False, (f"Wavelength grid mismatch: "
+                               f"model bands={wl_ref.size}, cube bands={self.wl.size}")
+
+        return False, "Cannot verify feature compatibility (no train_wl in model)."
+
+    def load_map(self):
+        """
+        Charge une carte de classification sauvegardée en .h5 avec _write_h5_class_map
+        et l'ajoute comme un nouveau job 'Done' dans la file, avec palette + labels
+        + métadonnées (rect, params binaires, clean, spectral range…).
+        """
+        from PyQt5.QtWidgets import QFileDialog, QMessageBox
+        import os
+        import h5py
+        import numpy as np
+
+        # --- 1) Choix du fichier ---
+        path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Load classification map",
+            "",
+            "HDF5 files (*.h5 *.hdf5);;All files (*)"
+        )
+        if not path:
+            return
+
+        def _decode_str(x):
+            if isinstance(x, (bytes, np.bytes_)):
+                try:
+                    return x.decode("utf-8")
+                except Exception:
+                    return x.decode(errors="ignore")
+            return str(x)
+
+        def _read_group_to_dict(group):
+            """Lecture récursive d'un groupe HDF5 -> dict (pour binary_param / clean_param)."""
+            out = {}
+            # attrs
+            for k, v in group.attrs.items():
+                out[k] = v
+            # datasets / sous-groupes
+            for name, item in group.items():
+                if isinstance(item, h5py.Dataset):
+                    data = item[()]
+                    # Décodage éventuel de chaînes
+                    if isinstance(data, (bytes, np.bytes_)):
+                        data = _decode_str(data)
+                    elif isinstance(data, np.ndarray) and data.dtype.kind in ("S", "O", "U"):
+                        # tableau de chaînes
+                        data = [
+                            _decode_str(val)
+                            for val in data.ravel().tolist()
+                        ]
+                    out[name] = data
+                elif isinstance(item, h5py.Group):
+                    out[name] = _read_group_to_dict(item)
+            return out
+
+        try:
+            # --- 2) Lecture du fichier HDF5 ---
+            with h5py.File(path, "r") as f:
+                if "class_map" not in f:
+                    raise ValueError("Dataset 'class_map' not found in file.")
+
+                class_map = np.asarray(f["class_map"][()])
+                if class_map.ndim != 2:
+                    raise ValueError(f"'class_map' must be 2D, got shape {class_map.shape}.")
+
+                meta_grp = f.get("Metadata", None)
+
+                # Valeurs par défaut
+                base_name = os.path.splitext(os.path.basename(path))[0]
+                clf_name = base_name
+                clf_type = "Loaded H5 map"
+                labels = None
+                palette_bgr = None
+                rect = None
+                spectral_range_used = None
+                binary_param = None
+                clean_param = None
+                substrate_name = "Unknown Substrate"
+
+                # --- 3) Métadonnées si dispo ---
+                if meta_grp is not None:
+                    # Nom / type de classif
+                    if "classifier_name" in meta_grp.attrs:
+                        clf_name = _decode_str(meta_grp.attrs["classifier_name"])
+                    if "classifier_type" in meta_grp.attrs:
+                        clf_type = _decode_str(meta_grp.attrs["classifier_type"])
+
+                    # Labels des classes
+                    if "class_labels" in meta_grp:
+                        raw = meta_grp["class_labels"][()]
+                        arr = np.array(raw)
+                        if arr.ndim == 0:
+                            arr = arr.reshape(1)
+                        labels = {}
+                        for i, v in enumerate(arr.tolist()):
+                            labels[i] = _decode_str(v)
+                        if labels:
+                            substrate_name = labels.get(0, substrate_name)
+
+                    # Palette (enregistrée en RGB, on repasse en BGR)
+                    if "palette" in meta_grp:
+                        pal = np.asarray(meta_grp["palette"][()], dtype=np.uint8)
+                        palette_bgr = {}
+                        for i in range(pal.shape[0]):
+                            r, g, b = pal[i]
+                            palette_bgr[i] = (int(b), int(g), int(r))
+
+                    # Rectangle de crop
+                    if "rect_crop" in meta_grp:
+                        rc = np.asarray(meta_grp["rect_crop"][()]).ravel()
+                        if rc.size >= 4:
+                            y, x, h, w = [int(v) for v in rc[:4]]
+                            rect = (y, x, h, w)
+
+                    # Spectral range utilisé
+                    if "spectral_range_used" in meta_grp:
+                        sr = np.asarray(meta_grp["spectral_range_used"][()]).ravel()
+                        if sr.size >= 1:
+                            spectral_range_used = [float(sr[0]), float(sr[-1])]
+
+                    # Params binaires / cleaning
+                    if "binary_param" in meta_grp:
+                        binary_param = _read_group_to_dict(meta_grp["binary_param"])
+                    if "clean_param" in meta_grp:
+                        clean_param = _read_group_to_dict(meta_grp["clean_param"])
+
+                # Fallback du spectral_range si nécessaire
+                if spectral_range_used is None:
+                    if isinstance(self.wl, np.ndarray) and self.wl.size > 0:
+                        spectral_range_used = [float(self.wl[0]), float(self.wl[-1])]
+                    else:
+                        spectral_range_used = [0.0, 0.0]
+
+                # --- 4) Palette / labels par défaut si manquants ---
+                max_cls = int(class_map.max()) if class_map.size else 0
+
+                if labels is None:
+                    labels = {i: f"class_{i}" for i in range(max_cls + 1)}
+
+                if palette_bgr is None:
+                    # Si une palette existe déjà dans le widget, on la recycle
+                    if hasattr(self, "palette_bgr") and self.palette_bgr:
+                        palette_bgr = {}
+                        for i in range(max_cls + 1):
+                            palette_bgr[i] = self.palette_bgr.get(i, (0, 0, 0))
+                    else:
+                        # Palette simple pseudo-aléatoire mais stable
+                        palette_bgr = {0: (128, 128, 128)}
+                        for i in range(1, max_cls + 1):
+                            palette_bgr[i] = (
+                                (37 * i) % 255,
+                                (91 * i) % 255,
+                                (179 * i) % 255
+                            )
+
+        except Exception as e:
+            QMessageBox.critical(self, "Load map error", f"Could not load map:\n{e}")
+            return
+
+        # --- 5) Intégration dans le widget comme un job 'Done' ---
+
+        # Mise à jour de la palette globale + labels
+        self.palette_bgr = palette_bgr
+        self.labels = labels
+        self.substrate_label = substrate_name
+
+        # Nom unique pour le job
+        unique_name = self._ensure_unique_name(clf_name)
+        if unique_name is None:
+            # L'utilisateur a refusé d'ajouter un doublon
+            return
+
+        # Création du job
+        job = ClassificationJob(unique_name, clf_type, kind="Loaded H5 map")
+        job.status = "Done"
+        job.class_map = class_map.astype(np.int32, copy=False)
+        job.rect = rect
+        job.spectral_range_used = spectral_range_used
+        job.binary_param = binary_param
+        job.clean_param = clean_param
+        if isinstance(binary_param, dict):
+            job.binary_algo = binary_param.get("algorithm")
+        else:
+            job.binary_algo = None
+        job.substrate_name = substrate_name
+
+        # Enregistrement dans les structures
+        self.jobs[unique_name] = job
+        self.job_order.append(unique_name)
+        self._refresh_table()
+        self._refresh_show_model_combo(select_name=unique_name)
+        self._refresh_clean_sources_list()
+
+        # --- 6) Affichage immédiat ---
+
+        # Problème potentiel si la taille de la map != image RGB
+        if self.data is not None and class_map.shape != self.data.shape[:2]:
+            QMessageBox.warning(
+                self, "Size mismatch",
+                f"Loaded map shape {class_map.shape} does not match current cube image "
+                f"shape {self.data.shape[:2]}.\n"
+                "The map will be shown without RGB overlay."
+            )
+
+            # On affiche la carte seule (sans overlay) :
+            def _colorize(cm: np.ndarray) -> np.ndarray:
+                colors = self.palette_bgr
+                h, w = cm.shape
+                result_rgb = np.zeros((h, w, 3), dtype=np.uint8)
+                for val, bgr in colors.items():
+                    result_rgb[cm == val] = bgr
+                return result_rgb
+
+            rgb_map = _colorize(class_map)
+            self.viewer_right.setImage(self._np2pixmap(rgb_map))
+            self.label_viewer_right.setText("RAW map (loaded)")
+            # On laisse la viewer_left telle quelle (RGB actuelle ou vide)
+            self.labels[0] = job.substrate_name
+            self.update_legend()
+            self._set_info_rows()
+        else:
+            # Cas normal : on utilise le pipeline existant
+            self.class_map = class_map
+            self.radioButton_overlay_identification.setChecked(True)
+            self.show_classification_result()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
@@ -1637,11 +3516,10 @@ if __name__ == "__main__":
     folder = r'C:\Users\Usuario\Documents\DOC_Yannick\HYPERDOC Database_TEST\identification/'
     fname1 = '01644-VNIR-genealogies.h5'
     fname2 = '01677-SWIR-genealogies.h5'
+
     import os
     filepath1 = os.path.join(folder, fname1)
     filepath2 = os.path.join(folder, fname2)
-    data,wl=fused_cube(Hypercube(filepath1,load_init=True),Hypercube(filepath2,load_init=True))
-    cube=Hypercube(data=data,wl=wl)
+    cube=fused_cube(Hypercube(filepath1,load_init=True),Hypercube(filepath2,load_init=True))
     w.load_cube(cube=cube)
-
     sys.exit(app.exec_())
