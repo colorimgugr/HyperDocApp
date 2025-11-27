@@ -4,15 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="[MAIN] : &#10;- switch to tab if send to tool">
+    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="[MAIN-CALIB-UNMIX] : &#10;- one tool dialog after adding cube&#10;- savgol filters adusted to order 4 and window 43">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/MainWindow.py" beforeDir="false" afterPath="$PROJECT_DIR$/MainWindow.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/MainWindow.spec" beforeDir="false" afterPath="$PROJECT_DIR$/MainWindow.spec" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hypercubes/hypercube.py" beforeDir="false" afterPath="$PROJECT_DIR$/hypercubes/hypercube.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hypercubes/white_calibration_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/hypercubes/white_calibration_window.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hypercubes/white_calibration_window.ui" beforeDir="false" afterPath="$PROJECT_DIR$/hypercubes/white_calibration_window.ui" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/illumination/illumination_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/illumination/illumination_tool.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/unmixing/unmixing_backend.py" beforeDir="false" afterPath="$PROJECT_DIR$/unmixing/unmixing_backend.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/unmixing/unmixing_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/unmixing/unmixing_tool.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -141,14 +135,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1744020944801</updated>
-    </task>
-    <task id="LOCAL-00092" summary="[IDENTIFICATION] : Inserted in the MainWindow Correctly">
-      <option name="closed" value="true" />
-      <created>1758275492539</created>
-      <option name="number" value="00092" />
-      <option name="presentableId" value="LOCAL-00092" />
-      <option name="project" value="LOCAL" />
-      <updated>1758275492539</updated>
     </task>
     <task id="LOCAL-00093" summary="[IDENTIFICATION] : Fixed loading parameters, icon, fusion, and defauts rgb parameters">
       <option name="closed" value="true" />
@@ -534,7 +520,15 @@
       <option name="project" value="LOCAL" />
       <updated>1764001941396</updated>
     </task>
-    <option name="localTasksCounter" value="141" />
+    <task id="LOCAL-00141" summary="[MAIN-CALIB-UNMIX] : &#10;- one tool dialog after adding cube&#10;- savgol filters adusted to order 4 and window 43">
+      <option name="closed" value="true" />
+      <created>1764240990085</created>
+      <option name="number" value="00141" />
+      <option name="presentableId" value="LOCAL-00141" />
+      <option name="project" value="LOCAL" />
+      <updated>1764240990085</updated>
+    </task>
+    <option name="localTasksCounter" value="142" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -586,7 +580,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="[unmixing] : implementing unmixing jobs" />
     <MESSAGE value="[unmixing] : implementing unmixing jobs&#10;- run one and all from queue&#10;- check if already in queue" />
     <MESSAGE value="[unmixing] : implementing unmixing jobs&#10;- ask confirm on supress if job done &#10;- only one job at a time&#10;- unmix simple view of abondance map" />
     <MESSAGE value="[unmixing] : implementing unmixing jobs&#10;- fixed lable of library bugg&#10;- fixed bug of EM sources for multiples jobs&#10;- progress bar implemented to dynamic 5%" />
@@ -611,6 +604,7 @@
     <MESSAGE value="[MINI CUBE] : &#10;- Bugg fixed with non classic spectral range for false rgb channels (float to int)" />
     <MESSAGE value="[MINI CUBE] : &#10;- Bugg fixed for clip R to 0..1" />
     <MESSAGE value="[MAIN] : &#10;- switch to tab if send to tool" />
-    <option name="LAST_COMMIT_MESSAGE" value="[MAIN] : &#10;- switch to tab if send to tool" />
+    <MESSAGE value="[MAIN-CALIB-UNMIX] : &#10;- one tool dialog after adding cube&#10;- savgol filters adusted to order 4 and window 43" />
+    <option name="LAST_COMMIT_MESSAGE" value="[MAIN-CALIB-UNMIX] : &#10;- one tool dialog after adding cube&#10;- savgol filters adusted to order 4 and window 43" />
   </component>
 </project>

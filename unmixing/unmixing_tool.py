@@ -2835,16 +2835,23 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
             return
 
         # --- Choix du fichier ---
+        if getattr(sys, 'frozen', False):
+            BASE_DIR = sys._MEIPASS
+        else:
+            BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+
+        open_dir = os.path.join(BASE_DIR, "unmixing", "data")
         path, _ = QFileDialog.getOpenFileName(
             self,
             "Load FTIR spectrum",
-            "",
+            open_dir,
             "Spectral files (*.csv *.txt *.dat);;All files (*)"
         )
         if not path:
             return
 
-        # --- Lecture du fichier (wl, valeur) ---
+
+        # --- Lecture du fichier (wl, valeur ou wl + plusieurs colonnes) ---
         try:
             import pandas as pd
 
@@ -2854,10 +2861,40 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
             # 1) tentative avec pandas (gère entêtes, etc.)
             try:
                 df = pd.read_csv(path)
+
+                # On garde uniquement les colonnes numériques
                 num = df.select_dtypes(include=[np.number])
                 if num.shape[1] >= 2:
+                    # 1ère colonne numérique = axe spectral
                     wl_raw = num.iloc[:, 0].to_numpy(dtype=float)
-                    val_raw = num.iloc[:, 1].to_numpy(dtype=float)
+
+                    # Colonnes restantes = spectres possibles
+                    spec_cols = list(num.columns[1:])
+
+                    from PyQt5.QtWidgets import QInputDialog
+
+                    chosen_col = None
+                    if len(spec_cols) == 1:
+                        # Un seul spectre possible -> on le prend directement
+                        chosen_col = spec_cols[0]
+                    else:
+                        # Plusieurs spectres : on propose une liste à l’utilisateur
+                        # Pour l’affichage, on essaie de garder le nom original
+                        # (souvent déjà explicite dans ton CSV FTIR).
+                        chosen_col, ok = QInputDialog.getItem(
+                            self,
+                            "Chosse the sample of the FTIR sample",
+                            "Column to be used :",
+                            spec_cols,
+                            0,  # index par défaut
+                            False  # l’utilisateur ne peut pas taper autre chose
+                        )
+                        if not ok:
+                            return  # utilisateur a annulé
+
+                    # On récupère la colonne choisie
+                    val_raw = num[chosen_col].to_numpy(dtype=float)
+
             except Exception:
                 wl_raw = None
                 val_raw = None
@@ -2888,13 +2925,13 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         # --- Demander l’unité : nm ou cm-1 ? ---
         msg = QMessageBox(self)
         msg.setIcon(QMessageBox.Question)
-        msg.setWindowTitle("Unité des longueurs d’onde (FTIR)")
+        msg.setWindowTitle("Units (FTIR)")
         msg.setText(
-            "Le fichier FTIR contient un seul spectre (1D).\n\n"
-            "Dans quelle unité sont exprimées les longueurs d’onde ?"
+            "An FTIR spectrum has been loaded.\n\n"
+            "What is the unit of the x-axis ?"
         )
-        btn_nm = msg.addButton("nanomètres (nm)", QMessageBox.AcceptRole)
-        btn_cm = msg.addButton("nombre d'onde (cm⁻¹)", QMessageBox.ActionRole)
+        btn_nm = msg.addButton("Nanometer (nm)", QMessageBox.AcceptRole)
+        btn_cm = msg.addButton("Inverse centimeter (cm⁻¹)", QMessageBox.ActionRole)
         btn_cancel = msg.addButton(QMessageBox.Cancel)
         msg.setDefaultButton(btn_nm)
         msg.exec_()
@@ -2983,6 +3020,8 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
             f"Spectrum from '{os.path.basename(path)}' was added to the cube\n"
             f"({Lf} new bands, total = {self.wl.size})."
         )
+
+        self.label_ftir_spectrum.setText(os.path.basename(path))
 
     # </editor-fold>
 
