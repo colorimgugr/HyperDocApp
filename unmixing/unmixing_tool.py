@@ -22,6 +22,7 @@ from PyQt5.QtCore import Qt,QObject, pyqtSignal, QRunnable, QThreadPool, pyqtSlo
 
 # Graphs
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
 from matplotlib.widgets import SpanSelector
 from matplotlib import colormaps
@@ -40,12 +41,10 @@ from identification.load_cube_dialog import Ui_Dialog
 
 # <editor-fold desc="To do">
 #todo : put Fran parametros
-#todo : Check calibration of full flat field if white file loaded
-#todo : color map of abundance map
+#todo : color map of abundance map ?
 #todo : export results en h5 or multiple png
 #todo : open and vizualize previous unmix analysis saved
 #todo : viz spectra -> show/hide by clicking line or title (or ctrl+click)
-#todo : add one pixel fusion
 #todo : select pixels of endmembers also with ctrl+clic left
 # </editor-fold>
 
@@ -1544,6 +1543,9 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         """Active/désactive sliders/spinbox selon mode RGB choisi"""
         if self.data is None or self.wl is None:
             return
+
+
+
         max_wl = int(self.wl[-1])
         min_wl = int(self.wl[0])
         wl_step = int(self.wl[1] - self.wl[0])
@@ -1588,7 +1590,7 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
 
     def default_rgb_channels(self):
         """Renvoie les canaux RGB par défaut selon plage spectrale"""
-        if self.wl[-1] < 1100 and self.wl[0] > 350:
+        if self.wl[0] <= 435 and self.wl[-1]>=610 :
             return [610, 540, 435]
         elif self.wl[-1] >= 1100 and self.wl[0] > 800:
             return [1605, 1205, 1005]
@@ -2024,43 +2026,65 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         canvas.setVisible(False)
 
     def init_spectrum_canvas(self):
+        from PyQt5.QtWidgets import QVBoxLayout, QWidget, QSplitter
+
+        # Le "placeholder" actuel (dans le splitter)
         placeholder = getattr(self, 'spec_canvas')
         parent = placeholder.parent()
 
-        # Crée le canvas
+        # --- Figure + canvas ---
         self.spec_fig = Figure(facecolor=(1, 1, 1, 0.1))
         self.spec_canvas = FigureCanvas(self.spec_fig)
         self.spec_ax = self.spec_fig.add_subplot(111)
-        self.spec_ax.set_facecolor((0.7,0.7,0.7,1))
+        self.spec_ax.set_facecolor((0.7, 0.7, 0.7, 1))
         self.spec_ax.set_title('Endmembers Spectra')
         self.spec_ax.grid()
 
+        # --- Toolbar Matplotlib reliée à ce canvas ---
+        container = QWidget(parent)
+        layout = QVBoxLayout(container)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
 
+        self.spec_toolbar = NavigationToolbar(self.spec_canvas, container)
+        from PyQt5.QtCore import QSize
+        self.spec_toolbar.setIconSize(QSize(14, 14))
+        self.spec_toolbar.setStyleSheet("QToolBar { icon-size: 12px; spacing: 1px; padding: 1px; }")
+
+        layout.addWidget(self.spec_toolbar)
+        layout.addWidget(self.spec_canvas)
+
+        # Met la toolbar aussi dans l’onglet Spectra (tab_2)
+        try:
+            self.verticalLayout_5.addWidget(self.spec_toolbar)
+        except Exception:
+            pass
+
+        # --- SpanSelector (sélection de bandes) ---
         self.span_selector = SpanSelector(
-            ax=self.spec_ax,  # votre axe “Spectrum”
-            onselect=self._on_bandselect,  # callback
-            direction="horizontal",  # sélection horizontale
-            useblit=True,  # activer le “blitting”
-            minspan=1.0,  # au moins 1 unité sur l’axe λ
+            ax=self.spec_ax,
+            onselect=self._on_bandselect,
+            direction="horizontal",
+            useblit=True,
+            minspan=1.0,
             props=dict(alpha=0.3, facecolor='tab:blue')
         )
-
         self.span_selector.set_active(False)
 
-        # Remplace dans le splitter ou dans le layout
+        # --- Remplacer l'ancien widget dans le splitter / layout ---
         if isinstance(parent, QSplitter):
             idx = parent.indexOf(placeholder)
             placeholder.deleteLater()
-            parent.insertWidget(idx, self.spec_canvas)
+            parent.insertWidget(idx, container)
         elif parent.layout() is not None:
-            layout = parent.layout()
-            idx = layout.indexOf(placeholder)
-            layout.removeWidget(placeholder)
+            layout_parent = parent.layout()
+            idx = layout_parent.indexOf(placeholder)
+            layout_parent.removeWidget(placeholder)
             placeholder.deleteLater()
-            layout.insertWidget(idx, self.spec_canvas)
+            layout_parent.insertWidget(idx, container)
         else:
             placeholder.deleteLater()
-            self.verticalLayout.addWidget(self.spec_canvas)
+            self.verticalLayout.addWidget(container)
 
     def update_spectra(self,x=None,y=None,maxR=0):
         self.spec_ax.clear()
@@ -2114,7 +2138,7 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
                         fontsize='small',
                         ncol=ncol
                     )
-                    leg.set_draggable(True)  # tu peux la déplacer à la souris
+                    leg.set_draggable(False)  # tu peux la déplacer à la souris
                     self.spec_fig.subplots_adjust(right=0.95)  # laisse de la place à droite
 
             else:
@@ -2136,6 +2160,16 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
             except:
                 print('[UPDATE SPECTRA] problem with x_graph')
 
+        try:
+            # Lignes verticales montrant les limites du cube (self.wl)
+            if self.wl is not None and len(self.wl) > 0:
+                wl_min = float(self.wl[0])
+                wl_max = float(self.wl[-1])
+                self.spec_ax.axvline(wl_min, linestyle='--', linewidth=1, color='k')
+                self.spec_ax.axvline(wl_max, linestyle='--', linewidth=1, color='k')
+        except Exception as e:
+            print("[UPDATE SPECTRA] could not draw wl limits:", e)
+
         for patch in self.selected_span_patch:
             # patch est un PolyCollection produit par axvspan()
             # On le remet dans l’axe courant :
@@ -2146,6 +2180,7 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         self.spec_canvas.draw_idle()
 
     def band_selection(self,checked):
+
         if checked:
 
             try:
@@ -2153,6 +2188,7 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
                 msg.setWindowTitle("Bands selection")
                 msg.setText("Add or suppress bands ")
                 add_button = msg.addButton("Add", QMessageBox.AcceptRole)
+                default_button = msg.addButton("Default bands", QMessageBox.AcceptRole)
                 remove_button = msg.addButton("Suppress", QMessageBox.AcceptRole)
                 reset_button=msg.addButton("Clear all bands", QMessageBox.AcceptRole)
                 cancel_button = msg.addButton(QMessageBox.Cancel)
@@ -2163,6 +2199,35 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
                     self._band_action = 'add'
                 elif msg.clickedButton() == remove_button:
                     self._band_action = 'del'
+                elif msg.clickedButton() == default_button:
+                    self._band_action = None
+                    self.selected_bands = []
+
+                    for patch in self.selected_span_patch:  # reset patch
+                        patch.remove()
+                    self.selected_span_patch = []
+
+                    wl = self.wl
+                    if wl is None or len(wl) == 0:
+                        QMessageBox.warning(
+                            self, "Band selection",
+                            "No wavelength axis available for the cube."
+                        )
+                        self.pushButton_band_selection.setChecked(False)
+                        return
+
+                    if wl[0] < 410 and wl[-1] > 10000:
+                        mask = (wl >= 410) & ((wl < 2490) | (wl >= 2520))
+                        self.selected_bands = np.where(mask)[0].tolist()
+                    else:
+                        self.selected_bands = list(range(2, len(wl)))
+
+                    self._rebuild_band_patches_from_selected()
+                    self.span_selector.set_active(False)
+                    self.pushButton_band_selection.setChecked(False)
+                    self.pushButton_band_selection.setText('Band selection')
+                    return
+
                 elif msg.clickedButton() == reset_button:
                     print('reset')
                     self._band_action = None
@@ -2909,12 +2974,12 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
 
         # --- 4) Dialogue avec table éditable ---
         dlg = QDialog(self)
-        dlg.setWindowTitle("FTIR: wavenumber → wavelength (nm)")
+        dlg.setWindowTitle("CHECK TRANSFORM wavenumber → wavelength (nm)")
         layout = QVBoxLayout(dlg)
 
         info_label = QLabel(
             "First column = wavelength (nm)\n"
-            "Other columns = spectra values (editable)."
+            "Other columns = spectra values."
         )
         layout.addWidget(info_label)
 
@@ -4285,15 +4350,52 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         return False
 
     def _on_bandselect(self, lambda_min, lambda_max):
-        """Callback del SpanSelector con merge automático de spans."""
+        """Callback du SpanSelector avec merge auto, limité à l'intervalle self.wl."""
         if self._band_action is None:
             return
 
+        if self.wl is None or len(self.wl) == 0:
+            QMessageBox.warning(
+                self, "Band selection",
+                "No wavelength axis available for the cube."
+            )
+            return
+
+        # Assure lambda_min <= lambda_max
         if lambda_min > lambda_max:
             lambda_min, lambda_max = lambda_max, lambda_min
 
-        idx_min = int(np.argmin(np.abs(self.wl - lambda_min)))
-        idx_max = int(np.argmin(np.abs(self.wl - lambda_max)))
+        wl_cube = np.asarray(self.wl, dtype=float)
+        cube_lo = float(wl_cube[0])
+        cube_hi = float(wl_cube[-1])
+
+        # Intersection selection ∩ [cube_lo, cube_hi]
+        inter_lo = max(lambda_min, cube_lo)
+        inter_hi = min(lambda_max, cube_hi)
+
+        # Cas 1 : complètement en dehors
+        if inter_hi <= inter_lo:
+            QMessageBox.information(
+                self, "Band selection",
+                "The selected range is outside the cube spectral range.\n"
+                "No band was added."
+            )
+            return
+
+        # Cas 2 : partiellement en dehors → on garde seulement l’intersection
+        if lambda_min < cube_lo or lambda_max > cube_hi:
+            QMessageBox.information(
+                self, "Band selection",
+                "Part of the selected range is outside the cube spectral range.\n"
+                "Only the overlapping part has been kept."
+            )
+
+        # On travaille uniquement avec la partie utile [inter_lo, inter_hi]
+        idx_min = int(np.argmin(np.abs(wl_cube - inter_lo)))
+        idx_max = int(np.argmin(np.abs(wl_cube - inter_hi)))
+
+        if idx_min > idx_max:
+            idx_min, idx_max = idx_max, idx_min
 
         if self._band_action == 'add':
             for idx in range(idx_min, idx_max + 1):
@@ -4301,12 +4403,11 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
                     self.selected_bands.append(idx)
 
         elif self._band_action == 'del':
-            # quitar los índices seleccionados de ese rango
             for idx in range(idx_min, idx_max + 1):
                 if idx in self.selected_bands:
                     self.selected_bands.remove(idx)
 
-        # Ordenar y reconstruir SIEMPRE: así evitamos solapes y hacemos el "merge".
+        # Tri + fusion des intervalles
         self.selected_bands = sorted(set(self.selected_bands))
         self._rebuild_band_patches_from_selected()
 

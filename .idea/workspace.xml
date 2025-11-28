@@ -4,11 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="[UNMIX] : &#10;- ADD one FTIR spectrum to an hypercube OK&#10;- Select good sample if csv with multiple samples">
+    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="[UNMIX] : &#10;- added conversion tool from cm-1 to nm">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/unmixing/unmixing_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/unmixing/unmixing_tool.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/unmixing/unmixing_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/unmixing/unmixing_window.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/unmixing/unmixing_window.ui" beforeDir="false" afterPath="$PROJECT_DIR$/unmixing/unmixing_window.ui" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -137,14 +135,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1744020944801</updated>
-    </task>
-    <task id="LOCAL-00094" summary="[IDENTIFICATION] : Traning status added, no rectangle roi on right viewer, security and restet on load new cube">
-      <option name="closed" value="true" />
-      <created>1758293782826</created>
-      <option name="number" value="00094" />
-      <option name="presentableId" value="LOCAL-00094" />
-      <option name="project" value="LOCAL" />
-      <updated>1758293782826</updated>
     </task>
     <task id="LOCAL-00095" summary="[IDENTIFICATION] : Modif savig path and learning thread.&#10;Added crop spectral in hypercube class">
       <option name="closed" value="true" />
@@ -530,7 +520,15 @@
       <option name="project" value="LOCAL" />
       <updated>1764243956820</updated>
     </task>
-    <option name="localTasksCounter" value="143" />
+    <task id="LOCAL-00143" summary="[UNMIX] : &#10;- added conversion tool from cm-1 to nm">
+      <option name="closed" value="true" />
+      <created>1764253967023</created>
+      <option name="number" value="00143" />
+      <option name="presentableId" value="LOCAL-00143" />
+      <option name="project" value="LOCAL" />
+      <updated>1764253967023</updated>
+    </task>
+    <option name="localTasksCounter" value="144" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -582,7 +580,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="[unmixing] : implementing unmixing jobs&#10;- ask confirm on supress if job done &#10;- only one job at a time&#10;- unmix simple view of abondance map" />
     <MESSAGE value="[unmixing] : implementing unmixing jobs&#10;- fixed lable of library bugg&#10;- fixed bug of EM sources for multiples jobs&#10;- progress bar implemented to dynamic 5%" />
     <MESSAGE value="[unmixing] : implementing unmixing jobs&#10;- same normalization for cube and EM OK" />
     <MESSAGE value="[unmixing] : implementing unmixing jobs&#10;- same normalization for cube and EM OK&#10;- update abundance map OK" />
@@ -607,6 +604,7 @@
     <MESSAGE value="[MAIN] : &#10;- switch to tab if send to tool" />
     <MESSAGE value="[MAIN-CALIB-UNMIX] : &#10;- one tool dialog after adding cube&#10;- savgol filters adusted to order 4 and window 43" />
     <MESSAGE value="[UNMIX] : &#10;- ADD one FTIR spectrum to an hypercube OK&#10;- Select good sample if csv with multiple samples" />
-    <option name="LAST_COMMIT_MESSAGE" value="[UNMIX] : &#10;- ADD one FTIR spectrum to an hypercube OK&#10;- Select good sample if csv with multiple samples" />
+    <MESSAGE value="[UNMIX] : &#10;- added conversion tool from cm-1 to nm" />
+    <option name="LAST_COMMIT_MESSAGE" value="[UNMIX] : &#10;- added conversion tool from cm-1 to nm" />
   </component>
 </project>
