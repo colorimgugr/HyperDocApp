@@ -44,8 +44,6 @@ from identification.load_cube_dialog import Ui_Dialog
 #todo : check metrics different
 #todo : adjust size of loaded cube in viewers.
 #todo : color map of abundance map ?
-#todo : export results en h5 or multiple png
-#todo : open and vizualize previous unmix analysis saved
 #todo : viz spectra -> show/hide by clicking line or title (or ctrl+click)
 #todo : select pixels of endmembers also with ctrl+clic left
 # </editor-fold>
@@ -4375,43 +4373,49 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
     def eventFilter(self, source, event):
         mode = self.comboBox_pixel_selection_mode.currentText()
 
+        # 1) Mouse press
+        if event.type() == QEvent.MouseButtonPress:
+            ctrl = bool(event.modifiers() & Qt.ControlModifier)
 
-        if event.type() == QEvent.MouseButtonPress and event.button() == Qt.LeftButton:
-            return False      ## to dont block drag
-
-        if event.type() == QEvent.MouseButtonPress and event.button() == Qt.RightButton and (self.selecting_pixels or self.erase_selection):
-
-            if not (self.selecting_pixels or self.erase_selection):
+            # --- clic gauche simple : laisser le drag du viewer ---
+            if event.button() == Qt.LeftButton and not ctrl:
                 return False
-            pos = self.viewer_left.mapToScene(event.pos())
-            x0, y0 = int(pos.x()), int(pos.y())
-            if mode == 'pixel':
-                # on commence la collecte
-                self._pixel_selecting = True
-                self._pixel_coords = [(x0, y0)]
-                return True
-            elif mode == 'rectangle':
-                # début du drag
-                from PyQt5.QtWidgets import QRubberBand
-                self.origin = event.pos()
-                self.rubberBand = QRubberBand(QRubberBand.Rectangle,
-                                              self.viewer_left.viewport())
-                self.rubberBand.setGeometry(self.origin.x(),
-                                            self.origin.y(), 1, 1)
-                self.rubberBand.show()
-                return True
-            elif mode == 'ellipse':
-                from PyQt5.QtWidgets import QGraphicsEllipseItem
-                from PyQt5.QtGui import QPen
 
-                self.origin = event.pos()
-                pen = QPen(Qt.red)
-                pen.setStyle(Qt.DashLine)
-                self.ellipse_item = QGraphicsEllipseItem()
-                self.ellipse_item.setPen(pen)
-                self.ellipse_item.setBrush(Qt.transparent)
-                self.viewer_left.scene().addItem(self.ellipse_item)
-                return True
+            # --- clic droit OU Ctrl+clic gauche : démarrer la sélection ---
+            if (event.button() == Qt.RightButton or (event.button() == Qt.LeftButton and ctrl)) and (
+                    self.selecting_pixels or self.erase_selection):
+
+                pos = self.viewer_left.mapToScene(event.pos())
+                x0, y0 = int(pos.x()), int(pos.y())
+
+                if mode == 'pixel':
+                    # on commence la collecte
+                    self._pixel_selecting = True
+                    self._pixel_coords = [(x0, y0)]
+                    return True
+
+                elif mode == 'rectangle':
+                    from PyQt5.QtWidgets import QRubberBand
+                    self.origin = event.pos()
+                    self.rubberBand = QRubberBand(QRubberBand.Rectangle,
+                                                  self.viewer_left.viewport())
+                    self.rubberBand.setGeometry(self.origin.x(),
+                                                self.origin.y(), 1, 1)
+                    self.rubberBand.show()
+                    return True
+
+                elif mode == 'ellipse':
+                    from PyQt5.QtWidgets import QGraphicsEllipseItem
+                    from PyQt5.QtGui import QPen
+
+                    self.origin = event.pos()
+                    pen = QPen(Qt.red)
+                    pen.setStyle(Qt.DashLine)
+                    self.ellipse_item = QGraphicsEllipseItem()
+                    self.ellipse_item.setPen(pen)
+                    self.ellipse_item.setBrush(Qt.transparent)
+                    self.viewer_left.scene().addItem(self.ellipse_item)
+                    return True
 
         if event.type() == QEvent.MouseButtonPress and event.button() == Qt.MiddleButton:
             if not self.selecting_pixels:
@@ -4460,7 +4464,7 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
 
         # 3) Relâchement souris → calcul de la sélection
 
-        if event.type() == QEvent.MouseButtonRelease and event.button() == Qt.RightButton and mode == 'pixel' and self._pixel_selecting :
+        if event.type() == QEvent.MouseButtonRelease and mode == 'pixel' and self._pixel_selecting:
             if not (self.selecting_pixels or self.erase_selection):
                 return False
             print('realeased OK')
@@ -4572,7 +4576,6 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
             self._update_abundance_legend_for_pixel(None, None)
             return False
 
-
         # 4) Mouvement souris pour le live spectrum
         # if source is self.viewer_left.viewport() and event.type() == QEvent.MouseMove and         self.checkBox_live_spectra.isChecked():
         #     if self.checkBox_live_spectra.isChecked() and self.data is not None:
@@ -4585,7 +4588,6 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         #     return True
 
         # return super().eventFilter(source, event)
-
 
         return False
 
