@@ -5736,12 +5736,21 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         # --- Vérification de doublon (mêmes params = même job)
         for exist in self.jobs.values():
             if getattr(exist, "_frozen_params", None) == frozen:
-                QMessageBox.information(
+                # On demande à l'utilisateur s'il veut VRAIMENT ajouter le doublon
+                ans = QMessageBox.question(
                     self,
                     "Duplicate job",
-                    f"An identical job ('{exist.name}') already exists.\nNo new job was added."
+                    f"An identical job ('{exist.name}') already exists.\n"
+                    f"Sure to add ?",
+                    QMessageBox.Yes | QMessageBox.No,
+                    QMessageBox.No
                 )
-                return
+                if ans != QMessageBox.Yes:
+                    # On annule l'ajout comme avant
+                    return
+                # Si Yes -> on sort juste de la boucle de vérif et on continue
+                break
+
 
         base = f"{P['algo']} ({P['em_src']})"
         name = self._ensure_unique_name(base)
