@@ -4,9 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="[UNMIX] : &#10;- small changes in ui&#10;- added save pixel abudances map on write clic">
+    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="[UNMIX] : &#10;- cursor change to cross&#10;- save on pixel abundaces + metadata update">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/interface/some_widget_for_interface.py" beforeDir="false" afterPath="$PROJECT_DIR$/interface/some_widget_for_interface.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/unmixing/unmixing_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/unmixing/unmixing_tool.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/unmixing/unmixing_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/unmixing/unmixing_window.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/unmixing/unmixing_window.ui" beforeDir="false" afterPath="$PROJECT_DIR$/unmixing/unmixing_window.ui" afterDir="false" />
@@ -138,14 +137,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1744020944801</updated>
-    </task>
-    <task id="LOCAL-00108" summary="[unmixing] : &#10;- working on endmembers location and normalisation">
-      <option name="closed" value="true" />
-      <created>1761743198706</created>
-      <option name="number" value="00108" />
-      <option name="presentableId" value="LOCAL-00108" />
-      <option name="project" value="LOCAL" />
-      <updated>1761743198706</updated>
     </task>
     <task id="LOCAL-00109" summary="[unmixing] : &#10;- affichages des endmembers auto et manual OK">
       <option name="closed" value="true" />
@@ -531,7 +522,15 @@
       <option name="project" value="LOCAL" />
       <updated>1764932482556</updated>
     </task>
-    <option name="localTasksCounter" value="157" />
+    <task id="LOCAL-00157" summary="[UNMIX] : &#10;- cursor change to cross&#10;- save on pixel abundaces + metadata update">
+      <option name="closed" value="true" />
+      <created>1765283074850</created>
+      <option name="number" value="00157" />
+      <option name="presentableId" value="LOCAL-00157" />
+      <option name="project" value="LOCAL" />
+      <updated>1765283074852</updated>
+    </task>
+    <option name="localTasksCounter" value="158" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -583,7 +582,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="[unmixing] : &#10;- show all window OK for first working version" />
     <MESSAGE value="[Calibration] : &#10;- load personnal ref file more robust and OK" />
     <MESSAGE value="[IDENTIFICATION] : &#10;- load_map added" />
     <MESSAGE value="[UNMIXING] : &#10;- One spectrum IR.&#10;- check if cm-1 o nm" />
@@ -608,6 +606,7 @@
     <MESSAGE value="[UNMIX] : &#10;- added possibility to duplicate jobs (to change bands)" />
     <MESSAGE value="[UNMIX] : &#10;- added possibility to duplicate jobs (to change bands)&#10;- checkbox for job bands&#10;- bugg fixed for lauch selected&#10;- added job reinit" />
     <MESSAGE value="[UNMIX] : &#10;- small changes in ui&#10;- added save pixel abudances map on write clic" />
-    <option name="LAST_COMMIT_MESSAGE" value="[UNMIX] : &#10;- small changes in ui&#10;- added save pixel abudances map on write clic" />
+    <MESSAGE value="[UNMIX] : &#10;- cursor change to cross&#10;- save on pixel abundaces + metadata update" />
+    <option name="LAST_COMMIT_MESSAGE" value="[UNMIX] : &#10;- cursor change to cross&#10;- save on pixel abundaces + metadata update" />
   </component>
 </project>

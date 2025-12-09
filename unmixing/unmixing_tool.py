@@ -44,7 +44,6 @@ from identification.load_cube_dialog import Ui_Dialog
 #todo : check FTIR results -> OK with reflectance but strange with FTIR - >check with Fran results
 #todo : fijar unas cositas para que la ui se quede mejor
 #todo : Quit sunsal ?
-#todo :see actual band selection
 # </editor-fold>
 
 class SelectEMDialog(QDialog):
@@ -2228,6 +2227,7 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         self.spec_canvas = canvas
         self.spec_fig = getattr(canvas, 'figure', None) or Figure()
         self.spec_ax = self.spec_fig.add_subplot(111)
+        self.spec_fig.subplots_adjust(bottom=0.190)
         self.spec_ax.set_title('Spectrum')
         canvas.setVisible(False)
 
@@ -2247,24 +2247,29 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         self.spec_ax.grid()
 
         # --- Toolbar Matplotlib reliée à ce canvas ---
+        # --- Toolbar Matplotlib reliée à ce canvas ---
         container = QWidget(parent)
-        layout = QVBoxLayout(container)
+
+        # layout horizontal pour mettre canvas + toolbar côte à côte
+        layout = QHBoxLayout(container)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(0)
+        layout.setSpacing(2)
 
         self.spec_toolbar = NavigationToolbar(self.spec_canvas, container)
         from PyQt5.QtCore import QSize
         self.spec_toolbar.setIconSize(QSize(14, 14))
         self.spec_toolbar.setStyleSheet("QToolBar { icon-size: 12px; spacing: 1px; padding: 1px; }")
 
-        layout.addWidget(self.spec_toolbar)
-        layout.addWidget(self.spec_canvas)
+        # toolbar verticale
+        self.spec_toolbar.setOrientation(Qt.Vertical)
+        # Largeur fixe (valeur conseillée : entre 32 et 45)
+        fixed_w = self.spec_toolbar.sizeHint().width()
+        self.spec_toolbar.setMinimumWidth(fixed_w)
+        self.spec_toolbar.setMaximumWidth(fixed_w)
 
-        # Met la toolbar aussi dans l’onglet Spectra (tab_2)
-        try:
-            self.verticalLayout_5.addWidget(self.spec_toolbar)
-        except Exception:
-            pass
+        # canvas à gauche, toolbar à droite
+        layout.addWidget(self.spec_canvas)
+        layout.addWidget(self.spec_toolbar)
 
         # --- SpanSelector (sélection de bandes) ---
         self.span_selector = SpanSelector(
