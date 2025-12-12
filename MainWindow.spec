@@ -5,7 +5,7 @@ a = Analysis(
     ['MainWindow.py'],
     pathex=[],
     binaries=[],
-    datas=[('interface/icons', 'Hypertool/interface/icons'), ('hypercubes/white_ref_reflectance_data', 'hypercubes/white_ref_reflectance_data'), ('ground_truth/Materials labels and palette assignation - Materials_labels_palette.csv', 'ground_truth'), ('data_vizualisation/Spatially registered minicubes equivalence.csv', 'data_vizualisation'), ('illumination/Illuminants.csv', 'illumination')],
+    datas=[('interface/icons', 'Hypertool/interface/icons'), ('hypercubes/white_ref_reflectance_data', 'hypercubes/white_ref_reflectance_data'), ('ground_truth/Materials labels and palette assignation - Materials_labels_palette.csv', 'ground_truth'), ('data_vizualisation/Spatially registered minicubes equivalence.csv', 'data_vizualisation'), ('illumination/Illuminants.csv', 'illumination'), ('unmixing/data', 'unmixing/data')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},

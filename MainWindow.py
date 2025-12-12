@@ -1,7 +1,7 @@
 # cd C:\Users\Usuario\Documents\GitHub\Hypertool
 # python MainWindow.py
 # sys.excepthook = excepthook #set the exception handler
-# pyinstaller  --noconfirm --noconsole --exclude-module tensorflow --exclude-module torch --exclude-module matlab --icon="interface/icons/hyperdoc_logo_transparente.ico" --add-data "interface/icons:Hypertool/interface/icons" --add-data "hypercubes/white_ref_reflectance_data:hypercubes/white_ref_reflectance_data" --add-data "ground_truth/Materials labels and palette assignation - Materials_labels_palette.csv:ground_truth"  --add-data "data_vizualisation/Spatially registered minicubes equivalence.csv:data_vizualisation" --add-data "illumination/Illuminants.csv:illumination"  MainWindow.py
+# pyinstaller  --noconfirm --noconsole --exclude-module tensorflow --exclude-module torch --exclude-module matlab --icon="interface/icons/hyperdoc_logo_transparente.ico" --add-data "interface/icons:Hypertool/interface/icons" --add-data "hypercubes/white_ref_reflectance_data:hypercubes/white_ref_reflectance_data" --add-data "ground_truth/Materials labels and palette assignation - Materials_labels_palette.csv:ground_truth"  --add-data "data_vizualisation/Spatially registered minicubes equivalence.csv:data_vizualisation" --add-data "illumination/Illuminants.csv:illumination" --add-data "unmixing/data:unmixing/data"  MainWindow.py
 # C:\Envs\py37test\Scripts\activate
 
 # GUI Qt
@@ -14,7 +14,6 @@ from PyQt5.QtWidgets import (QStyleFactory, QAction, QSizePolicy,QPushButton,
 ## Python import
 import traceback
 import logging
-
 
 ## bloc non important warning
 import warnings
@@ -1068,10 +1067,10 @@ if __name__ == "__main__":
     main = MainApp()
     main.show()
 
-    folder = r'C:\Users\Usuario\Documents\DOC_Yannick\HYPERDOC Database_TEST\Samples\minicubes/'
-    fname = '00189-VNIR-mock-up.h5'
-    filepath = os.path.join(folder, fname)
-    main._on_add_cube([filepath,filepath.replace('189','191')])
+    # folder = r'C:\Users\Usuario\Documents\DOC_Yannick\HYPERDOC Database_TEST\Samples\minicubes/'
+    # fname = '00189-VNIR-mock-up.h5'
+    # filepath = os.path.join(folder, fname)
+    # main._on_add_cube([filepath,filepath.replace('189','191')])
 
     try:
         import matlab.engine

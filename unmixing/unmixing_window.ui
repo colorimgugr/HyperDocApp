@@ -37,7 +37,14 @@
      <property name="frameShadow">
       <enum>QFrame::Raised</enum>
      </property>
-     <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="1,0,0,0,8,0">
+     <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="0,0,0,0,0,0,0,0,0,0,0,0,0">
+      <item>
+       <widget class="Line" name="line_4">
+        <property name="orientation">
+         <enum>Qt::Vertical</enum>
+        </property>
+       </widget>
+      </item>
       <item>
        <layout class="QVBoxLayout" name="verticalLayout_7">
         <item>
@@ -49,6 +56,12 @@
         </item>
         <item>
          <widget class="QLabel" name="label_cube_file">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
           <property name="maximumSize">
            <size>
             <width>16777215</width>
@@ -72,6 +85,12 @@
         </item>
         <item>
          <widget class="QLabel" name="label_one_spectrum">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
           <property name="maximumSize">
            <size>
             <width>16777215</width>
@@ -166,12 +185,38 @@
        </widget>
       </item>
       <item>
+       <spacer name="horizontalSpacer_3">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item>
+       <widget class="Line" name="line_5">
+        <property name="orientation">
+         <enum>Qt::Vertical</enum>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QTabWidget" name="tabWidget">
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>16777215</height>
+         </size>
+        </property>
         <property name="tabPosition">
          <enum>QTabWidget::North</enum>
         </property>
         <property name="currentIndex">
-         <number>0</number>
+         <number>1</number>
         </property>
         <widget class="QWidget" name="tab_endmembers">
          <attribute name="title">
@@ -314,7 +359,7 @@
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>496</width>
+                   <width>442</width>
                    <height>103</height>
                   </rect>
                  </property>
@@ -391,8 +436,8 @@
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>98</width>
-                   <height>28</height>
+                   <width>63</width>
+                   <height>20</height>
                   </rect>
                  </property>
                  <layout class="QVBoxLayout" name="verticalLayout_4">
@@ -542,8 +587,8 @@
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>198</width>
-                   <height>28</height>
+                   <width>181</width>
+                   <height>20</height>
                   </rect>
                  </property>
                  <layout class="QVBoxLayout" name="verticalLayout_6">
@@ -580,173 +625,6 @@
          <layout class="QHBoxLayout" name="horizontalLayout">
           <item>
            <layout class="QGridLayout" name="gridLayout_3" rowstretch="0,0,0,0,0,0,0">
-            <item row="2" column="2">
-             <widget class="QSpinBox" name="spinBox">
-              <property name="minimum">
-               <number>100</number>
-              </property>
-              <property name="maximum">
-               <number>3000</number>
-              </property>
-              <property name="singleStep">
-               <number>100</number>
-              </property>
-              <property name="value">
-               <number>1000</number>
-              </property>
-             </widget>
-            </item>
-            <item row="3" column="2">
-             <widget class="QDoubleSpinBox" name="doubleSpinBox_unmix_lambda_2">
-              <property name="minimum">
-               <double>-7.000000000000000</double>
-              </property>
-              <property name="maximum">
-               <double>-2.000000000000000</double>
-              </property>
-              <property name="singleStep">
-               <double>0.100000000000000</double>
-              </property>
-              <property name="value">
-               <double>-4.000000000000000</double>
-              </property>
-             </widget>
-            </item>
-            <item row="4" column="2">
-             <widget class="QDoubleSpinBox" name="doubleSpinBox_unmix_lambda_3">
-              <property name="minimum">
-               <double>-5.000000000000000</double>
-              </property>
-              <property name="maximum">
-               <double>-1.000000000000000</double>
-              </property>
-              <property name="singleStep">
-               <double>0.100000000000000</double>
-              </property>
-              <property name="value">
-               <double>-3.000000000000000</double>
-              </property>
-             </widget>
-            </item>
-            <item row="2" column="1">
-             <widget class="QLabel" name="label_unmix_maxiter">
-              <property name="maximumSize">
-               <size>
-                <width>16777215</width>
-                <height>20</height>
-               </size>
-              </property>
-              <property name="text">
-               <string>Maximum iterations :</string>
-              </property>
-              <property name="alignment">
-               <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-              </property>
-             </widget>
-            </item>
-            <item row="3" column="1">
-             <widget class="QLabel" name="label_unmx_tolerance">
-              <property name="maximumSize">
-               <size>
-                <width>16777215</width>
-                <height>20</height>
-               </size>
-              </property>
-              <property name="text">
-               <string>Tolerance : 10^</string>
-              </property>
-              <property name="alignment">
-               <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-              </property>
-             </widget>
-            </item>
-            <item row="6" column="1">
-             <widget class="QLabel" name="label_unmix_lambda_2">
-              <property name="maximumSize">
-               <size>
-                <width>16777215</width>
-                <height>20</height>
-               </size>
-              </property>
-              <property name="text">
-               <string>Rho : 10^</string>
-              </property>
-              <property name="alignment">
-               <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="1">
-             <widget class="QLabel" name="label_unmix_algorithm_choice">
-              <property name="text">
-               <string>Unmixing algorithm :</string>
-              </property>
-              <property name="alignment">
-               <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="2">
-             <widget class="QComboBox" name="comboBox_unmix_algorithm">
-              <item>
-               <property name="text">
-                <string>UCLS</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>NNLS</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>FCLS</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>Metric (cGFC)</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>SUnSAL</string>
-               </property>
-              </item>
-             </widget>
-            </item>
-            <item row="4" column="1">
-             <widget class="QLabel" name="label_unmix_lambda">
-              <property name="maximumSize">
-               <size>
-                <width>16777215</width>
-                <height>20</height>
-               </size>
-              </property>
-              <property name="text">
-               <string>Lambda : 10^</string>
-              </property>
-              <property name="alignment">
-               <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-              </property>
-             </widget>
-            </item>
-            <item row="6" column="2">
-             <widget class="QDoubleSpinBox" name="doubleSpinBox_unmix_lambda_4">
-              <property name="minimum">
-               <double>0.500000000000000</double>
-              </property>
-              <property name="maximum">
-               <double>5.000000000000000</double>
-              </property>
-              <property name="singleStep">
-               <double>0.100000000000000</double>
-              </property>
-              <property name="value">
-               <double>5.000000000000000</double>
-              </property>
-             </widget>
-            </item>
             <item row="4" column="5">
              <widget class="QCheckBox" name="checkBox_unmix_ANC">
               <property name="text">
@@ -884,7 +762,122 @@
               </item>
              </widget>
             </item>
-            <item row="6" column="4" colspan="2">
+            <item row="1" column="1" rowspan="2" colspan="2">
+             <widget class="QStackedWidget" name="stackedWidget_3">
+              <property name="currentIndex">
+               <number>0</number>
+              </property>
+              <widget class="QWidget" name="page_algo_param">
+               <layout class="QGridLayout" name="gridLayout_6">
+                <item row="1" column="1">
+                 <widget class="QDoubleSpinBox" name="doubleSpinBox_unmix_lambda_2">
+                  <property name="minimum">
+                   <double>-7.000000000000000</double>
+                  </property>
+                  <property name="maximum">
+                   <double>-2.000000000000000</double>
+                  </property>
+                  <property name="singleStep">
+                   <double>0.100000000000000</double>
+                  </property>
+                  <property name="value">
+                   <double>-4.000000000000000</double>
+                  </property>
+                 </widget>
+                </item>
+                <item row="0" column="0">
+                 <widget class="QLabel" name="label_unmix_maxiter">
+                  <property name="maximumSize">
+                   <size>
+                    <width>16777215</width>
+                    <height>20</height>
+                   </size>
+                  </property>
+                  <property name="text">
+                   <string>Maximum iterations :</string>
+                  </property>
+                  <property name="alignment">
+                   <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                  </property>
+                 </widget>
+                </item>
+                <item row="0" column="1">
+                 <widget class="QSpinBox" name="spinBox">
+                  <property name="minimum">
+                   <number>100</number>
+                  </property>
+                  <property name="maximum">
+                   <number>3000</number>
+                  </property>
+                  <property name="singleStep">
+                   <number>100</number>
+                  </property>
+                  <property name="value">
+                   <number>1000</number>
+                  </property>
+                 </widget>
+                </item>
+                <item row="1" column="0">
+                 <widget class="QLabel" name="label_unmx_tolerance">
+                  <property name="maximumSize">
+                   <size>
+                    <width>16777215</width>
+                    <height>20</height>
+                   </size>
+                  </property>
+                  <property name="text">
+                   <string>Tolerance : 10^</string>
+                  </property>
+                  <property name="alignment">
+                   <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </widget>
+              <widget class="QWidget" name="page_classic"/>
+             </widget>
+            </item>
+            <item row="3" column="1">
+             <widget class="QLabel" name="label_unmix_algorithm_choice">
+              <property name="text">
+               <string>Unmixing algorithm :</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="2">
+             <widget class="QComboBox" name="comboBox_unmix_algorithm">
+              <item>
+               <property name="text">
+                <string>UCLS</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>NNLS</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>FCLS</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Metric (cGFC)</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>SUnSAL</string>
+               </property>
+              </item>
+             </widget>
+            </item>
+            <item row="5" column="4" colspan="2">
              <widget class="QPushButton" name="pushButton_add_queue_unmixing">
               <property name="minimumSize">
                <size>
@@ -903,6 +896,89 @@
               </property>
               <property name="text">
                <string>Add to queue</string>
+              </property>
+             </widget>
+            </item>
+            <item row="4" column="1" rowspan="2" colspan="2">
+             <widget class="QStackedWidget" name="stackedWidget_4">
+              <property name="currentIndex">
+               <number>0</number>
+              </property>
+              <widget class="QWidget" name="page_SUnSAL">
+               <layout class="QGridLayout" name="gridLayout_7">
+                <item row="0" column="1">
+                 <widget class="QDoubleSpinBox" name="doubleSpinBox_unmix_lambda_3">
+                  <property name="minimum">
+                   <double>-5.000000000000000</double>
+                  </property>
+                  <property name="maximum">
+                   <double>-1.000000000000000</double>
+                  </property>
+                  <property name="singleStep">
+                   <double>0.100000000000000</double>
+                  </property>
+                  <property name="value">
+                   <double>-3.000000000000000</double>
+                  </property>
+                 </widget>
+                </item>
+                <item row="0" column="0">
+                 <widget class="QLabel" name="label_unmix_lambda">
+                  <property name="maximumSize">
+                   <size>
+                    <width>16777215</width>
+                    <height>20</height>
+                   </size>
+                  </property>
+                  <property name="text">
+                   <string>Lambda : 10^</string>
+                  </property>
+                  <property name="alignment">
+                   <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                  </property>
+                 </widget>
+                </item>
+                <item row="1" column="0">
+                 <widget class="QLabel" name="label_unmix_lambda_2">
+                  <property name="maximumSize">
+                   <size>
+                    <width>16777215</width>
+                    <height>20</height>
+                   </size>
+                  </property>
+                  <property name="text">
+                   <string>Rho : 10^</string>
+                  </property>
+                  <property name="alignment">
+                   <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                  </property>
+                 </widget>
+                </item>
+                <item row="1" column="1">
+                 <widget class="QDoubleSpinBox" name="doubleSpinBox_unmix_lambda_4">
+                  <property name="minimum">
+                   <double>0.500000000000000</double>
+                  </property>
+                  <property name="maximum">
+                   <double>5.000000000000000</double>
+                  </property>
+                  <property name="singleStep">
+                   <double>0.100000000000000</double>
+                  </property>
+                  <property name="value">
+                   <double>5.000000000000000</double>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </widget>
+              <widget class="QWidget" name="page_metric"/>
+             </widget>
+            </item>
+            <item row="1" column="3" rowspan="5">
+             <widget class="Line" name="line_3">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
               </property>
              </widget>
             </item>
@@ -1000,7 +1076,40 @@ color: rgb(255, 255, 255);</string>
        </widget>
       </item>
       <item>
+       <widget class="Line" name="line_6">
+        <property name="orientation">
+         <enum>Qt::Vertical</enum>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <spacer name="horizontalSpacer_2">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item>
+       <widget class="Line" name="line_7">
+        <property name="orientation">
+         <enum>Qt::Vertical</enum>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QTabWidget" name="tabWidget_Image">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Maximum" vsizetype="Expanding">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
         <property name="currentIndex">
          <number>1</number>
         </property>
@@ -1524,6 +1633,13 @@ color: rgb(255, 255, 255);</string>
           </item>
          </layout>
         </widget>
+       </widget>
+      </item>
+      <item>
+       <widget class="Line" name="line_8">
+        <property name="orientation">
+         <enum>Qt::Vertical</enum>
+        </property>
        </widget>
       </item>
      </layout>

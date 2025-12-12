@@ -1001,7 +1001,6 @@ def fused_cube(cube1, cube2, *, copy_common_meta: bool = True):
 
     return fused
 
-
 # ------------------------------- Signals --------------------------------------
 class UnmixingSignals(QObject):
     error = pyqtSignal(str)
@@ -1217,8 +1216,8 @@ class UnmixWorker(QRunnable):
             if user_chunk > 0:
                 chunk = user_chunk
             else:
-                # ➜ 20 morceaux ≈ 5% chacun
-                steps = 20
+                # ➜ 50 morceaux ≈ 2% chacun
+                steps = 50
                 chunk = max(1, int(np.ceil(Nw / steps)))
 
             # Destino global en espacio (p, N)
@@ -1227,7 +1226,7 @@ class UnmixWorker(QRunnable):
             self.signals.progress.emit(0, A)
 
             # Progreso granular 5 -> 95 durante el solver
-            base_prog, end_prog = 5.0, 95.0  # 5%..95% pendant le solveur
+            base_prog, end_prog = 2.0, 98.0  # 5%..95% pendant le solveur
             processed = 0
 
             m = (self.job.model or "").upper()
@@ -1255,6 +1254,7 @@ class UnmixWorker(QRunnable):
                         tol=self.job.tol,
                     )
                 elif self.job.model in {"Metric (cGFC)","METRIC (CGFC)"}:
+
                     # A_sub = unmix_metric(
                     #     E, Y_sub,
                     #     metric="cGFC",
@@ -1264,6 +1264,7 @@ class UnmixWorker(QRunnable):
                     #     step=1e-2,
                     #     tol=self.job.tol,
                     # )
+
                     A_sub = unmix_metric_scipy(
                         E, Y_sub,
                         metric="cGFC",
@@ -1449,6 +1450,9 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         self.pushButton_add_EM.clicked.connect(self._add_em_to_lib)
         self.pushButton_remove_EM.clicked.connect(self._remove_em_from_lib)
         self.pushButton_wavenumber_to_wavelength.clicked.connect(self.wavenumber_to_wavelength)
+        self.comboBox_endmembers_get.currentIndexChanged.connect(self.on_algo_endmember_change)
+        self.tabWidget.currentChanged.connect(self.stop_pixel_selection)
+        self.on_algo_endmember_change()
 
         # Spectra window
         self.comboBox_endmembers_spectra.currentIndexChanged.connect(self.on_changes_EM_spectra_viz)
@@ -1491,9 +1495,6 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         self.comboBox_unmix_algorithm.currentIndexChanged.connect(self.on_unmix_algo_change)
         self.on_unmix_algo_change()
 
-        self.comboBox_endmembers_get.currentIndexChanged.connect(self.on_algo_endmember_change)
-        self.on_algo_endmember_change()
-
         # Job Queue
         self._init_classification_table(self.tableWidget_classificationList)
         self.pushButton_add_queue_unmixing.clicked.connect(self._on_add_unmix_job)
@@ -1514,6 +1515,23 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         self.fill_form_em('manual')
         self.fill_form_em('auto')
         self.fill_form_em('lib')
+
+        #fix initial size of upper frame
+
+        layout = self.horizontalLayout_2
+        i_tab = layout.indexOf(self.tabWidget)
+        i_img = layout.indexOf(self.tabWidget_Image)
+
+        layout.setStretch(0, 0)  # boutons cube
+        layout.setStretch(2, 0)  # bloc FTIR
+        layout.setStretch(i_tab, 3)  # centre
+        layout.setStretch(i_img, 2)  # droite (tabWidget_Image)
+
+        # s'assurer que tabWidget_Image peut vraiment s'étendre
+        from PyQt5.QtWidgets import QSizePolicy
+        sp = self.tabWidget_Image.sizePolicy()
+        sp.setHorizontalPolicy(QSizePolicy.Expanding)
+        self.tabWidget_Image.setSizePolicy(sp)
 
     # <editor-fold desc="Visual elements">
 
@@ -1834,6 +1852,9 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
 
         try:
             if algo == 'UCLS':
+                self.stackedWidget_3.setCurrentIndex(1)
+                self.stackedWidget_4.setCurrentIndex(1)
+
                 # UCLS = unconstrained least squares
                 anc.setChecked(False)
                 asc.setChecked(False)
@@ -1848,6 +1869,9 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
                     w.setEnabled(False)
 
             elif algo == 'NNLS':
+                self.stackedWidget_3.setCurrentIndex(1)
+                self.stackedWidget_4.setCurrentIndex(1)
+
                 # NNLS = ANC uniquement
                 anc.setChecked(True)
                 asc.setChecked(False)
@@ -1859,6 +1883,9 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
                     w.setEnabled(False)
 
             elif algo == 'FCLS':
+                self.stackedWidget_3.setCurrentIndex(1)
+                self.stackedWidget_4.setCurrentIndex(1)
+
                 # FCLS = ANC + ASC
                 anc.setChecked(True)
                 asc.setChecked(True)
@@ -1870,6 +1897,9 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
                     w.setEnabled(False)
 
             elif algo == 'SUNSAL':
+                self.stackedWidget_3.setCurrentIndex(0)
+                self.stackedWidget_4.setCurrentIndex(0)
+
                 # SUnSAL : ANC/ASC libres + paramètres activés
                 anc.setEnabled(True)
                 asc.setEnabled(True)
@@ -1884,12 +1914,17 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
                     w.setEnabled(True)
 
             elif algo == 'METRIC (CGFC)':
+                self.stackedWidget_3.setCurrentIndex(0)
+                self.stackedWidget_4.setCurrentIndex(1)
+
                 anc.setEnabled(True)
                 asc.setEnabled(True)
                 mrg.setEnabled(True)
 
-                for w in (lam3, lam2, lam4, maxit):
+                for w in (lam3, lam4):
                     w.setEnabled(False)
+                for w in (lam2, maxit):
+                    w.setEnabled(True)
 
             else:
                 # Cas inattendu
@@ -3875,12 +3910,16 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         if 'library' in txt:
             self.stackedWidget.setCurrentIndex(0)
             self._activate_endmembers('lib')
+            if self.selecting_pixels:
+                self.stop_pixel_selection()
         elif 'Manual' in txt:
             self.stackedWidget.setCurrentIndex(1)
             self._activate_endmembers('manual')
         else:
             self.stackedWidget.setCurrentIndex(2)
             self._activate_endmembers('auto')
+            if self.selecting_pixels:
+                self.stop_pixel_selection()
 
     def _on_extract_endmembers(self):
         if self.cube is None:
