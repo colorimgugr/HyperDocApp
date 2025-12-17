@@ -33,6 +33,9 @@
        <layout class="QGridLayout" name="gridLayout_4">
         <item row="1" column="4">
          <widget class="QSlider" name="horizontalSlider_green_channel">
+          <property name="toolTip">
+           <string>Green channel band index (for user RGB).</string>
+          </property>
           <property name="maximum">
            <number>149</number>
           </property>
@@ -56,6 +59,9 @@
         </item>
         <item row="0" column="4">
          <widget class="QSlider" name="horizontalSlider_red_channel">
+          <property name="toolTip">
+           <string>Red channel band index (for user RGB).</string>
+          </property>
           <property name="maximum">
            <number>149</number>
           </property>
@@ -71,6 +77,9 @@
          <widget class="QRadioButton" name="radioButton_rgb_user">
           <property name="enabled">
            <bool>true</bool>
+          </property>
+          <property name="toolTip">
+           <string>Display the cube using user-selected RGB band indices.</string>
           </property>
           <property name="text">
            <string>RGB user</string>
@@ -106,7 +115,7 @@
         <item row="0" column="0">
          <widget class="QRadioButton" name="radioButton_rgb_default">
           <property name="toolTip">
-           <string/>
+           <string>Display the cube using the default RGB band mapping.</string>
           </property>
           <property name="text">
            <string>RGB default</string>
@@ -115,6 +124,9 @@
         </item>
         <item row="0" column="3">
          <widget class="QSpinBox" name="spinBox_red_channel">
+          <property name="toolTip">
+           <string>Red channel band index (for user RGB).</string>
+          </property>
           <property name="maximum">
            <number>149</number>
           </property>
@@ -141,6 +153,9 @@
         </item>
         <item row="1" column="2">
          <widget class="QLabel" name="label_green_channel">
+          <property name="toolTip">
+           <string/>
+          </property>
           <property name="text">
            <string>Green</string>
           </property>
@@ -151,6 +166,9 @@
         </item>
         <item row="2" column="0">
          <widget class="QRadioButton" name="radioButton_grayscale">
+          <property name="toolTip">
+           <string>Display a single band as a grayscale image.</string>
+          </property>
           <property name="text">
            <string>Grayscale</string>
           </property>
@@ -158,6 +176,9 @@
         </item>
         <item row="2" column="4">
          <widget class="QSlider" name="horizontalSlider_blue_channel">
+          <property name="toolTip">
+           <string>Blue channel band index (for user RGB).</string>
+          </property>
           <property name="maximum">
            <number>149</number>
           </property>
@@ -171,6 +192,9 @@
         </item>
         <item row="2" column="3">
          <widget class="QSpinBox" name="spinBox_blue_channel">
+          <property name="toolTip">
+           <string>Blue channel band index (for user RGB).</string>
+          </property>
           <property name="maximum">
            <number>149</number>
           </property>
@@ -181,6 +205,9 @@
         </item>
         <item row="1" column="3">
          <widget class="QSpinBox" name="spinBox_green_channel">
+          <property name="toolTip">
+           <string>Green channel band index (for user RGB).</string>
+          </property>
           <property name="maximum">
            <number>149</number>
           </property>
@@ -253,6 +280,9 @@
       <layout class="QGridLayout" name="gridLayout">
        <item row="0" column="0" colspan="2">
         <widget class="QPushButton" name="pushButton_open_hypercube">
+         <property name="toolTip">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Open a hyperspectral cube (.h5, .mat, .hdr) to display it and extract a minicube ROI.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
          <property name="styleSheet">
           <string notr="true"/>
          </property>
@@ -266,6 +296,9 @@
        </item>
        <item row="1" column="1">
         <widget class="QPushButton" name="pushButton_next_cube">
+         <property name="toolTip">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Next cube (same folder)&lt;/span&gt;&lt;/p&gt;&lt;p&gt;Load the next available cube in the same directory (skips files with the same numeric prefix and non-cube extensions).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
          <property name="text">
           <string>&gt;</string>
          </property>
@@ -274,7 +307,7 @@
        <item row="2" column="0" colspan="2">
         <widget class="QPushButton" name="pushButton_save_minicube">
          <property name="toolTip">
-          <string>Save segmented image and Ground Truth information in metadata of hypercube file</string>
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Save minicube&lt;/span&gt;&lt;br/&gt;Crop the currently selected ROI and save it as a new cube. A metadata dialog is shown before writing the file. &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
          </property>
          <property name="text">
           <string>Save minicube selected</string>
@@ -283,6 +316,9 @@
        </item>
        <item row="1" column="0">
         <widget class="QPushButton" name="pushButton_prev_cube">
+         <property name="toolTip">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Previous cube (same folder)&lt;/span&gt;&lt;/p&gt;&lt;p&gt;Load the previous available cube in the same directory (skips files with the same numeric prefix and non-cube extensions).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
          <property name="text">
           <string>&lt;</string>
          </property>
@@ -294,6 +330,9 @@
    </item>
    <item>
     <widget class="QLabel" name="label_path_cube">
+     <property name="toolTip">
+      <string>Displays the path of the currently loaded cube</string>
+     </property>
      <property name="text">
       <string>cube path</string>
      </property>
@@ -304,6 +343,9 @@
    </item>
    <item>
     <widget class="QFrame" name="frame_image">
+     <property name="toolTip">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;ROI selection&lt;/span&gt;&lt;br/&gt;Right-click and drag to draw a rectangular ROI. The ROI is displayed as an overlay and will be saved as the minicube extent.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
      <property name="frameShape">
       <enum>QFrame::StyledPanel</enum>
      </property>

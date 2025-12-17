@@ -175,8 +175,9 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
         if self.overlay_selector.currentText() == "View Matches":
             self.viewer_aligned.setToolTip(
                 "Interaction in “View Matches”\n"
-                "- Middle-click near a match point to remove that match (by displayed index).\n"
-                "- Drag a match point to manually adjust its position (left or right side)."
+                "- Middle-click or CTRL+click near a match point to remove that match (by displayed index).\n"
+                "- Drag a match point to manually adjust its position (left or right side) with RIGHT CLICK."
+                "- ROI selection is disabled during View Matches mode"
             )
         else:
             self.viewer_aligned.setToolTip("")

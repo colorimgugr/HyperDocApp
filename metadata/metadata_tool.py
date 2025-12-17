@@ -48,6 +48,75 @@ class MetadataTool(QWidget, Ui_Metadata_tool):
         self.pushButton_valid_all_changes.clicked.connect(self.emit_updated_cube)
         self.pushButton_load_cube.clicked.connect(self.open_cube)
 
+        # ---- Tooltips ----
+        self.comboBox_metadata.setToolTip(
+            "Select which metadata key to view/edit.\n"
+            "Use the up/down arrows to step through keys.\n"
+            "If Edit mode is enabled and you changed the current key, you may be asked whether to discard changes."
+        )
+
+        self.checkBox_edit.setToolTip(
+            "Enable editing for the selected metadatum.\n"
+            "When disabled, the field is read-only.\n"
+            "Note: you must validate to apply changes, and 'Validate all changes' will propagate updates to other tools."
+        )
+
+        self.textEdit_metadata.setToolTip(
+            "Raw value of the selected metadatum.\n"
+            "Edit mode must be enabled to modify it.\n"
+            "Depending on the key, the value may be displayed as text even if stored as arrays/structures."
+        )
+
+        self.pushButton_valid_metadatum.setToolTip(
+            "Validate the current metadatum value (only for the currently selected key).\n"
+            "This updates the in-memory metadata for this cube in the Metadata tool."
+        )
+
+        self.pushButton_cancel.setToolTip(
+            "Cancel changes for all metadata."
+        )
+
+        self.pushButton_reset_one.setToolTip(
+            "Reset the current metadatum to its original value (as loaded initially for this cube).\n"
+            "Use this if you want to undo local edits for this key."
+        )
+
+        self.toolButton_up.setToolTip(
+            "Previous metadatum (select the previous key in the list).\n"
+            "If Edit mode is enabled and the current key was modified, you may be prompted to discard changes."
+        )
+
+        self.toolButton_down.setToolTip(
+            "Next metadatum (select the next key in the list).\n"
+            "If Edit mode is enabled and the current key was modified, you may be prompted to discard changes."
+        )
+
+        self.pushButton_see_all_metadata.setToolTip(
+            "Show all metadata entries (read-only overview).\n"
+            "Useful for quickly inspecting what is stored in the cube."
+        )
+
+        self.pushButton_generateMeta.setToolTip(
+            "Auto-generate / enrich metadata fields.\n"
+            "This may create or update multiple keys at once."
+        )
+
+        self.pushButton_add.setToolTip(
+            "Add or remove a metadatum entry.\n"
+            "Use with caution: removing keys may affect downstream tools."
+        )
+
+        self.pushButton_valid_all_changes.setToolTip(
+            "Validate all metadata changes and emit them to the rest of the application.\n"
+            "This will notify other tools via the metadataChanged signal.\n"
+            "To save to disk, you will have to click on Save Cube."
+        )
+
+        self.pushButton_load_cube.setToolTip(
+            "Open a cube and load its metadata into the Metadata tool.\n"
+            "This will also notify the manager via cubeLoaded so other tools can sync."
+        )
+
     def ask_if_modif(self,index):
         discard=True
         combo = self.comboBox_metadata

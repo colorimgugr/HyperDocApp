@@ -940,6 +940,128 @@ class Hypercube:
 
                 QTimer.singleShot(0, self.update_white_spectrum) # to force spectra draw after layout processed
 
+                # ----------------------------
+                # Tooltips (WhiteCalibrationDialog)
+                # ----------------------------
+
+                # Main purpose
+                self.setToolTip(
+                    "White calibration\n"
+                    "Compute reflectance correction from a selected white region (or a loaded white capture), "
+                    "optionally with dark correction, then apply a flat-field mode to the current cube."
+                )
+
+                # White / dark loading
+                self.ui.pushButton_load_white_capture.setToolTip(
+                    "Load white reference capture\n"
+                    "Load an external white capture cube. If enabled below, calibration will use this cube for the white region."
+                )
+
+                self.ui.checkBox_use_white_capture.setToolTip(
+                    "Use loaded white capture\n"
+                    "If checked, the calibration ROI is taken from the loaded white capture instead of the main cube.\n"
+                    "Requires a white capture to be loaded."
+                )
+
+                self.ui.pushButton_load_dark.setToolTip(
+                    "Load dark\n"
+                    "Load a dark capture cube to subtract sensor offset / dark current before white normalization.\n"
+                    "If provided, dark correction is applied to the main cube (and to the white cube when possible)."
+                )
+
+                # Clipping
+                self.ui.checkBox_crop_ref_1.setToolTip(
+                    "Crop reflectance values to 1\n"
+                    "If checked, the calibrated cube is clipped to the range [0, 1].\n"
+                    "Useful to avoid values > 1 after calibration."
+                )
+
+                # Calibration mode from image
+                self.ui.groupBox_calibration_type_from_image.setToolTip(
+                    "Calibration type from image\n"
+                    "Choose how the selected rectangle is used to build the white map:\n"
+                    "- Single mean spectra of rectangle: one mean spectrum is used for all pixels.\n"
+                    "- Horizontal Flat Field: extend the selected rectangle across the full width (row-dependent correction).\n"
+                    "- Vertical Flat Field: extend the selected rectangle across the full height (column-dependent correction).\n"
+                    "- Full image Flat Field: use the full cube as the white map."
+                )
+
+                self.ui.radioButton_no_flat_field.setToolTip(
+                    "Single mean spectra of rectangle\n"
+                    "Uses the mean spectrum of the selected rectangle as a single white reference for the whole image."
+                )
+
+                self.ui.radioButton_horizontal_flat_field.setToolTip(
+                    "Horizontal Flat Field\n"
+                    "Uses a row-dependent white map built from the selected rectangle extended to the full width."
+                )
+
+                self.ui.radioButton_vertical_flat_field.setToolTip(
+                    "Vertical Flat field\n"
+                    "Uses a column-dependent white map built from the selected rectangle extended to the full height."
+                )
+
+                self.ui.radioButton_full_flat_field.setToolTip(
+                    "Full image Flat Field\n"
+                    "Uses the full cube as the white map (no rectangle required)."
+                )
+
+                # White reference reflectance (target reflectance curve)
+                self.ui.groupBox_white_ref.setToolTip(
+                    "White reference reflectance\n"
+                    "Select the target reflectance spectrum used for normalization.\n"
+                    "This defines what 'white' should be (e.g., Sphere Optics, Teflon, or a custom file)."
+                )
+
+                self.ui.comboBox_white_Reference_choice.setToolTip(
+                    "White reference used\n"
+                    "Select the reflectance reference curve:\n"
+                    "- Constant value (from field): uses a constant reflectance R for all wavelengths.\n"
+                    "- Sphere Optics / Teflon / Hyspex: loads built-in reference spectra.\n"
+                    "- Personal (load file): uses a user-provided (wavelength, reflectance) table."
+                )
+
+                self.ui.doubleSpinBox_R_manual.setToolTip(
+                    "Manual constant reflectance R\n"
+                    "Used only when 'Constant value (from field)' is selected.\n"
+                    "Defines a flat reflectance value applied to all wavelengths."
+                )
+
+                self.ui.pushButton_load_personal_white_ref.setToolTip(
+                    "Load other file\n"
+                    "Load a two-column text/CSV file defining the white reflectance curve.\n"
+                    "A preview dialog lets you skip the first row and swap columns if needed."
+                )
+
+                self.ui.label.setToolTip(
+                    "Loaded file\n"
+                    "Shows the currently loaded personal white reflectance file (if any)."
+                )
+
+                # Spectra preview frame
+                self.ui.frame_spectra_white.setToolTip(
+                    "White reference preview\n"
+                    "Displays the selected reference reflectance curve (resampled to the cube wavelengths)."
+                )
+
+                # Validation button
+                self.ui.pushButton_valid_calibration.setToolTip(
+                    "Valid calibration\n"
+                    "Apply the selected calibration settings.\n"
+                    "If no rectangle is selected (and not using Full image Flat Field), the dialog will ask what to do."
+                )
+
+                # Viewer tooltip (your ZoomableGraphicsView inserted into frame_image)
+                # Note: selection uses right-click rectangle in your viewer implementation.
+                try:
+                    self.viewer.setToolTip(
+                        "White region selection\n"
+                        "Right-click and drag to select the white region used for calibration.\n"
+                        "Left-drag pans the view; mouse wheel zooms."
+                    )
+                except Exception:
+                    pass
+
             def get_selected_rect(self):
                 return self.viewer.get_rect_coords()
 
@@ -1871,6 +1993,71 @@ class HDF5BrowserWidget(QWidget, Ui_HDF5BrowserWidget):
             self.le_meta.setText(cube_info.metadata_path)
         if cube_info.gtmap_path:
             self.le_gtmap.setText(cube_info.gtmap_path)
+
+        # ---- Tooltips (HDF5BrowserWidget) ----
+        self.treeWidget.setToolTip(
+            "Browse the file structure.\n"
+            "Select a Group/Dataset/Attribute, then use the buttons to assign it as Cube/Wavelength/Metadata/GT map path."
+        )
+
+        self.label_filename.setToolTip(
+            "Currently loaded file.\n"
+            "This browser supports HDF5 (.h5/.hdf5), MATLAB v7.3 stored as HDF5, legacy .mat (limited), and ENVI .hdr metadata."
+        )
+
+        self.le_cube.setToolTip(
+            "Selected path for the hyperspectral data cube.\n"
+            "This is the dataset/group that will be used as the main data source."
+        )
+
+        self.le_wl.setToolTip(
+            "Selected path for wavelengths.\n"
+            "Use checkbox 'wl dim' to indicate if the wavelength vector is stored along the first or last dimension in the source dataset."
+        )
+
+        self.le_meta.setToolTip(
+            "Selected path for metadata.\n"
+        )
+
+        # Only if you have GT widgets in your UI (they exist in your class: le_gtmap / btn_select_gtmap)
+        if hasattr(self, "le_gtmap"):
+            self.le_gtmap.setToolTip(
+                "Selected path for a Ground Truth / label map (optional).\n"
+                "If provided, it can be used by Ground Truth tool."
+            )
+
+        self.btn_select_cube.setToolTip(
+            "Assign the currently selected tree item path to 'Cube path'."
+        )
+        self.btn_select_wl.setToolTip(
+            "Assign the currently selected tree item path to 'Wavelength path'."
+        )
+        self.btn_select_meta.setToolTip(
+            "Assign the currently selected tree item path to 'Metadata path'."
+        )
+        if hasattr(self, "btn_select_gtmap"):
+            self.btn_select_gtmap.setToolTip(
+                "Assign the currently selected tree item path to 'GT map path' (optional)."
+            )
+
+        self.comboBox_channel_wl.setToolTip(
+            "Wavelength dimension hint.\n"
+            "Indicate if the wavelength vector is stored along the first or last dimension in the source dataset."
+        )
+
+        if hasattr(self, "label_wl_dim"):
+            self.label_wl_dim.setToolTip(
+                "Indicates how the wavelength axis is interpreted when extracting wavelengths from the selected path."
+            )
+
+        self.btn_ok.setToolTip(
+            "Validate the selected paths and emit them as CubeInfoTemp (accepted).\n"
+            "This updates how the cube is parsed/loaded by the rest of the application."
+        )
+
+        self.btn_cancel.setToolTip(
+            "Cancel and close without applying changes (rejected)."
+        )
 
     def _is_hdf5_file(self, path: str) -> bool:
         """True if `path` can be opened by h5py (including .mat v7.3)."""

@@ -532,7 +532,7 @@ class Ui_IdentificationWidget(object):
         self.verticalLayout.setStretch(1, 8)
 
         self.retranslateUi(IdentificationWidget)
-        self.tabWidget_Process.setCurrentIndex(1)
+        self.tabWidget_Process.setCurrentIndex(0)
         self.comboBox_clean_preset.setCurrentIndex(1)
         self.tabWidget_Image.setCurrentIndex(0)
         self.tabWidget_info_classification.setCurrentIndex(0)
@@ -555,7 +555,7 @@ class Ui_IdentificationWidget(object):
         self.label_padding_mode.setText(_translate("IdentificationWidget", "Padding :"))
         self.radioButton_band_selection_auto.setToolTip(_translate("IdentificationWidget", "Let the algorithm choose the best band for binarization"))
         self.radioButton_band_selection_auto.setText(_translate("IdentificationWidget", "Automatic best band selection"))
-        self.comboBox_padding_mode.setToolTip(_translate("IdentificationWidget", "<html><head/><body><p>Padding mode — Border handling</p><p><br/></p><p>Defines how image borders are handled when computing local statistics.<br/>Not used for Niblack and Otsu.</p></body></html>"))
+        self.comboBox_padding_mode.setToolTip(_translate("IdentificationWidget", "<html><head/><body><p>Padding mode — Border handling</p><p>Defines how image borders are handled when computing local statistics.<br/>Not used for Niblack and Otsu.</p></body></html>"))
         self.comboBox_padding_mode.setItemText(0, _translate("IdentificationWidget", "replicate"))
         self.comboBox_padding_mode.setItemText(1, _translate("IdentificationWidget", "symmetric"))
         self.comboBox_padding_mode.setItemText(2, _translate("IdentificationWidget", "circular"))

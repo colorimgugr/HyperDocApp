@@ -38,7 +38,7 @@
          <string/>
         </property>
         <property name="currentIndex">
-         <number>1</number>
+         <number>0</number>
         </property>
         <widget class="QWidget" name="tabWidgetPage2">
          <attribute name="title">
@@ -175,7 +175,7 @@
             <item row="3" column="2">
              <widget class="QComboBox" name="comboBox_padding_mode">
               <property name="toolTip">
-               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Padding mode — Border handling&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;Defines how image borders are handled when computing local statistics.&lt;br/&gt;Not used for Niblack and Otsu.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Padding mode — Border handling&lt;/p&gt;&lt;p&gt;Defines how image borders are handled when computing local statistics.&lt;br/&gt;Not used for Niblack and Otsu.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
               </property>
               <item>
                <property name="text">

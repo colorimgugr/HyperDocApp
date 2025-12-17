@@ -337,17 +337,17 @@ class MainApp(QtWidgets.QMainWindow):
         self.toolbar.setIconSize(QSize(48, 48))  # Taille des icônes
         self.toolbar.setToolButtonStyle(Qt.ToolButtonIconOnly)  #ToolButtonIconOnly ou TextUnderIcon)
 
-        act_file = self.onToolButtonPress(self.file_browser_dock,icon_name="file_browser_icon.png",tooltip="File Browser")
-        act_met = self.onToolButtonPress(self.meta_dock, "metadata_icon.png", "Metadata")
+        act_file = self.onToolButtonPress(self.file_browser_dock,icon_name="file_browser_icon.png",    tooltip="File Browser — Browse cube files, inspect internal datasets, and send selections to the tools.")
+        act_met = self.onToolButtonPress(self.meta_dock, "metadata_icon.png",     "Metadata — View and edit cube metadata with safe synchronization.")
         self.toolbar.addSeparator()
-        act_mini=self.onToolButtonPress(self.minicube_dock, "minicube_icon.png", "Minicube Extract")
-        act_data = self.onToolButtonPress(self.data_viz_dock, "icon_data_viz.svg", "Data Vizualisation")
-        act_illumination = self.onToolButtonPress(self.illumination_dock, "illumination_icon.png", "Illumination")
-        act_reg = self.onToolButtonPress(self.reg_dock, "registration_icon.png", "Registration")
-        act_gt =self.onToolButtonPress(self.gt_dock, "GT_icon_1.png", "Ground Truth")
+        act_mini=self.onToolButtonPress(self.minicube_dock, "minicube_icon.png",     "Minicube Extract — Crop regions of interest and export compact minicubes while preserving parent metadata.")
+        act_data = self.onToolButtonPress(self.data_viz_dock, "icon_data_viz.svg", "Data Visualization — Explore cubes of the dataset interactively")
+        act_illumination = self.onToolButtonPress(self.illumination_dock, "illumination_icon.png", "Illumination — Inspect illumination effects")
+        act_reg = self.onToolButtonPress(self.reg_dock, "registration_icon.png",     "Registration — Align a moving cube to a fixed cube using feature matching and geometric transforms.")
+        act_gt =self.onToolButtonPress(self.gt_dock, "GT_icon_1.png",     "Ground Truth — Create, edit, and export labeled maps (manual selection + supervised/unsupervised segmentation).")
         self.toolbar.addSeparator()
-        act_ident=self.onToolButtonPress(self.identification_dock,"Ident_icon.png","Identification")
-        act_unmix=self.onToolButtonPress(self.unmixing_dock,"unmixing_icon.png","Unmixing")
+        act_ident=self.onToolButtonPress(self.identification_dock,"Ident_icon.png",    "Identification — Run ink/substrate identification workflows using the dataset.")
+        act_unmix=self.onToolButtonPress(self.unmixing_dock,"unmixing_icon.png",    "Unmixing — Estimate per-pixel abundances by fitting mixtures of reference spectra and visualize abundance maps.")
 
         self.toolbar.addSeparator()
 
@@ -355,6 +355,9 @@ class MainApp(QtWidgets.QMainWindow):
         self.cubeBtn = QtWidgets.QToolButton(self)
         self.cubeBtn.setText("Cubes list   ")
         self.cubeBtn.setPopupMode(QtWidgets.QToolButton.InstantPopup)
+        self.cubeBtn.setToolTip(
+            "Cubes list — Select the loaded cube to manage."
+        )
         # self.cubeBtn.setStyleSheet("QToolButton::menu-indicator { image: none; }")
         self.toolbar.addWidget(self.cubeBtn)
 
@@ -364,6 +367,9 @@ class MainApp(QtWidgets.QMainWindow):
 
         # Action Add File in list of cubes
         act_add = QAction("Open new cube(s)", self)
+        act_add.setToolTip(
+            "Open new cube(s) — Load one or multiple hyperspectral cubes and add them to the cubes list."
+        )
         act_add.triggered.connect(self._on_add_cube)
         self.toolbar.addAction(act_add)
 
@@ -373,6 +379,9 @@ class MainApp(QtWidgets.QMainWindow):
         # Save with menu
         self.saveBtn = QtWidgets.QToolButton(self)
         self.saveBtn.setText("Save Cube")
+        self.saveBtn.setToolTip(
+            "Save cube — Export the selected cube to disk (including updated metadata)."
+        )
         # self.saveBtn.setIcon(QIcon(os.path.join(self.ICONS_DIR, "save_icon.png")))
         self.saveBtn.setPopupMode(QtWidgets.QToolButton.InstantPopup)
         self.saveMenu = QtWidgets.QMenu(self)
@@ -388,12 +397,14 @@ class MainApp(QtWidgets.QMainWindow):
         self.toolbar.addWidget(spacer)
 
         act_suggestion = QAction("SUGGESTIONS", self)
-        act_suggestion.setToolTip("Add a suggestion for the developper")
+        act_suggestion.setToolTip(
+            "Suggestions — Send feedback or feature requests to improve the tool."
+        )
         act_suggestion.triggered.connect(self.open_suggestion_box)
         self.toolbar.addAction(act_suggestion)
 
         # Checkbox "Show tooltips" dans la toolbar (à droite, près de SUGGESTIONS)
-        self.checkBox_show_tooltips = QCheckBox("Show Tooltips")
+        self.checkBox_show_tooltips = QCheckBox("Show Tooltips for help")
         self.checkBox_show_tooltips.setToolTip("Enable/disable all tooltips in the application")
 
         tooltips_action = QWidgetAction(self)
@@ -1102,10 +1113,10 @@ if __name__ == "__main__":
     main = MainApp()
     main.show()
 
-    # folder = r'C:\Users\Usuario\Documents\DOC_Yannick\HYPERDOC Database_TEST\Samples\minicubes/'
-    # fname = '00189-VNIR-mock-up.h5'
-    # filepath = os.path.join(folder, fname)
-    # main._on_add_cube([filepath,filepath.replace('189','191')])
+    folder = r'C:\Users\Usuario\Documents\DOC_Yannick\HYPERDOC Database_TEST\Samples\minicubes/'
+    fname = '00189-VNIR-mock-up.h5'
+    filepath = os.path.join(folder, fname)
+    main._on_add_cube([filepath,filepath.replace('189','191')])
 
     try:
         import matlab.engine

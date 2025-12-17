@@ -192,6 +192,47 @@ class LabelWidget(QWidget):
         self.tableView.setContextMenuPolicy(Qt.CustomContextMenu)
         self.tableView.customContextMenuRequested.connect(self.on_table_right_click)
 
+        # Tooltips
+
+        self.tableView.setToolTip(
+            "Materials / palette table\n"
+            "Reference table of GT labels. Original rows are read-only; only newly added rows can be edited."
+            "Tip: Right-click a row to assign it to a class."
+
+        )
+
+        self.btn_choose.setToolTip(
+            "Assign selected\n"
+            "Assign the currently selected table row (GT idx, name, RGB) to a class index used by the Ground Truth tool.\n"
+            "Tip: you can also right-click a row to assign it."
+        )
+
+        self.btn_new.setToolTip(
+            "Add a new label\n"
+            "Create a new GT label entry: choose a name, pick a color, and automatically assign the next available GT index."
+        )
+
+        self.btn_delete.setToolTip(
+            "Delete added label\n"
+            "Delete the selected label row, but only if it was added in this session (original CSV rows cannot be removed)."
+        )
+
+        self.btn_load.setToolTip(
+            "Load table\n"
+            "Load a CSV label table. If loading fails, you can create a new empty table (same columns) and continue."
+        )
+
+        self.btn_save.setToolTip(
+            "Save modified table\n"
+            "Export the current table to a CSV file."
+        )
+
+        # Optional: tooltip on the left mapping panel (if you want it on hover)
+        label_container.setToolTip(
+            "Class ↔ GT mapping\n"
+            "Summary of current assignments: for each internal class index, shows the linked GT index, GT name, and GT color swatch."
+        )
+
     def fill_label_box(self):
 
         # On vide d’abord tout (si recyclage possible)
