@@ -1,8 +1,10 @@
-from PyQt5.QtWidgets import (QProgressBar,QLabel,QDialog, QVBoxLayout,
-    QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QRubberBand,QGraphicsRectItem
+from PyQt5.QtWidgets import (QProgressBar,QLabel,QDialog, QVBoxLayout,QGraphicsLineItem, QGraphicsItem,
+    QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QRubberBand,QGraphicsRectItem,QHBoxLayout,QPushButton
 )
 from PyQt5.QtGui import QPixmap, QImage, QPen, QColor
-from PyQt5.QtCore import QRect, QPoint, Qt, QSize,pyqtSignal, QPointF,QRectF
+from PyQt5.QtCore import QRect, QPoint, Qt, QSize,pyqtSignal, QPointF,QRectF,QLineF, QObject, pyqtSlot, QRunnable
+
+import traceback
 
 import cv2
 import os
@@ -52,6 +54,12 @@ class ZoomableGraphicsView(QGraphicsView):
         self.editing_match = None  # (match_index, side: "left"/"right")
         self.setMouseTracking(True)  # enable mouseMoveEvent without press
 
+        # zoom
+        self._scale_factor = 1.0
+        self.min_scale = 0.2
+        self.max_scale = 100.0
+        self.zoom_step = 1.25
+
     def setImage(self, pixmap):
         # self.clear_rectangle()
         self.scene().clear()
@@ -67,11 +75,24 @@ class ZoomableGraphicsView(QGraphicsView):
             self.scale(scale_factor, scale_factor)
 
     def wheelEvent(self, event):
-        self.viewport().setCursor(Qt.CrossCursor)
-        zoom_in_factor = 1.25
-        zoom_out_factor = 1 / zoom_in_factor
-        zoom = zoom_in_factor if event.angleDelta().y() > 0 else zoom_out_factor
+        if event.angleDelta().y() == 0:
+            return
+
+        if event.angleDelta().y() > 0:
+            zoom = self.zoom_step
+        else:
+            zoom = 1 / self.zoom_step
+
+        new_scale = self._scale_factor * zoom
+
+        # Clamp
+        if new_scale < self.min_scale:
+            return  # ← stop net : plus aucun effet
+        if new_scale > self.max_scale:
+            return
+
         self.scale(zoom, zoom)
+        self._scale_factor = new_scale
 
     def mousePressEvent(self, event):
         self.viewport().setCursor(Qt.CrossCursor)
@@ -174,9 +195,13 @@ class ZoomableGraphicsView(QGraphicsView):
                 return
 
             self.rect_coords = [x_min, y_min, width, height]
-            self.last_rect_item = self.scene().addRect(
-                x_min, y_min, width, height, QPen(QColor("red"))
-            )
+            pen = QPen(QColor(255, 255, 0, 255))  # jaune très visible (mieux que rouge sur certaines scènes)
+            pen.setWidth(3)  # épaisseur
+            pen.setCosmetic(True)  # épaisseur constante à l’écran (indépendante du zoom)
+            pen.setStyle(Qt.SolidLine)
+
+            self.last_rect_item = self.scene().addRect(x_min, y_min, width, height, pen)
+            self.last_rect_item.setZValue(20)
 
         if self.editing_match is not None:
             self.moveFeatureEnd.emit()
@@ -184,7 +209,6 @@ class ZoomableGraphicsView(QGraphicsView):
 
         self.selectionChanged.emit()
         super().mouseReleaseEvent(event)
-
 
     def get_rect_coords(self):
         return self.rect_coords
@@ -198,18 +222,6 @@ class ZoomableGraphicsView(QGraphicsView):
         self.last_rect_item = None
         self.rect_coords=None
 
-    # def add_selection_overlay(self, rect: QRectF):
-    #     # Remove previous overlay if any
-    #     if hasattr(self, '_selection_overlay') and self._selection_overlay is not None:
-    #         self.scene().removeItem(self._selection_overlay)
-    #
-    #     overlay = QGraphicsRectItem(rect)
-    #     overlay.setBrush(QColor(0, 255, 0, 80) ) # Green with transparency
-    #     overlay.setPen(QPen(Qt.green, 2, Qt.DashLine))
-    #     overlay.setZValue(10)  # Ensure it's above the image
-    #     self.scene().addItem(overlay)
-    #     self._selection_overlay = overlay
-
     def add_selection_overlay(self, rect: QRectF,surface=True):
         # Remove previous overlay if any
         if hasattr(self, '_selection_overlay') and self._selection_overlay is not None:
@@ -222,8 +234,10 @@ class ZoomableGraphicsView(QGraphicsView):
         overlay = QGraphicsRectItem(rect)
         if surface:
             overlay.setBrush(QColor(0, 255, 0, 80))  # Green with transparency
-        overlay.setPen(QPen(Qt.red, 1, Qt.DashLine))
-        overlay.setZValue(10)  # On top
+        pen = QPen(QColor(255, 255, 0, 255), 2, Qt.DashLine)
+        pen.setCosmetic(True)
+        overlay.setPen(pen)
+        overlay.setZValue(20)
         self.scene().addItem(overlay)
         self._selection_overlay = overlay
 
@@ -232,29 +246,194 @@ class ZoomableGraphicsView(QGraphicsView):
             self.scene().removeItem(self._selection_overlay)
             self._selection_overlay = None
 
+    def clear_overlay_items(self):
+        items = getattr(self, "_overlay_items", [])
+        if not items:
+            self._overlay_items = []
+            return
+        sc = self.scene()
+        for it in items:
+            try:
+                sc.removeItem(it)
+            except Exception:
+                pass
+        self._overlay_items = []
+
+    def add_cross_overlay(self, x, y, half_size=8, color=QColor(255, 255, 0), width=2):
+        """
+        Draw a cross centered at (x,y) in SCENE coordinates.
+        Cosmetic pen => constant thickness regardless of zoom.
+        """
+        sc = self.scene()
+        if sc is None:
+            return
+
+        if not hasattr(self, "_overlay_items"):
+            self._overlay_items = []
+
+        pen = QPen(color)
+        pen.setWidth(int(width))
+        pen.setCosmetic(True)  # KEY: thickness constant on screen
+
+        # Horizontal line
+        h = QGraphicsLineItem(QLineF(x - half_size, y, x + half_size, y))
+        h.setPen(pen)
+        h.setZValue(10_000)
+
+        # Vertical line
+        v = QGraphicsLineItem(QLineF(x, y - half_size, x, y + half_size))
+        v.setPen(pen)
+        v.setZValue(10_000)
+
+        sc.addItem(h)
+        sc.addItem(v)
+        self._overlay_items.extend([h, v])
+
 
 class LoadingDialog(QDialog):
-    def __init__(self, message="Loading...", filename=None, parent=None):
+    cancel_requested = pyqtSignal()
+
+    def __init__(
+        self,
+        message="Loading.",
+        filename=None,
+        parent=None,
+        cancellable: bool = False,
+        cancel_text: str = "Cancel",
+        block_close: bool = True,
+    ):
         super().__init__(parent)
         self.setWindowTitle("Please wait")
         self.setModal(True)
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
 
+        self._cancellable = bool(cancellable)
+        self._block_close = bool(block_close)
+        self._cancel_requested = False
+
         layout = QVBoxLayout(self)
 
-        label = QLabel(message)
-        label.setAlignment(Qt.AlignCenter)
-        layout.addWidget(label)
+        self.label = QLabel(message)
+        self.label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(self.label)
 
         if filename:
-            label_file = QLabel(f"<i>{os.path.basename(filename)}</i>")
-            label_file.setAlignment(Qt.AlignCenter)
-            layout.addWidget(label_file)
+            self.label_file = QLabel(f"<i>{os.path.basename(filename)}</i>")
+            self.label_file.setAlignment(Qt.AlignCenter)
+            layout.addWidget(self.label_file)
+        else:
+            self.label_file = None
 
         self.progress = QProgressBar()
-        self.progress.setRange(0, 0)  # mode indéterminé
+        self.progress.setRange(0, 0)  # indeterminate (animated)
+        self.progress.setTextVisible(True)
+        self.progress.setFormat("In progress…")  # “dynamic” busy style, not 0%
         layout.addWidget(self.progress)
+
+        # Optional cancel button row
+        self.btn_cancel = None
+        if self._cancellable:
+            row = QHBoxLayout()
+            row.addStretch(1)
+
+            self.btn_cancel = QPushButton(cancel_text, self)
+            self.btn_cancel.clicked.connect(self._on_cancel_clicked)
+            row.addWidget(self.btn_cancel)
+
+            layout.addLayout(row)
 
         self.setFixedWidth(350)
 
+    def _on_cancel_clicked(self):
+        self._cancel_requested = True
+        if self.btn_cancel is not None:
+            self.btn_cancel.setEnabled(False)
 
+        # UX feedback
+        self.label.setText("Cancel requested…")
+        self.progress.setFormat("Stopping…")
+
+        self.cancel_requested.emit()
+
+    def was_cancel_requested(self) -> bool:
+        return self._cancel_requested
+
+    def set_message(self, message: str):
+        self.label.setText(message)
+
+    def set_busy_text(self, text: str):
+        # changes the text displayed inside the progress bar
+        self.progress.setFormat(text)
+
+    def set_indeterminate(self, on: bool):
+        if on:
+            self.progress.setRange(0, 0)
+        else:
+            self.progress.setRange(0, 100)
+            # Optionnel: si tu veux éviter le 0% affiché
+            if self.progress.value() == 0:
+                self.progress.setValue(100)
+
+    def set_progress(self, value: int):
+        # Si on reçoit un progrès déterminé, on bascule automatiquement
+        if self.progress.maximum() == 0:
+            self.set_indeterminate(False)
+        self.progress.setValue(int(value))
+
+    def closeEvent(self, event):
+        # Optionally block user from closing via the window [X] while cancellable & not canceled
+        if self._cancellable and self._block_close and not self._cancel_requested:
+            event.ignore()
+            return
+        super().closeEvent(event)
+
+# ======================================================================
+# Cube loading worker (generic, cancellable)
+# ======================================================================
+
+class LoadCubeSignals(QObject):
+    started = pyqtSignal()
+    finished = pyqtSignal(object)   # Hypercube
+    error = pyqtSignal(str)
+    canceled = pyqtSignal()
+
+class LoadCubeWorker(QRunnable):
+    """
+    Generic worker to load a Hypercube (or equivalent object) in background.
+
+    Parameters
+    ----------
+    load_fn : callable
+        Function with no arguments that performs the actual loading
+        and RETURNS the loaded cube.
+    """
+
+    def __init__(self, load_fn):
+        super().__init__()
+        self.signals = LoadCubeSignals()
+        self._load_fn = load_fn
+        self._cancel_requested = False
+
+    def cancel(self):
+        self._cancel_requested = True
+
+    @pyqtSlot()
+    def run(self):
+        try:
+            self.signals.started.emit()
+
+            if self._cancel_requested:
+                self.signals.canceled.emit()
+                return
+
+            cube = self._load_fn()
+
+            if self._cancel_requested:
+                self.signals.canceled.emit()
+                return
+
+            self.signals.finished.emit(cube)
+
+        except Exception as e:
+            tb = traceback.format_exc()
+            self.signals.error.emit(f"Cube loading failed:\n{e}\n\n{tb}")

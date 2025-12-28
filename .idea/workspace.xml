@@ -4,10 +4,12 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="[GNL] : &#10;- tool_tips">
+    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="[Main] : &#10;- added send to ident and unmix if send to all&#10;[Illum]:&#10;- error message plus precis">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/MainWindow.py" beforeDir="false" afterPath="$PROJECT_DIR$/MainWindow.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/illumination/illumination_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/illumination/illumination_tool.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/interface/some_widget_for_interface.py" beforeDir="false" afterPath="$PROJECT_DIR$/interface/some_widget_for_interface.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/registration/registration_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/registration/registration_window.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/registration/registration_window.ui" beforeDir="false" afterPath="$PROJECT_DIR$/registration/registration_window.ui" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/unmixing/unmixing_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/unmixing/unmixing_tool.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -136,14 +138,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1744020944801</updated>
-    </task>
-    <task id="LOCAL-00119" summary="[unmixing] : implementing unmixing jobs&#10;- same normalization for cube and EM OK">
-      <option name="closed" value="true" />
-      <created>1762867998016</created>
-      <option name="number" value="00119" />
-      <option name="presentableId" value="LOCAL-00119" />
-      <option name="project" value="LOCAL" />
-      <updated>1762867998016</updated>
     </task>
     <task id="LOCAL-00120" summary="[unmixing] : implementing unmixing jobs&#10;- same normalization for cube and EM OK&#10;- update abundance map OK">
       <option name="closed" value="true" />
@@ -529,7 +523,15 @@
       <option name="project" value="LOCAL" />
       <updated>1765952284863</updated>
     </task>
-    <option name="localTasksCounter" value="168" />
+    <task id="LOCAL-00168" summary="[Main] : &#10;- added send to ident and unmix if send to all&#10;[Illum]:&#10;- error message plus precis">
+      <option name="closed" value="true" />
+      <created>1765964206276</created>
+      <option name="number" value="00168" />
+      <option name="presentableId" value="LOCAL-00168" />
+      <option name="project" value="LOCAL" />
+      <updated>1765964206276</updated>
+    </task>
+    <option name="localTasksCounter" value="169" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -581,7 +583,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="[MINI CUBE] : &#10;- Bugg fixed for clip R to 0..1" />
     <MESSAGE value="[MAIN] : &#10;- switch to tab if send to tool" />
     <MESSAGE value="[MAIN-CALIB-UNMIX] : &#10;- one tool dialog after adding cube&#10;- savgol filters adusted to order 4 and window 43" />
     <MESSAGE value="[UNMIX] : &#10;- ADD one FTIR spectrum to an hypercube OK&#10;- Select good sample if csv with multiple samples" />
@@ -606,6 +607,7 @@
     <MESSAGE value="[GNL] : &#10;- tool_tips &#10;[REGISTRATION] : &#10;- fixed interferences rectangle_move keypoint" />
     <MESSAGE value="[GNL] : &#10;- global activation of tool_tips" />
     <MESSAGE value="[GNL] : &#10;- tool_tips" />
-    <option name="LAST_COMMIT_MESSAGE" value="[GNL] : &#10;- tool_tips" />
+    <MESSAGE value="[Main] : &#10;- added send to ident and unmix if send to all&#10;[Illum]:&#10;- error message plus precis" />
+    <option name="LAST_COMMIT_MESSAGE" value="[Main] : &#10;- added send to ident and unmix if send to all&#10;[Illum]:&#10;- error message plus precis" />
   </component>
 </project>

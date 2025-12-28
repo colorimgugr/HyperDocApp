@@ -37,7 +37,7 @@ import traceback
 from unmixing.unmixing_backend import*
 from unmixing.unmixing_window import Ui_GroundTruthWidget
 from hypercubes.hypercube import Hypercube,CubeInfoTemp
-from interface.some_widget_for_interface import ZoomableGraphicsView
+from interface.some_widget_for_interface import ZoomableGraphicsView, LoadingDialog, LoadCubeWorker
 from identification.load_cube_dialog import Ui_Dialog
 
 # <editor-fold desc="To do">
@@ -146,6 +146,10 @@ class LoadCubeDialog(QDialog):
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
 
+        self._threadpool = QThreadPool.globalInstance()
+        self._loading_dialog = None
+        self._load_worker = None
+
         # Internal state
         self.cubes = {"VNIR": None, "SWIR": None}
         self._wl_ranges = {"VNIR": None, "SWIR": None}
@@ -179,9 +183,6 @@ class LoadCubeDialog(QDialog):
 
     # ---------------------- internals -----------------------
     def _load(self, kind: str):
-        """
-        Load VNIR or SWIR cube. On error, cleans state and UI.
-        """
         start_dir = ""
         path, _ = QFileDialog.getOpenFileName(
             self,
@@ -192,21 +193,63 @@ class LoadCubeDialog(QDialog):
         if not path:
             return
 
-        cube = Hypercube()
-        try:
+        # Empêcher 2 chargements simultanés dans ce dialog
+        if self._loading_dialog is not None:
+            return
+
+        dlg = LoadingDialog(
+            message=f"Loading {kind} cube…",
+            filename=path,
+            parent=self,
+            cancellable=True
+        )
+        self._loading_dialog = dlg
+
+        # Fonction de load exécutée dans le worker
+        def do_load():
+            cube = Hypercube()
             cube.open_hyp(default_path=path, open_dialog=False)
-            # WL can be None for some sources; we tolerate that
-            wl = cube.wl if cube.wl is not None else np.array([])
+            return cube
+
+        worker = LoadCubeWorker(do_load)
+        self._load_worker = worker
+
+        # Cancel -> request stop (cooperatif)
+        dlg.cancel_requested.connect(worker.cancel)
+
+        def cleanup():
+            if self._loading_dialog is not None:
+                self._loading_dialog.close()
+                self._loading_dialog.deleteLater()
+                self._loading_dialog = None
+            self._load_worker = None
+
+        def on_finished(cube):
+            cleanup()
+            # WL can be None for some sources; tolerate that
+            wl = cube.wl if getattr(cube, "wl", None) is not None else np.array([])
             self.cubes[kind] = cube
             self._wl_ranges[kind] = (float(wl.min()), float(wl.max())) if wl.size > 0 else None
-        except Exception as e:
-            # Robustness: clear state on failure
-            QMessageBox.warning(self, "Load error",
-                                f"Could not load {kind} cube:\n{e}")
+            self._update_labels()
+
+        def on_error(msg):
+            cleanup()
+            QMessageBox.warning(self, "Load error", f"Could not load {kind} cube:\n{msg}")
             self.cubes[kind] = None
             self._wl_ranges[kind] = None
+            self._update_labels()
 
-        self._update_labels()
+        def on_canceled():
+            cleanup()
+            # Ne change rien (ou reset si tu préfères). Ici je laisse inchangé.
+            # Optionnel : self._update_labels()
+
+        worker.signals.finished.connect(on_finished)
+        worker.signals.error.connect(on_error)
+        worker.signals.canceled.connect(on_canceled)
+
+        dlg.show()
+        self._threadpool.start(worker)
 
     def _update_labels(self):
         """
@@ -1010,6 +1053,14 @@ class UnmixingSignals(QObject):
     em_ready = pyqtSignal(np.ndarray,np.ndarray, object, dict)  # E, labels, index_map
     unmix_ready = pyqtSignal(np.ndarray, np.ndarray, dict)  # A, E, maps_by_group
 
+class EndmemberSignals(QObject):
+    error = pyqtSignal(str)
+    em_ready = pyqtSignal(np.ndarray, np.ndarray, object, dict)  # E, em_idx, labels, index_map
+    progress = pyqtSignal(int)                  # 0..100 (optionnel)
+    progress_indeterminate = pyqtSignal(bool)   # True -> range(0,0)
+    canceled = pyqtSignal()
+    finished = pyqtSignal()
+
 # ------------------------------- Workers --------------------------------------
 @dataclass
 class EndmemberJob:
@@ -1022,37 +1073,58 @@ class EndmemberWorker(QRunnable):
     def __init__(self, job: EndmemberJob,cube):
         super().__init__()
         self.job = job
-        self.signals = UnmixingSignals()
+        self.signals = EndmemberSignals()
         self.cube=cube
+        self._cancel = False
+
+    def cancel(self):
+        self._cancel = True
 
     @pyqtSlot()
     def run(self):
         try:
+            if self._cancel:
+                self.signals.canceled.emit()
+                return
+
+            # UI: indeterminate while heavy ops run
+            self.signals.progress_indeterminate.emit(True)
+            self.signals.progress.emit(0)
+
             # Normalize cube if needed
             data = normalize_cube(self.cube.data, mode=self.job.normalization)
-            print('[ENDMEMBERS] work started with ',self.job.method)
+
+            if self._cancel:
+                self.signals.canceled.emit()
+                return
 
             if self.job.method == 'ATGP':
-                E,em_idx = extract_endmembers_atgp(data, self.job.p)
-                labels = np.array([f"EM_{i:02d}" for i in range(E.shape[1])], dtype=object)
-                index_map = {str(lbl): np.array([i]) for i, lbl in enumerate(labels)}
+                # Note: no granular progress from current backend call
+                E, em_idx = extract_endmembers_atgp(data, self.job.p)
+
             elif self.job.method == 'N-FINDR':
-                # In PySptools, `maxit` is a small integer; use job.niter
-                E,em_idx = extract_endmembers_nfindr(data, self.job.p, maxit=max(1, int(self.job.niter)))
-                labels = np.array([f"EM_{i:02d}" for i in range(E.shape[1])], dtype=object)
-                index_map = {str(lbl): np.array([i]) for i, lbl in enumerate(labels)}
+                E, em_idx = extract_endmembers_nfindr(
+                    data, self.job.p, maxit=max(1, int(self.job.niter))
+                )
             else:
                 raise ValueError("Invalid endmember extraction settings.")
 
-            # Match normalization if any groups were given not already normalized
-            if self.job.normalization and self.job.normalization.lower() != 'none':
-                pass
+            if self._cancel:
+                self.signals.canceled.emit()
+                return
 
-            self.signals.em_ready.emit(E,em_idx, labels, index_map)
+            labels = np.array([f"EM_{i:02d}" for i in range(E.shape[1])], dtype=object)
+            index_map = {str(lbl): np.array([i]) for i, lbl in enumerate(labels)}
+
+            self.signals.progress.emit(100)
+            self.signals.em_ready.emit(E, em_idx, labels, index_map)
+
         except Exception as e:
             tb = traceback.format_exc()
             self.signals.error.emit(f"Endmember extraction failed: {e}\n{tb}")
-
+        finally:
+            self.signals.progress_indeterminate.emit(False)
+            self.signals.finished.emit()
 @dataclass
 class UnmixJob:
     name : str # unique key shown in table
@@ -1325,6 +1397,10 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         self.only_selected = False
         self.signals = UnmixingSignals()
 
+        # Chargement cube
+        self._loading_dialog = None
+        self._load_cube_worker = None
+
         # Remplacer placeholders par ZoomableGraphicsView
         self._replace_placeholder('viewer_left', ZoomableGraphicsView,cursor=Qt.CrossCursor)
         self._replace_placeholder('viewer_right', ZoomableGraphicsView,cursor=Qt.CrossCursor)
@@ -1452,7 +1528,11 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         self.pushButton_wavenumber_to_wavelength.clicked.connect(self.wavenumber_to_wavelength)
         self.comboBox_endmembers_get.currentIndexChanged.connect(self.on_algo_endmember_change)
         self.tabWidget.currentChanged.connect(self.stop_selec_if_tab_change)
+        self.tabWidget.setCurrentIndex(0)
         self.on_algo_endmember_change()
+        self._em_worker = None
+        self._em_progress_dialog = None
+
 
         # Spectra window
         self.comboBox_endmembers_spectra.currentIndexChanged.connect(self.on_changes_EM_spectra_viz)
@@ -1474,6 +1554,7 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         self.radioButton_view_em.toggled.connect(self.toggle_em_viz_stacked)
         self.horizontalSlider_em_position_size.valueChanged.connect(self.update_overlay)
         self.horizontalSlider_overlay_transparency.valueChanged.connect(self.update_alpha)
+        self.toggle_em_viz_stacked()
 
         # Defaults values algorithm
         self.comboBox_unmix_algorithm.setCurrentText('UCLS')
@@ -2189,9 +2270,6 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
                 # masque pixels de la classe
                 mask2d = (self.selection_mask_map == cls)
 
-                # ajouter les croix EM auto pour cette classe (si on en a)
-                if cls in extra_cross_masks:
-                    mask2d = np.logical_or(mask2d, extra_cross_masks[cls])
 
                 if not np.any(mask2d):
                     continue
@@ -2215,25 +2293,50 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
             mixed = cv2.addWeighted(overlay_img, 0.7, layer, 0.3, 0.0)
             overlay_img = np.where(self._preview_mask[:, :, None], mixed, overlay_img)
 
-        # 4) IMPORTANT : On veut aussi les croix sur viewer_right
-        #    seg_img est déjà coloré classe par classe sans alpha.
-        #    On va juste peindre les croix (opaques) par dessus.
-        #    Ici on réutilise extra_cross_masks.
-        for cls, cross_mask in extra_cross_masks.items():
-            # couleur : si tu veux cohérence, essaie class_info_auto[cls][2] si dispo sinon class_info[cls][2]
-            bgr_color = (0, 255, 255)
-            if hasattr(self, "class_info_auto") and cls in self.class_info_auto:
-                if len(self.class_info_auto[cls]) >= 3 and self.class_info_auto[cls][2] is not None:
-                    bgr_color = self.class_info_auto[cls][2]
-            elif cls in getattr(self, "class_info", {}):
-                bgr_color = self.class_info[cls][2]
-
-            seg_img[cross_mask] = bgr_color
 
         # 5) Push vers les viewers
         self.viewer_left.setImage(self._np2pixmap(overlay_img))
+        self.viewer_left.clear_overlay_items()
+
+        if self.active_source == "auto" and cross_half_size > 0 and self.selection_mask_map_auto is not None:
+            unique_cls = np.unique(self.selection_mask_map_auto)
+            unique_cls = [c for c in unique_cls if c >= 0]
+            for cls in unique_cls:
+                ys, xs = np.where(self.selection_mask_map_auto == cls)
+                if ys.size == 0:
+                    continue
+                y0 = int(ys[0])
+                x0 = int(xs[0])
+
+                # couleur cohérente avec tes classes (même logique que right)
+                bgr = self.class_info.get(cls, [None, None, (0, 255, 255)])[2]
+                b, g, r = bgr
+                qcol = QColor(int(r), int(g), int(b))
+
+                self.viewer_left.add_cross_overlay(x0, y0, half_size=cross_half_size, color=qcol, width=2)
+
+
         self.viewer_right.setImage(self._np2pixmap(seg_img))
+        self.viewer_right.clear_overlay_items()
+
+        if self.active_source == "auto" and cross_half_size > 0 and self.selection_mask_map_auto is not None:
+            unique_cls = np.unique(self.selection_mask_map_auto)
+            unique_cls = [c for c in unique_cls if c >= 0]
+            for cls in unique_cls:
+                ys, xs = np.where(self.selection_mask_map_auto == cls)
+                if ys.size == 0:
+                    continue
+                y0 = int(ys[0])
+                x0 = int(xs[0])
+
+                # couleur de classe si dispo (BGR -> QColor RGB)
+                bgr = self.class_info.get(cls, [None, None, (0, 255, 255)])[2]
+                b, g, r = bgr
+                qcol = QColor(int(r), int(g), int(b))
+
+                self.viewer_right.add_cross_overlay(x0, y0, half_size=cross_half_size, color=qcol, width=2)
         self._draw_current_rect(surface=False)
+
 
     def update_alpha(self, value):
         self.alpha = value / 100.0
@@ -3099,7 +3202,6 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         if self.no_reset_jobs_on_new_cube():
             return
 
-
         dlg = LoadCubeDialog(self, vnir_cube=self._last_vnir, swir_cube=self._last_swir)
         if dlg.exec_() == QDialog.Accepted:
             # Prefer fusing VNIR+SWIR if both available; otherwise passthrough a single cube
@@ -3154,65 +3256,29 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         if self.no_reset_jobs_on_new_cube():
             return
 
-        flag_loaded = False
-        if cube is not None:
-            try:
-                if cube_info is not None:
-                    cube.metadata = cube.cube_info.metadata_temp
-
-                if range is None:
-                    self.cube = cube
-                    flag_loaded = True
-                else:
-                    print('Range : ', range)
-                    if range == 'VNIR':
-                        self._last_vnir = cube
-                        self.cube = fused_cube(self._last_vnir, self._last_swir)
-
-                        flag_loaded = True
-
-                    elif range == 'SWIR':
-                        self._last_swir = cube
-                        self.cube = fused_cube(self._last_vnir, self._last_swir)
-
-                        flag_loaded = True
-
-                    else:
-                        print('Problem with cube range in parameter')
-
-            except:
-                print('Problem with cube in parameter')
-
-        if not flag_loaded:
-            if not filepath:
-                filepath, _ = QFileDialog.getOpenFileName(
-                    self, "Open Hypercube", "", "Hypercube files (*.mat *.h5 *.hdr)"
-                )
-                if not filepath:
-                    return
-            try:
-                cube = Hypercube(filepath=filepath, load_init=True)
-
+        def do_load(filepath=filepath,cube=cube, cube_info=cube_info, range=range):
+            flag_loaded = False
+            if cube is not None:
                 try:
                     if cube_info is not None:
                         cube.metadata = cube.cube_info.metadata_temp
 
                     if range is None:
                         self.cube = cube
+                        flag_loaded = True
                     else:
+                        print('Range : ', range)
                         if range == 'VNIR':
                             self._last_vnir = cube
-                            if self._last_swir is not None:
-                                self.cube = fused_cube(self._last_vnir, self._last_swir)
-                            else:
-                                self.cube = cube
+                            self.cube = fused_cube(self._last_vnir, self._last_swir)
+
+                            flag_loaded = True
 
                         elif range == 'SWIR':
                             self._last_swir = cube
-                            if self._last_vnir is not None:
-                                self.cube = fused_cube(self._last_vnir, self._last_swir)
-                            else:
-                                self.cube = cube
+                            self.cube = fused_cube(self._last_vnir, self._last_swir)
+
+                            flag_loaded = True
 
                         else:
                             print('Problem with cube range in parameter')
@@ -3220,46 +3286,86 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
                 except:
                     print('Problem with cube in parameter')
 
-            except Exception as e:
-                QMessageBox.warning(self, "Error", f"Failed to load cube: {e}")
-                return
+            if not flag_loaded:
+                if not filepath:
+                    filepath, _ = QFileDialog.getOpenFileName(
+                        self, "Open Hypercube", "", "Hypercube files (*.mat *.h5 *.hdr)"
+                    )
+                    if not filepath:
+                        return
+                try:
+                    cube = Hypercube(filepath=filepath, load_init=True)
 
-        # test spectral range
+                    try:
+                        if cube_info is not None:
+                            cube.metadata = cube.cube_info.metadata_temp
 
-        self.data = self.cube.data
-        self.wl = self.cube.wl
-        H, W = self.data.shape[:2]
-        # self.selection_mask_map = np.full((H, W), -1, dtype=int)
-        self.selection_mask_map_manual = np.full((H, W), -1, np.int32)
-        self.selection_mask_map_auto = np.full((H, W), -1, np.int32)
-        self.selection_mask_map_lib = np.full((H, W), -1, np.int32)
-        self.samples = {}
-        self.sample_coords = {}
-        self.class_means = {}
-        self.class_stds = {}
-        self.update_rgb_controls()
-        self.show_rgb_image()
-        self.update_overlay()
+                        if range is None:
+                            self.cube = cube
+                        else:
+                            if range == 'VNIR':
+                                self._last_vnir = cube
+                                if self._last_swir is not None:
+                                    self.cube = fused_cube(self._last_vnir, self._last_swir)
+                                else:
+                                    self.cube = cube
 
-        for viewer in [self.viewer_left,self.viewer_right]:
-            rect = viewer.pixmap_item.boundingRect()
-            viewer.fitInView(rect, Qt.KeepAspectRatio)
-            viewer.scale(0.7, 0.7)  # zoom avant (1.0 = cadre exact, 0.7 = ~70% de l'écran)
+                            elif range == 'SWIR':
+                                self._last_swir = cube
+                                if self._last_vnir is not None:
+                                    self.cube = fused_cube(self._last_vnir, self._last_swir)
+                                else:
+                                    self.cube = cube
 
-        self.regions = {}
+                            else:
+                                print('Problem with cube range in parameter')
 
-        self.E_manual = {}
-        self.class_info_manual = {}
-        self.param_manual = {}
-        self.wl_manual = None
+                    except:
+                        print('Problem with cube in parameter')
 
-        self.E_auto = {}
-        self.class_info_auto = {}
-        self.param_auto = {}
-        self.wl_auto = None
+                except Exception as e:
+                    QMessageBox.warning(self, "Error", f"Failed to load cube: {e}")
+                    return
 
-        path=self.cube.cube_info.filepath
-        self.label_cube_file.setText(os.path.basename(path).split('.')[0])
+        dlg = LoadingDialog(
+            message="Loading cube…",
+            filename=filepath,
+            parent=self,
+            cancellable=True
+        )
+        self._loading_dialog = dlg
+
+        worker = LoadCubeWorker(do_load)
+        self._load_cube_worker = worker
+
+        # Cancel request
+        dlg.cancel_requested.connect(worker.cancel)
+
+        def cleanup():
+            if self._loading_dialog is not None:
+                self._loading_dialog.close()
+                self._loading_dialog.deleteLater()
+                self._loading_dialog = None
+
+            self._load_cube_worker = None
+
+        def on_finished():
+            cleanup()
+            self._on_cube_loaded()
+
+        def on_error(msg):
+            cleanup()
+            QMessageBox.warning(self, "Load cube", msg)
+
+        def on_canceled():
+            cleanup()
+
+        worker.signals.finished.connect(on_finished)
+        worker.signals.error.connect(on_error)
+        worker.signals.canceled.connect(on_canceled)
+
+        dlg.show()
+        self.threadpool.start(worker)
 
     def no_reset_jobs_on_new_cube(self):
         for job in self.jobs:
@@ -3902,6 +4008,43 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         # Mettre à jour le label dédié
         self.label_one_spectrum.setText(sample)
 
+    def _on_cube_loaded(self):
+        # test spectral range
+        self.data = self.cube.data
+        self.wl = self.cube.wl
+        H, W = self.data.shape[:2]
+        # self.selection_mask_map = np.full((H, W), -1, dtype=int)
+        self.selection_mask_map_manual = np.full((H, W), -1, np.int32)
+        self.selection_mask_map_auto = np.full((H, W), -1, np.int32)
+        self.selection_mask_map_lib = np.full((H, W), -1, np.int32)
+        self.samples = {}
+        self.sample_coords = {}
+        self.class_means = {}
+        self.class_stds = {}
+        self.update_rgb_controls()
+        self.show_rgb_image()
+        self.update_overlay()
+
+        for viewer in [self.viewer_left, self.viewer_right]:
+            rect = viewer.pixmap_item.boundingRect()
+            viewer.fitInView(rect, Qt.KeepAspectRatio)
+            viewer.scale(0.7, 0.7)  # zoom avant (1.0 = cadre exact, 0.7 = ~70% de l'écran)
+
+        self.regions = {}
+
+        self.E_manual = {}
+        self.class_info_manual = {}
+        self.param_manual = {}
+        self.wl_manual = None
+
+        self.E_auto = {}
+        self.class_info_auto = {}
+        self.param_auto = {}
+        self.wl_auto = None
+
+        path = self.cube.cube_info.filepath
+        self.label_cube_file.setText(os.path.basename(path).split('.')[0])
+
     # </editor-fold>
 
     # <editor-fold desc="Endmembers">
@@ -3925,8 +4068,13 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         if self.cube is None:
             QMessageBox.warning(self, 'Unmixing', 'Load a cube first.')
             return
+
+        if self._em_worker is not None:
+            QMessageBox.information(self, "Endmembers", "An endmember extraction is already running.")
+            return
+
+
         method = self.comboBox_endmembers_auto_algo.currentText()
-        print('[ENDMEMBERS] algorithm : ',method)
         p = int(self.nclass_box.value())
         niter = int(self.niter_box.value())
         norm = self._current_normalization()
@@ -3939,9 +4087,47 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         job = EndmemberJob(method=method, p=p, niter=niter, normalization=norm)
 
         worker = EndmemberWorker(job,self.cube)
+        self._em_worker = worker
+
+        dlg = LoadingDialog(
+            message=f"Extracting endmembers ({job.method})…",
+            parent=self,
+            cancel_text="Cancel"
+        )
+        self._em_progress_dialog = dlg
+
+        dlg.cancel_requested.connect(self._on_cancel_endmember_extraction)
         worker.signals.em_ready.connect(self._on_em_ready)
-        worker.signals.error.connect(self._on_error)
+        worker.signals.canceled.connect(lambda: dlg.setWindowTitle("Canceled"))
+        worker.signals.error.connect(lambda msg: dlg.setWindowTitle("Error"))
+        worker.signals.finished.connect(self._close_em_progress_dialog)
+
+        dlg.show()
+
         self.threadpool.start(worker)
+
+    def _close_em_progress_dialog(self):
+        if self._em_progress_dialog is not None:
+            # autoriser closeEvent (on désactive le bouton)
+            self._em_progress_dialog.close()
+            self._em_progress_dialog.deleteLater()
+            self._em_progress_dialog = None
+
+        self._em_worker = None
+
+    def _on_cancel_endmember_extraction(self):
+        if self._em_worker is not None:
+            self._em_worker.cancel()
+            # note: si l'algo est un gros bloc non-interruptible, la fermeture viendra au finished
+
+    def _on_em_finished_close_dialog(self):
+        # close dialog safely
+        if self._em_progress_dialog is not None:
+            self._em_progress_dialog.close()
+            self._em_progress_dialog.deleteLater()
+            self._em_progress_dialog = None
+
+        self._em_worker = None
 
     def _on_em_ready(self, E: np.ndarray,idx_em : np.ndarray, labels: np.ndarray, index_map: Dict[str, np.ndarray]):
         self.labels, self.index_map = labels, index_map
@@ -5064,6 +5250,9 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
         self.viewer_left.enable_rect_selection = False
 
     def stop_selec_if_tab_change(self):
+        if not self.selecting_pixels:
+            return
+
         if self.tabWidget.currentIndex() !=0:
             self.stop_pixel_selection()
             return
