@@ -865,6 +865,7 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         self._cube_load_dialog = None
         self._cube_load_worker = None
 
+
         # Table init
         self._init_classification_table(self.tableWidget_classificationList)
         self._init_cleaning_list()
@@ -1734,7 +1735,6 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
             self.classifier_type = "sklearn"
             self.classifier_wl=model['train_wl']
 
-    # Loading logic (single point of truth)
     def _load_substrate_model(self, model_name, trained_path=None):
         if trained_path:
             self.load_classifier(trained_path)
@@ -1763,6 +1763,26 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
         filename = f"model_{model_name.lower()}_background_10pct.joblib"
         self.load_classifier(os.path.join(BASE_DIR, "identification", "data", filename))
 
+    def _open_busy_dialog(self, message: str):
+        if getattr(self, "_busy_dialog", None) is not None:
+            return
+
+        self._busy_dialog = LoadingDialog(
+            message=message,
+            parent=self,
+            cancellable=False,  # IMPORTANT : comme unmixing
+        )
+        self._busy_dialog.show()
+
+    def _close_busy_dialog(self):
+        dlg = getattr(self, "_busy_dialog", None)
+        if dlg is not None:
+            try:
+                dlg.close()
+            except Exception:
+                pass
+            self._busy_dialog = None
+
     def classify_substrate(self,trained_path=None):
         model_name=self.comboBox_clas_substrate_model.currentText()
         rect = self._get_selected_rect()
@@ -1782,7 +1802,7 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
                 return
 
         if self.binary_map is None:
-            QMessageBox.Warning(self, "No binarization map",
+            QMessageBox.warning(self, "No binarization map",
                                 "Launch binarization first")
             return
 
@@ -1825,7 +1845,6 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
                                     'Model can not be trained.\nPlease choose between LDA, KNN, RDF or SVM')
                 return
 
-
             # Build a filename that embeds the spectral range
             spectral_tag = f"_{int(self.wl[0])}-{int(self.wl[-1])}"
             if getattr(sys, 'frozen', False):
@@ -1845,6 +1864,8 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
                 train_wl=self.wl
             )
 
+            self._open_busy_dialog("Training substrate model…")
+
             def _on_saved(path):
                 try:
                     # reload the freshly trained model
@@ -1855,12 +1876,19 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
 
             worker.signals.saved.connect(_on_saved)
             worker.signals.error.connect(lambda msg: QMessageBox.critical(self, "Training error", msg))
-            worker.signals.progress.connect(lambda v: None)  # optional: wire a small progress UI
+
+            # Progress handling
+            worker.signals.progress.connect(self._on_classif_progress)  # réutilise ta fonction existante
+
+            worker.signals.finished.connect(self._close_busy_dialog)
+            worker.signals.error.connect(lambda _: self._close_busy_dialog())
+
             self.threadpool.start(worker)
             return
 
         if self.checkBox_classify_substrate_fast.isChecked():
             '''Make the Mid spectra of all pixels of sub_data where sub_map is 0 and classify with loaded model'''
+            self._open_busy_dialog("Fast substrate identification…")
             x_mean = X.mean(axis=0, keepdims=True)
             pred = int(self.classifier.predict(x_mean)[0])
             self.substrate_label = SUBSTRATE_LABEL_DIC[pred]
@@ -1894,7 +1922,8 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
                         lines = []
                         for c in classes:
                             pct = 100.0 * counts[c] / tot
-                            lines.append(f"class {int(c)} : {counts[c]} px  ({pct:.1f}%)")
+                            substrate_label = SUBSTRATE_LABEL_DIC[c]
+                            lines.append(f"{substrate_label} : {counts[c]} px  ({pct:.1f}%)")
                         s = "\n".join(lines)
                         counts = np.bincount(preds)
                         tot = counts.sum()
@@ -1903,20 +1932,27 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
                         self.substrate_label=SUBSTRATE_LABEL_DIC[pred]
 
                     QMessageBox.information(self, "Substrate (full)", s)
+                    self.update_overlay()
 
-                worker.signals.progress.connect(lambda: None)
+                worker.signals.progress.connect(self._on_classif_progress)
                 worker.signals.error.connect(_on_err)
                 worker.signals.result.connect(_on_res)
-                worker.signals.finished.connect(lambda: None)
+
+                worker.signals.finished.connect(self._close_busy_dialog)
+                worker.signals.error.connect(lambda _: self._close_busy_dialog())
+
+                self._open_busy_dialog("Classifying substrate…")
 
                 self.threadpool.start(worker)
+
 
             except Exception as e:
                 QMessageBox.critical(self, "Substrate classification", f"Unexpected error:\n{e}")
 
+        self._close_busy_dialog()
+
         for key in self.jobs:
             self.jobs[key].substrate_name=self.substrate_label
-
         self.update_overlay()
 
     def _on_classif_progress(self, value):
