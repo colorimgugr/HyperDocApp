@@ -13,9 +13,10 @@
 [4. Ground Truth Tool](#-4-ground-truth-tool)  
 [5. Minicube Extract Tool](#-5-minicube-extract-tool)  
 [6. Identification Tool](#-6-identification-tool)  
-[7. Illumination Tool](#-7-illumination-tool)  
-[8. HDF5 / File Browser](#-8-hdf5--file-browser)  
-[9. White Calibration Window](#-9-white-calibration-window)  
+[7. Unmixing Tool](#-7-unmixing-tool)  
+[8. Illumination Tool](#-7-illumination-tool)  
+[9. HDF5 / File Browser](#-8-hdf5--file-browser)  
+[10. White Calibration Window](#-9-white-calibration-window)  
 [Cube Management and Synchronization](#-cube-management-and-synchronization)  
 [Tips & Tricks](#-tips--tricks)  
 [Launching the Application](#-launching-the-application)
@@ -181,7 +182,71 @@ All modules interact through the shared **HypercubeManager**, ensuring synchroni
 
 ---
 
-## <img src="/interface/icons/illumination_icon.png" width="32" /> 7. Illumination Tool
+---
+
+## <img src="/interface/icons/unmixing_icon.png" width="32" /> 7. Unmixing Tool
+
+**Purpose:** Estimate **per-pixel abundance maps** by unmixing each pixel spectrum as a combination of **endmember spectra** (from a library, manual selection, or automatic extraction).  
+This module also provides **job management**, **visualization**, and **export/import** of unmixing results.
+
+### Open the tool
+- In `MainWindow.py`, open **Unmixing** from the **Quick Tools** toolbar (unmixing icon) or from the **Tools** menu (dock widgets).
+
+### 1) Load data (cube)
+1. Click **Load Cube** to open a VNIR, SWIR, or fused VNIR+SWIR cube.
+2. The cube becomes the target for endmember selection/extraction and unmixing.
+
+**Tip:** If you load VNIR and SWIR separately, the application can work with a fused cube depending on your workflow and available data.
+
+### 2) Provide endmembers (E)
+Unmixing requires endmember spectra **E**. You can choose the source in the endmembers panel:
+
+#### A) From library (CSV)
+- Click **Load library** and select a CSV file with:
+  - **Column 0:** wavelength in **nm**
+  - **Columns 1..N:** spectra (one spectrum per column)
+- If multiple columns share the same name, they are treated as multiple spectra for the same endmember class.
+
+#### B) Manual selection
+- Switch to **Manual** endmembers.
+- Select pixels/regions on the image to build endmember spectra from the cube (mean spectrum per region).
+- Edit names/colors if needed, then confirm the selected endmembers.
+
+#### C) Automatic extraction
+- Switch to **Auto** endmembers.
+- Choose an extraction algorithm (e.g., ATGP / N-FINDR), set the number of endmembers **p** and iterations, then run extraction.
+- Extracted endmembers are automatically added and can be renamed later.
+
+### 3) Configure the unmixing job
+Before launching, configure:
+- **Normalization** (L2 / L1 / None)
+- **Preprocess** (RAW / 1st derivative / 2nd derivative)
+- Optional **band selection** (useful to exclude noisy bands or test robustness)
+- **Unmixing algorithm** (least-squares vs. constrained/iterative solvers depending on your selection)
+
+If cube wavelengths and endmember wavelengths do not match, the tool can handle it by cropping to the overlap and/or interpolating (depending on the case). If there is no spectral overlap, unmixing cannot run.
+
+### 4) Run jobs (queue)
+1. Click **Add to queue** to create a job with the current settings.
+2. Use:
+   - **Start selected** (or last job)
+   - **Start all** (runs queued jobs sequentially)
+   - **Stop** to cancel the queue
+3. Job progress and status are displayed in the table.
+
+### 5) Visualize results
+- Switch the visualization mode to display abundance maps.
+- Select which job/model to display.
+- You can compare abundance maps and inspect spatial structures with zoom/pan.
+
+### 6) Save / load results (.h5)
+- **Save unmixing result (.h5)** exports the currently visualized job (abundances + metadata needed for later review).
+- **Load unmixing result (.h5)** imports a previously saved job into the queue so you can re-visualize it.
+
+> Note: Loaded jobs can be visualized independently of the current run context; however, visualization is inherently linked to the stored map dimensions and job content.
+
+
+## <img src="/interface/icons/illumination_icon.png" width="32" /> 8. Illumination Tool
 
 **Purpose:** Convert reflectance cubes to RGB appearance under chosen illuminants.
 
@@ -194,7 +259,7 @@ All modules interact through the shared **HypercubeManager**, ensuring synchroni
 
 ---
 
-## <img src="/interface/icons/file_browser_icon.png" width="32" /> 8. HDF5 / File Browser
+## <img src="/interface/icons/file_browser_icon.png" width="32" /> 9. HDF5 / File Browser
 
 **Purpose:** Inspect unknown HDF5 or MATLAB files and manually select the paths for data, wavelengths, and metadata.
 
@@ -206,7 +271,7 @@ All modules interact through the shared **HypercubeManager**, ensuring synchroni
 
 ---
 
-## ⚪ 9. White Calibration Window
+## ⚪ 10. White Calibration Window
 
 **Purpose:** Perform white reference calibration to convert raw data to reflectance.
 
