@@ -22,29 +22,9 @@
      <property name="frameShadow">
       <enum>QFrame::Raised</enum>
      </property>
-     <layout class="QGridLayout" name="gridLayout">
-      <item row="3" column="2">
-       <widget class="QPushButton" name="pushButton_load_cube_2">
-        <property name="text">
-         <string>Load second cube</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="1">
-       <widget class="QLabel" name="label_spectral_range">
-        <property name="maximumSize">
-         <size>
-          <width>16777215</width>
-          <height>20</height>
-         </size>
-        </property>
-        <property name="text">
-         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Spectral range&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="0">
-       <widget class="QLabel" name="label_filepath_cube_1">
+     <layout class="QGridLayout" name="gridLayout" columnstretch="1,6,1,1">
+      <item row="3" column="0">
+       <widget class="QLabel" name="label_filepath_cube_2">
         <property name="maximumSize">
          <size>
           <width>16777215</width>
@@ -53,6 +33,13 @@
         </property>
         <property name="text">
          <string>path cube</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="2">
+       <widget class="QPushButton" name="pushButton_load_cube_2">
+        <property name="text">
+         <string>Load second cube</string>
         </property>
        </widget>
       </item>
@@ -66,22 +53,6 @@
         </property>
         <property name="text">
          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Filepath of cube&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-        </property>
-       </widget>
-      </item>
-      <item row="3" column="1">
-       <widget class="QLabel" name="label_spec_range_cube_2">
-        <property name="maximumSize">
-         <size>
-          <width>16777215</width>
-          <height>20</height>
-         </size>
-        </property>
-        <property name="text">
-         <string>range</string>
-        </property>
-        <property name="alignment">
-         <set>Qt::AlignCenter</set>
         </property>
        </widget>
       </item>
@@ -101,15 +72,24 @@
         </property>
        </widget>
       </item>
-      <item row="2" column="2">
-       <widget class="QPushButton" name="pushButton_load_cube_1">
+      <item row="3" column="1">
+       <widget class="QLabel" name="label_spec_range_cube_2">
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>20</height>
+         </size>
+        </property>
         <property name="text">
-         <string>Load first cube</string>
+         <string>range</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
         </property>
        </widget>
       </item>
-      <item row="3" column="0">
-       <widget class="QLabel" name="label_filepath_cube_2">
+      <item row="2" column="0">
+       <widget class="QLabel" name="label_filepath_cube_1">
         <property name="maximumSize">
          <size>
           <width>16777215</width>
@@ -121,7 +101,48 @@
         </property>
        </widget>
       </item>
-      <item row="5" column="0" colspan="3">
+      <item row="2" column="2">
+       <widget class="QPushButton" name="pushButton_load_cube_1">
+        <property name="text">
+         <string>Load first cube</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QLabel" name="label_spectral_range">
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>20</height>
+         </size>
+        </property>
+        <property name="text">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Spectral range&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="3">
+       <widget class="QPushButton" name="pushButton_remove_cube_1">
+        <property name="text">
+         <string>Remove first cube</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="3">
+       <widget class="QPushButton" name="pushButton_remove_cube_2">
+        <property name="text">
+         <string>Remove second cube</string>
+        </property>
+       </widget>
+      </item>
+      <item row="6" column="0" colspan="4">
+       <widget class="QPushButton" name="pushButton_valid">
+        <property name="text">
+         <string>Valid cubes</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="0" colspan="4">
        <widget class="QLabel" name="label_instructions">
         <property name="text">
          <string>Instructions</string>
@@ -131,10 +152,19 @@
         </property>
        </widget>
       </item>
-      <item row="6" column="0" colspan="3">
-       <widget class="QPushButton" name="pushButton_valid">
+      <item row="0" column="0" colspan="4">
+       <widget class="QLabel" name="label_info">
         <property name="text">
-         <string>Valid cubes</string>
+         <string>You can chosse two cubes (that must be registered together).
+In that case, the cube loaded in the app after pressing the button &quot;Valid cubes&quot;
+will be a single cube resulting in the spectral fusion of these cubes.
+You can also just select one cube if no fusion of data is needed. </string>
+        </property>
+        <property name="textFormat">
+         <enum>Qt::PlainText</enum>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
         </property>
        </widget>
       </item>

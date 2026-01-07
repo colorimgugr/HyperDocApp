@@ -170,6 +170,8 @@ class LoadCubeDialog(QDialog):
         self.ui.pushButton_load_cube_1.clicked.connect(lambda: self._load("VNIR"))
         self.ui.pushButton_load_cube_2.clicked.connect(lambda: self._load("SWIR"))
         self.ui.pushButton_valid.clicked.connect(self._on_accept)
+        self.ui.pushButton_remove_cube_1.clicked.connect(lambda: self._remove("VNIR"))
+        self.ui.pushButton_remove_cube_2.clicked.connect(lambda: self._remove("SWIR"))
 
         # Reset labels
         self._update_labels()
@@ -275,6 +277,14 @@ class LoadCubeDialog(QDialog):
         # Instruction summary
         instr = self._coverage_message()
         self.ui.label_instructions.setText(instr)
+
+    def _remove(self, kind: str):
+        """
+        Remove VNIR or SWIR cube: reset internal state and UI.
+        """
+        self.cubes[kind] = None
+        self._wl_ranges[kind] = None
+        self._update_labels()
 
     def _coverage_message(self) -> str:
         """
