@@ -184,66 +184,69 @@ All modules interact through the shared **HypercubeManager**, ensuring synchroni
 
 ---
 
-## <img src="/interface/icons/unmixing_icon.png" width="32" /> 7. Unmixing Tool
+## <img src="/interface/icons/unmixing_icon.svg" width="32" /> 7. Unmixing Tool
 
-**Purpose:** Estimate **per-pixel abundance maps** by unmixing each pixel spectrum as a combination of **endmember spectra** (from a library, manual selection, or automatic extraction).  
-This module also provides **job management**, **visualization**, and **export/import** of unmixing results.
+### Purpose
+The **Unmixing Tool** estimates **per-pixel abundance maps** by decomposing each pixel spectrum into a linear combination of **endmember spectra**.  
+It is designed for exploratory analysis, material mapping, and comparison of different unmixing strategies on hyperspectral cubes.
 
-### Open the tool
-- In `MainWindow.py`, open **Unmixing** from the **Quick Tools** toolbar (unmixing icon) or from the **Tools** menu (dock widgets).
+The tool supports **library-based**, **manual**, and **automatic** endmember definitions and provides integrated **job management** and **visualization**.
 
-### 1) Load data (cube)
-1. Click **Load Cube** to open a VNIR, SWIR, or fused VNIR+SWIR cube.
-2. The cube becomes the target for endmember selection/extraction and unmixing.
+---
 
-**Tip:** If you load VNIR and SWIR separately, the application can work with a fused cube depending on your workflow and available data.
+### Key Features
+- Unmixing of VNIR, SWIR, or fused VNIR+SWIR hyperspectral cubes
+- Multiple endmember sources:
+  - **Spectral library (CSV)**
+  - **Manual selection** from image pixels or regions
+  - **Automatic extraction** (e.g. ATGP, N-FINDR)
+- Several unmixing strategies:
+  - Least-squares based methods
+  - Constrained / iterative solvers
+- Spectral preprocessing options:
+  - RAW spectra
+  - First or second spectral derivatives
+  - L1 / L2 normalization
+- Job queue system:
+  - Run and compare multiple unmixing configurations
+  - Progress tracking and cancellation
+- Interactive visualization of abundance maps
+- Save and reload unmixing jobs (`.h5`) for later inspection
 
-### 2) Provide endmembers (E)
-Unmixing requires endmember spectra **E**. You can choose the source in the endmembers panel:
+---
 
-#### A) From library (CSV)
-- Click **Load library** and select a CSV file with:
-  - **Column 0:** wavelength in **nm**
-  - **Columns 1..N:** spectra (one spectrum per column)
-- If multiple columns share the same name, they are treated as multiple spectra for the same endmember class.
+### Typical Workflow
+1. **Load a hyperspectral cube**  
+   Open a VNIR, SWIR, or fused cube from the main application.
 
-#### B) Manual selection
-- Switch to **Manual** endmembers.
-- Select pixels/regions on the image to build endmember spectra from the cube (mean spectrum per region).
-- Edit names/colors if needed, then confirm the selected endmembers.
+2. **Define endmembers**  
+   Choose one of the following:
+   - Load a spectral library (CSV)
+   - Select endmembers manually from the image
+   - Extract endmembers automatically
 
-#### C) Automatic extraction
-- Switch to **Auto** endmembers.
-- Choose an extraction algorithm (e.g., ATGP / N-FINDR), set the number of endmembers **p** and iterations, then run extraction.
-- Extracted endmembers are automatically added and can be renamed later.
+3. **Configure unmixing parameters**  
+   Select preprocessing, normalization, wavelength handling, and the unmixing algorithm.
 
-### 3) Configure the unmixing job
-Before launching, configure:
-- **Normalization** (L2 / L1 / None)
-- **Preprocess** (RAW / 1st derivative / 2nd derivative)
-- Optional **band selection** (useful to exclude noisy bands or test robustness)
-- **Unmixing algorithm** (least-squares vs. constrained/iterative solvers depending on your selection)
+4. **Add job to queue and run**  
+   Launch one or several unmixing jobs and monitor their execution.
 
-If cube wavelengths and endmember wavelengths do not match, the tool can handle it by cropping to the overlap and/or interpolating (depending on the case). If there is no spectral overlap, unmixing cannot run.
+5. **Visualize abundance maps**  
+   Inspect spatial distributions of estimated abundances directly in the viewer.
 
-### 4) Run jobs (queue)
-1. Click **Add to queue** to create a job with the current settings.
-2. Use:
-   - **Start selected** (or last job)
-   - **Start all** (runs queued jobs sequentially)
-   - **Stop** to cancel the queue
-3. Job progress and status are displayed in the table.
+6. **Save or reload results**  
+   Export unmixing jobs to `.h5` files or reload previous results for comparison.
 
-### 5) Visualize results
-- Switch the visualization mode to display abundance maps.
-- Select which job/model to display.
-- You can compare abundance maps and inspect spatial structures with zoom/pan.
+---
 
-### 6) Save / load results (.h5)
-- **Save unmixing result (.h5)** exports the currently visualized job (abundances + metadata needed for later review).
-- **Load unmixing result (.h5)** imports a previously saved job into the queue so you can re-visualize it.
+### Tips & Notes
+- Endmember and cube wavelengths must overlap; only the common spectral range is used.
+- Using spectral derivatives can enhance material contrast but may increase noise sensitivity.
+- Running multiple jobs with different normalizations or algorithms is recommended for comparison.
+- Saved unmixing jobs can be reloaded later without recomputing abundances.
+- For large cubes or complex constraints, unmixing may take time; prefer incremental testing with small regions first.
 
-> Note: Loaded jobs can be visualized independently of the current run context; however, visualization is inherently linked to the stored map dimensions and job content.
+---
 
 
 ## <img src="/interface/icons/illumination_icon.png" width="32" /> 8. Illumination Tool
