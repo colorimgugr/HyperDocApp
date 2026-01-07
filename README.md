@@ -14,9 +14,9 @@
 [5. Minicube Extract Tool](#-5-minicube-extract-tool)  
 [6. Identification Tool](#-6-identification-tool)  
 [7. Unmixing Tool](#-7-unmixing-tool)  
-[8. Illumination Tool](#-7-illumination-tool)  
-[9. HDF5 / File Browser](#-8-hdf5--file-browser)  
-[10. White Calibration Window](#-9-white-calibration-window)  
+[8. Illumination Tool](#-8-illumination-tool)  
+[9. HDF5 / File Browser](#-9-hdf5--file-browser)  
+[10. White Calibration Window](#-10-white-calibration-window)  
 [Cube Management and Synchronization](#-cube-management-and-synchronization)  
 [Tips & Tricks](#-tips--tricks)  
 [Launching the Application](#-launching-the-application)
@@ -43,7 +43,7 @@ Ground truth creation & class labelling
 
 Minicube extraction with editable metadata
 
-Endmember extraction & spectral unmixing
+Endmember extraction & spectral 
 
 Synchronized abundance map gallery
 
@@ -182,7 +182,6 @@ All modules interact through the shared **HypercubeManager**, ensuring synchroni
 
 ---
 
----
 
 ## <img src="/interface/icons/unmixing_icon.svg" width="32" /> 7. Unmixing Tool
 
@@ -192,7 +191,7 @@ It is designed for exploratory analysis, material mapping, and comparison of dif
 
 The tool supports **library-based**, **manual**, and **automatic** endmember definitions and provides integrated **job management** and **visualization**.
 
----
+
 
 ### Key Features
 - Unmixing of VNIR, SWIR, or fused VNIR+SWIR hyperspectral cubes
@@ -213,7 +212,7 @@ The tool supports **library-based**, **manual**, and **automatic** endmember def
 - Interactive visualization of abundance maps
 - Save and reload unmixing jobs (`.h5`) for later inspection
 
----
+
 
 ### Typical Workflow
 1. **Load a hyperspectral cube**  
@@ -237,7 +236,7 @@ The tool supports **library-based**, **manual**, and **automatic** endmember def
 6. **Save or reload results**  
    Export unmixing jobs to `.h5` files or reload previous results for comparison.
 
----
+
 
 ### Tips & Notes
 - Endmember and cube wavelengths must overlap; only the common spectral range is used.
