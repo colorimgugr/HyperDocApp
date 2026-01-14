@@ -365,3 +365,12 @@ Traceback (most recent call last):
     self._send_to_identification(self, filepath, kind, show_tab=False)
 TypeError: MainApp._send_to_identification() got multiple values for argument 'show_tab'
 
+2026-01-14 12:04:00,764 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\MainWindow.py", line 486, in open_suggestion_box
+    opened = QDesktopServices.openUrl(QUrl(url))
+             ^^^^^^^^^^^^^^^^
+NameError: name 'QDesktopServices' is not defined
+
+2026-01-14 12:04:07,498 - ERROR - User comment: Ole 
+

@@ -5,9 +5,10 @@
 # C:\Envs\py37test\Scripts\activate
 
 # GUI Qt
+
 from PyQt5 import QtWidgets, QtCore
-from PyQt5.QtCore import QTimer
-from PyQt5.QtGui import QFont,QIcon, QPalette
+from PyQt5.QtCore import QTimer, QUrl
+from PyQt5.QtGui import QFont,QIcon, QPalette, QDesktopServices
 from PyQt5.QtWidgets import (QStyleFactory, QAction, QSizePolicy,QPushButton,
                              QTextEdit,QToolTip, QCheckBox, QWidgetAction,)
 
@@ -467,6 +468,32 @@ class MainApp(QtWidgets.QMainWindow):
                 print(f"[Warning] Le widget {tool.__class__.__name__} n’a pas de signal 'cube_saved'.")
 
     def open_suggestion_box(self):
+        # Public distribution: redirect suggestions to an online form.
+        url = "https://docs.google.com/forms/d/e/1FAIpQLSff0dXWaO57mmHGBjkNVxKFjhxLHEYXgzifMafPH8soU93PdA/viewform?usp=publish-editor"
+
+        msg = QMessageBox(self)
+        msg.setIcon(QMessageBox.Information)
+        msg.setWindowTitle("Suggestions / Feedback")
+        msg.setText("Submitting a suggestion will open a Google Form in your web browser.")
+        msg.setInformativeText(
+            "If you continue, your default browser will be opened on the feedback form.\n\nContinue?"
+        )
+        msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+        msg.setDefaultButton(QMessageBox.Ok)
+
+        if msg.exec_() != QMessageBox.Ok:
+            return
+
+        opened = QDesktopServices.openUrl(QUrl(url))
+        if not opened:
+            QMessageBox.warning(
+                self,
+                "Unable to open browser",
+                "The application could not open your browser automatically.\n\n"
+                f"Please open this link manually:\n{url}",
+            )
+
+    def open_suggestion_box_intern(self):
         self.suggestion_window = SuggestionWidget()
         self.suggestion_window.show()
 

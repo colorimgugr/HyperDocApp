@@ -4,12 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="[UNMIXING]&#10;- Icon added to git">
+    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="[UNMIXING]&#10;- Label problem on add manual fixed (it seems to)&#10;- added traceback sended to gui in job error">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/MainWindow.py" beforeDir="false" afterPath="$PROJECT_DIR$/MainWindow.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/identification/load_cube_dialog.py" beforeDir="false" afterPath="$PROJECT_DIR$/identification/load_cube_dialog.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/identification/load_cube_dialog.ui" beforeDir="false" afterPath="$PROJECT_DIR$/identification/load_cube_dialog.ui" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/unmixing/unmixing_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/unmixing/unmixing_tool.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/log/error.log" beforeDir="false" afterPath="$PROJECT_DIR$/log/error.log" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -138,14 +136,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1744020944801</updated>
-    </task>
-    <task id="LOCAL-00130" summary="[unmixing] : &#10;- implementing show all">
-      <option name="closed" value="true" />
-      <created>1763470652191</created>
-      <option name="number" value="00130" />
-      <option name="presentableId" value="LOCAL-00130" />
-      <option name="project" value="LOCAL" />
-      <updated>1763470652191</updated>
     </task>
     <task id="LOCAL-00131" summary="[unmixing] : &#10;- show all window OK for first working version">
       <option name="closed" value="true" />
@@ -531,7 +521,15 @@
       <option name="project" value="LOCAL" />
       <updated>1767790290025</updated>
     </task>
-    <option name="localTasksCounter" value="179" />
+    <task id="LOCAL-00179" summary="[UNMIXING]&#10;- Label problem on add manual fixed (it seems to)&#10;- added traceback sended to gui in job error">
+      <option name="closed" value="true" />
+      <created>1768197204637</created>
+      <option name="number" value="00179" />
+      <option name="presentableId" value="LOCAL-00179" />
+      <option name="project" value="LOCAL" />
+      <updated>1768197204639</updated>
+    </task>
+    <option name="localTasksCounter" value="180" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -583,7 +581,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="[GROUND TRUTH] : &#10;- ctrl+left clic OK" />
     <MESSAGE value="[UNMIX] : &#10;- added variable row height in show all&#10;- separate scroll action in show all&#10;- autosize viewer on loading (interesting for one pixel)&#10;- reset all&#10;[MAIN WINDOW]&#10;- Unmix_tool added and connected&#10;- icons of unmix done" />
     <MESSAGE value="[UNMIX] : &#10;- metric CGFC optimizada con scipy" />
     <MESSAGE value="[UNMIX] : &#10;- show all zoom memory&#10;- selected_band realy active in job ! &#10;- visualisation et sauvegarde des bandes selectionnées pour le job&#10;-" />
@@ -608,6 +605,7 @@
     <MESSAGE value="[UNMIXING]&#10;- Spectra axis updated if wl different on loading new cube&#10;- added exepction for vnir swir classif if not in classical range&#10;- interference between matplotlib widgets and band selection killed&#10;- ellipsed text if too long for label_file_name + in tooltips&#10;- zoom problem on loading new cube of differente size fixed" />
     <MESSAGE value="[UNMIXING]&#10;- Added info in LoadDialogWindow and possibility to remove one cube." />
     <MESSAGE value="[UNMIXING]&#10;- Icon added to git" />
-    <option name="LAST_COMMIT_MESSAGE" value="[UNMIXING]&#10;- Icon added to git" />
+    <MESSAGE value="[UNMIXING]&#10;- Label problem on add manual fixed (it seems to)&#10;- added traceback sended to gui in job error" />
+    <option name="LAST_COMMIT_MESSAGE" value="[UNMIXING]&#10;- Label problem on add manual fixed (it seems to)&#10;- added traceback sended to gui in job error" />
   </component>
 </project>
