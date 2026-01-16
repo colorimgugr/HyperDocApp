@@ -1,4 +1,4 @@
-# Hyperdoc App — Hyperspectral Image Processing Suite
+# Hyperdoc App — Hyperspectral Image Processing Application
 
 <img src="/interface/icons/hyperdoc_logo_transparente.ico" width="32" /> **Hyperdoc App** is a modular PyQt5-based application designed for loading, visualizing, registering, segmenting, classifying and unmixing hyperspectral cubes (VNIR, SWIR, or combined). It provides a unified graphical interface to handle all stages of hyperspectral data analysis with or without the Hyperdoc database.
 
@@ -332,6 +332,7 @@ The tool is designed for exploratory analysis, material mapping, and comparison 
 - Use the **toolbar icons** for one-click access to tools.
 - Docks can be detached, resized, or made fullscreen (⛶ button).
 - Ctrl+scroll or drag to zoom/pan viewers
+
 ---
 
 ## 🧑‍💻 Launching the Application
