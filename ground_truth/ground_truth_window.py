@@ -387,7 +387,7 @@ class Ui_GroundTruthWidget(object):
         self.verticalLayout.setStretch(1, 6)
 
         self.retranslateUi(GroundTruthWidget)
-        self.tabWidget.setCurrentIndex(1)
+        self.tabWidget.setCurrentIndex(0)
         self.stackedWidget.setCurrentIndex(0)
         QtCore.QMetaObject.connectSlotsByName(GroundTruthWidget)
 

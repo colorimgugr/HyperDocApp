@@ -94,7 +94,7 @@ Load a GT indexed PNG (palette + labels) and rebuild internal class indices, cla
          <enum>QTabWidget::West</enum>
         </property>
         <property name="currentIndex">
-         <number>1</number>
+         <number>0</number>
         </property>
         <widget class="QWidget" name="tab">
          <attribute name="title">

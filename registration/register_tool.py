@@ -4,6 +4,7 @@
 
 import sys
 import os
+import re
 import warnings
 
 import numpy as np
@@ -786,6 +787,29 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
             opts = dialogWindow.get_options()
             self.save_cube_with_options(opts)
 
+    def _add_suffix_once(self,stem: str, suffix: str) -> str:
+        """Ajoute suffix uniquement s'il n'est pas déjà en fin de nom (avant extension)."""
+        return stem if re.search(re.escape(suffix) + r"$", stem) else (stem + suffix)
+
+    def _default_out_path(self,src_path: str, *, role: str, crop: bool) -> str:
+        """
+        role: 'aligned' -> _reg ; 'fixed' -> _fix
+        crop: ajoute _minicube
+        """
+        folder = os.path.dirname(src_path) if src_path else ""
+        stem = os.path.splitext(os.path.basename(src_path or "cube"))[0]
+
+        # Nettoyage léger : si des anciens suffixes trainent en fin de nom, on les retire
+        stem = re.sub(r"(_reg(_minicube)?|_fix(_minicube)?)$", "", stem)
+
+        suffix = "_reg" if role == "aligned" else "_fix"
+        stem = self._add_suffix_once(stem, suffix)
+
+        if crop:
+            stem = self._add_suffix_once(stem, "_minicube")
+
+        return os.path.join(folder, stem)
+
     def save_cube_with_options(self, opts):
         """
         Sauvegarde les cubes et images selon le dict opts retourné par SaveWindow.get_options().
@@ -845,41 +869,21 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
                                     cube_info=self.moving_cube.cube_info)
 
         # 1) Choix des noms de fichier
-        file_name_align=self.aligned_cube.cube_info.filepath.split('.')[0]
-        if '_reg' not in os.path.basename(file_name_align):
-            file_name_align+='_reg'
-
-        if opts['crop_cube']:
-            file_name_align+='_minicube_'
-
-        save_path_align, _ = QFileDialog.getSaveFileName(self,"ALIGNED cube Save As…",file_name_align)
-        mini_align_cube.cube_info.filepath=save_path_align
-
+        src_aligned = getattr(self.aligned_cube.cube_info, "filepath", None) or getattr(self.moving_cube.cube_info,
+                                                                                        "filepath", None)
+        default_align = self._default_out_path(src_aligned, role="aligned", crop=opts["crop_cube"])
+        save_path_align, _ = QFileDialog.getSaveFileName(self, "ALIGNED cube Save As…", default_align)
         if not save_path_align:
-            QMessageBox.critical(self,'Abort','No filepath given : Save action aborted')
+            QMessageBox.critical(self, "Abort", "No filepath given : Save action aborted")
             return
 
+        # --- fixed cube (si save_both) ---
         if save_both:
-
-            folder_name_fixed=os.path.dirname(save_path_align) #same as before
-            name_fixed=os.path.basename(self.fixed_cube.cube_info.filepath).split('.')[0]
-            if '_reg' not in name_fixed:
-                name_fixed+='_reg'
-
-            if opts['crop_cube']:
-                name_fixed += '_minicube_'
-
-            try:
-                name_fixed+=os.path.basename(save_path_align).split('_')[-1]
-            except:pass
-
-            file_name_fixed=os.path.join(folder_name_fixed,name_fixed)
-
-            save_path_fixed, _ = QFileDialog.getSaveFileName(self,"FIXED cube Save As…",file_name_fixed)
-            mini_fixed_cube.cube_info.filepath = save_path_fixed
-
+            src_fixed = getattr(self.fixed_cube.cube_info, "filepath", None)
+            default_fixed = self._default_out_path(src_fixed, role="fixed", crop=opts["crop_cube"])
+            save_path_fixed, _ = QFileDialog.getSaveFileName(self, "FIXED cube Save As…", default_fixed)
             if not save_path_fixed:
-                QMessageBox.critical(self, 'Abort', 'No filepath given : Save action aborted')
+                QMessageBox.critical(self, "Abort", "No filepath given : Save action aborted")
                 return
 
         # Crop
