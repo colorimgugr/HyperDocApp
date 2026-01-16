@@ -37,7 +37,7 @@ The simplest way for windows :
 
 ```bash
 # From your project root
-git clone https://github.com/yourusername/Hypertool.git
+git clone https://github.com/llanick/Hypertool.git
 cd Hypertool
 python install_requirements.py
 python MainWindow.py
