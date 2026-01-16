@@ -2,6 +2,10 @@
 
 <img src="/interface/icons/hyperdoc_logo_transparente.ico" width="32" /> **Hyperdoc App** is a modular PyQt5-based application designed for loading, visualizing, registering, segmenting, classifying and unmixing hyperspectral cubes (VNIR, SWIR, or combined). It provides a unified graphical interface to handle all stages of hyperspectral data analysis with or without the Hyperdoc database.
 
+> **Open science notice**  
+> This project is source-available for academic, research, and educational use only.  
+> Commercial use is strictly prohibited.
+
 ---
 
 ## 📚 Table of Contents
@@ -286,5 +290,9 @@ Developed by **CIMLab / Hyperdoc Project Team**.
 
 ## 📄 License
 
-MIT License © 2025 — CIMLab Hyperdoc Project.
+This project is released as **source-available software for academic, research, and educational use only**.
+
+Commercial use is strictly prohibited.
+
+See the `LICENSE.txt` file for full license terms.
 
