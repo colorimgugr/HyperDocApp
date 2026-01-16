@@ -80,8 +80,10 @@ This option is especially useful when discovering a new tool or unfamiliar param
 | <img src="/interface/icons/registration_icon.svg" width="32" /> **Registration** | Align VNIR and SWIR cubes spatially. |
 | <img src="/interface/icons/GT_icon_1.png" width="32" /> **Ground Truth** | Create and manage labeled maps for supervised learning. |
 | <img src="/interface/icons/minicube_icon.svg" width="32" /> **Minicube Extract** | Select and extract subcubes from a larger hyperspectral cube. |
-| <img src="/interface/icons/Ident_icon.png" width="32" /> **Identification** | Classify pixels using ML models (KNN, SVM, CNN, etc.). |
 | <img src="/interface/icons/illumination_icon.png" width="32" /> **Illumination** | Visualize reflectance under different light sources. |
+| <img src="/interface/icons/Ident_icon.png" width="32" /> **Identification** | Classify pixels using ML models (KNN, SVM, CNN, etc.). |
+| <img src="/interface/icons/unmixing_icon.png" width="32" /> **Unmixing** | Get relative abundance of each selected endmembers at each pixel of your hypercube. |
+
 
 All modules interact through the shared **HypercubeManager**, ensuring synchronization of loaded cubes and metadata updates.
 
