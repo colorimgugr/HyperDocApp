@@ -510,3 +510,85 @@ Traceback (most recent call last):
     ^^^^^^^^^^^^
 AttributeError: 'GroundTruthWidget' object has no attribute 'live_cb'
 
+2026-01-19 11:28:21,716 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\data_vizualisation\data_vizualisation_tool.py", line 699, in search_gt_in_files
+    self.update_widgets()
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\data_vizualisation\data_vizualisation_tool.py", line 550, in update_widgets
+    self.modif_sliders(default=True)
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\data_vizualisation\data_vizualisation_tool.py", line 943, in modif_sliders
+    max_wl=int(hyp.wl[-1])
+               ~~~~~~^^^^
+TypeError: 'NoneType' object is not subscriptable
+
+2026-01-19 11:34:06,857 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\ground_truth\ground_truth_tool.py", line 2000, in run
+    self.update_spectra()
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\ground_truth\ground_truth_tool.py", line 1531, in update_spectra
+    b, g, r = self.class_colors[c]
+              ~~~~~~~~~~~~~~~~~^^^
+KeyError: 0
+
+2026-01-19 11:39:33,145 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\ground_truth\ground_truth_tool.py", line 2000, in run
+    self.update_spectra()
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\ground_truth\ground_truth_tool.py", line 1531, in update_spectra
+    b, g, r = self.class_colors[c]
+              ~~~~~~~~~~~~~~~~~^^^
+KeyError: 0
+
+2026-01-19 11:42:44,256 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\ground_truth\ground_truth_tool.py", line 2000, in run
+    self.update_spectra()
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\ground_truth\ground_truth_tool.py", line 1531, in update_spectra
+    b, g, r = self.class_colors[c]
+              ~~~~~~~~~~~~~~~~~^^^
+KeyError: 0
+
+2026-01-19 11:57:56,468 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\ground_truth\ground_truth_tool.py", line 2000, in run
+    self.update_spectra()
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\ground_truth\ground_truth_tool.py", line 1531, in update_spectra
+    b, g, r = self.class_colors[c]
+              ~~~~~~~~~~~~~~~~~^^^
+KeyError: 0
+
+2026-01-19 12:27:35,605 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\ground_truth\ground_truth_tool.py", line 2000, in run
+    self.update_spectra()
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\ground_truth\ground_truth_tool.py", line 1531, in update_spectra
+    b, g, r = self.class_colors[c]
+              ~~~~~~~~~~~~~~~~~^^^
+KeyError: 2
+
+2026-01-19 22:25:42,920 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\identification\identification_tool.py", line 2804, in <lambda>
+    worker.signals.finished.connect(lambda n=n: self._on_job_finished(n))
+                                                ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\identification\identification_tool.py", line 2934, in _on_job_finished
+    self._advance_and_launch_next()
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\identification\identification_tool.py", line 2944, in _advance_and_launch_next
+    self._launch_next_job()
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\identification\identification_tool.py", line 2721, in _launch_next_job
+    self.load_classifier(job.trained_path)
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\identification\identification_tool.py", line 1744, in load_classifier
+    model=joblib.load(path)
+          ^^^^^^^^^^^^^^^^^
+  File "C:\Users\Usuario\AppData\Local\Programs\Python\Python312\Lib\site-packages\joblib\numpy_pickle.py", line 650, in load
+    with open(filename, 'rb') as f:
+         ^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'Default'
+
+2026-01-19 22:26:51,540 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\identification\identification_tool.py", line 3038, in on_click_save_map
+    dic_binaire['algorithm']=job.binary_algo
+    ~~~~~~~~~~~^^^^^^^^^^^^^
+TypeError: 'NoneType' object does not support item assignment
+

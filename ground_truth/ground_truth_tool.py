@@ -2052,15 +2052,23 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
     def prune_unused_classes(self):
         """
         Supprime de self.class_colors et self.class_info
-        tous les labels qui ne figurent plus dans self.cls_map.
+        les labels qui ne figurent plus dans cls_map ET selection_mask_map.
         """
-        if self.cls_map is None:
-            return
+        labels_in_use = set()
 
-        labels_in_map = set(np.unique(self.cls_map))
+        if getattr(self, "cls_map", None) is not None:
+            labels_in_use |= set(np.unique(self.cls_map))
+
+        sel = getattr(self, "selection_mask_map", None)
+        if sel is not None:
+            labels_in_use |= set(np.unique(sel[sel >= 0]))
+
+        # Retirer les sentinelles éventuelles
+        labels_in_use.discard(-1)
+
         for d in (self.class_colors, self.class_info):
             for cls in list(d.keys()):
-                if cls not in labels_in_map:
+                if cls not in labels_in_use:
                     del d[cls]
 
     def band_selection(self,checked):

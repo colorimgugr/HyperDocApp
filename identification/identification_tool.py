@@ -2718,7 +2718,22 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
 
             # Load classifier and create worker
 
+            if job.trained_path in (None, "", "Default"):
+                if getattr(sys, "frozen", False):
+                    base = sys._MEIPASS
+                else:
+                    base = os.path.dirname(os.path.dirname(__file__))
+
+                # à adapter à ton naming réel dans identification/data
+                fname = f"model_{job.clf_type.lower()}_3classes.joblib"
+                job.trained_path = os.path.join(base, "identification", "data", fname)
+
             self.load_classifier(job.trained_path)
+
+            if job.binary_algo is None:
+                job.binary_algo = self.binary_algo
+            if job.binary_param is None:
+                job.binary_param = {} if self.binary_param is None else dict(self.binary_param)
 
             # --- make sure model grid matches current cube; train if needed
             ok, msg = self.features_compatible(getattr(self, "classifier_wl", None))
@@ -3034,8 +3049,11 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
                 max_idx = max(int(k) for k in labels.keys()) if labels else -1
                 labels = [labels.get(i, labels.get(i, f"class_{i}")) for i in range(max_idx + 1)]
 
-            dic_binaire=job.binary_param
-            dic_binaire['algorithm']=job.binary_algo
+            dic_binaire = {} if job.binary_param is None else dict(job.binary_param)
+            if job.binary_algo is None:
+                dic_binaire["algorithm"] = self.binary_algo
+            else:
+                dic_binaire["algorithm"] = job.binary_algo
 
             metadata = {
                 "classifier_name": classifier_name,

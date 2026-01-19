@@ -4,12 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="[GT] :&#10;- Clamp Zoom in local zoomable graphics view&#10;[Hypercube]&#10;- squeeze wl to have ndim=1 on loading">
+    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="[GT] :&#10;- small buggs">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/MainWindow.py" beforeDir="false" afterPath="$PROJECT_DIR$/MainWindow.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ground_truth/GT_table_viz.py" beforeDir="false" afterPath="$PROJECT_DIR$/ground_truth/GT_table_viz.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ground_truth/ground_truth_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/ground_truth/ground_truth_tool.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hypercubes/hypercube.py" beforeDir="false" afterPath="$PROJECT_DIR$/hypercubes/hypercube.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/identification/identification_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/identification/identification_tool.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/log/error.log" beforeDir="false" afterPath="$PROJECT_DIR$/log/error.log" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -139,14 +138,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1744020944801</updated>
-    </task>
-    <task id="LOCAL-00136" summary="[HYPERCUBE] : &#10;- Added loading other white file&#10;- Adde dark">
-      <option name="closed" value="true" />
-      <created>1763886734612</created>
-      <option name="number" value="00136" />
-      <option name="presentableId" value="LOCAL-00136" />
-      <option name="project" value="LOCAL" />
-      <updated>1763886734612</updated>
     </task>
     <task id="LOCAL-00137" summary="[HYPERCUBE] : &#10;- Modif in dark (for line flat field)">
       <option name="closed" value="true" />
@@ -532,7 +523,15 @@
       <option name="project" value="LOCAL" />
       <updated>1768782275010</updated>
     </task>
-    <option name="localTasksCounter" value="185" />
+    <task id="LOCAL-00185" summary="[GT] :&#10;- small buggs">
+      <option name="closed" value="true" />
+      <created>1768818169217</created>
+      <option name="number" value="00185" />
+      <option name="presentableId" value="LOCAL-00185" />
+      <option name="project" value="LOCAL" />
+      <updated>1768818169218</updated>
+    </task>
+    <option name="localTasksCounter" value="186" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -584,7 +583,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="[UNMIX] : &#10;- small changes in ui&#10;- added save pixel abudances map on write clic" />
     <MESSAGE value="[UNMIX] : &#10;- cursor change to cross&#10;- save on pixel abundaces + metadata update" />
     <MESSAGE value="[UNMIX] : &#10;- cursor change to cross&#10;- save on pixel abundaces + metadata update&#10;- modif matplotlib_toolbar and margen" />
     <MESSAGE value="[UNMIX] : &#10;- fixing buggs and ui details" />
@@ -609,6 +607,7 @@
     <MESSAGE value="[Register] : change method for savename generation" />
     <MESSAGE value="[Ilumination] :&#10;Added message when processing&#10;added message on large cube&#10;added button to process" />
     <MESSAGE value="[GT] :&#10;- Clamp Zoom in local zoomable graphics view&#10;[Hypercube]&#10;- squeeze wl to have ndim=1 on loading" />
-    <option name="LAST_COMMIT_MESSAGE" value="[GT] :&#10;- Clamp Zoom in local zoomable graphics view&#10;[Hypercube]&#10;- squeeze wl to have ndim=1 on loading" />
+    <MESSAGE value="[GT] :&#10;- small buggs" />
+    <option name="LAST_COMMIT_MESSAGE" value="[GT] :&#10;- small buggs" />
   </component>
 </project>

@@ -65,23 +65,29 @@ def apply_fusion_border_highlight(app,
         color: black;
         text-align: left;
     }}
+    
     QMainWindow::separator {{
         background-color: {border_color};
         width: 2px; height: 2px; margin: 1px;
     }}
+    
     QMainWindow::separator:hover {{
         background-color: {separator_hover};
     }}
+    
     QSplitter::handle {{
         background-color: {border_color};
     }}
+    
     QSplitter::handle:hover {{
         background-color: {separator_hover};
     }}
+    
     /* assure que les widgets enfants héritent bien de la couleur de fond */
     QDockWidget > QWidget {{
         background-color: {base_bg};
     }}
+    
     """)
 
 class CustomDockTitleBar(QtWidgets.QWidget):
