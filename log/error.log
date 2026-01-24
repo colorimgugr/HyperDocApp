@@ -626,3 +626,113 @@ Traceback (most recent call last):
     ^^^^^^
 NameError: name 'QTimer' is not defined
 
+2026-01-23 11:43:17,036 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\data_vizualisation\data_vizualisation_tool.py", line 289, in on_metadata_updated
+    if hyp.cube_info and hyp.cube_info == updated_ci:
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\hypercubes\hypercube.py", line 62, in __eq__
+    return Path(self.filepath).resolve() == Path(other.filepath).resolve()
+           ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Usuario\AppData\Local\Programs\Python\Python312\Lib\pathlib.py", line 1162, in __init__
+    super().__init__(*args)
+  File "C:\Users\Usuario\AppData\Local\Programs\Python\Python312\Lib\pathlib.py", line 373, in __init__
+    raise TypeError(
+TypeError: argument should be a str or an os.PathLike object where __fspath__ returns a str, not 'method'
+
+2026-01-23 11:53:21,646 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\metadata\metadata_tool.py", line 669, in update_metadata_label
+    self.label_metadata.setText(st)
+                                ^^
+UnboundLocalError: cannot access local variable 'st' where it is not associated with a value
+
+2026-01-23 11:53:28,533 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\metadata\metadata_tool.py", line 669, in update_metadata_label
+    self.label_metadata.setText(st)
+                                ^^
+UnboundLocalError: cannot access local variable 'st' where it is not associated with a value
+
+2026-01-23 12:30:49,204 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\metadata\metadata_tool.py", line 669, in update_metadata_label
+    self.label_metadata.setText(st)
+                                ^^
+UnboundLocalError: cannot access local variable 'st' where it is not associated with a value
+
+2026-01-23 12:31:02,035 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\metadata\metadata_tool.py", line 669, in update_metadata_label
+    self.label_metadata.setText(st)
+                                ^^
+UnboundLocalError: cannot access local variable 'st' where it is not associated with a value
+
+2026-01-23 12:31:26,751 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\metadata\metadata_tool.py", line 669, in update_metadata_label
+    self.label_metadata.setText(st)
+                                ^^
+UnboundLocalError: cannot access local variable 'st' where it is not associated with a value
+
+2026-01-23 12:31:34,789 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\metadata\metadata_tool.py", line 772, in toggle_edit_metadata
+    self.update_metadata_label()
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\metadata\metadata_tool.py", line 669, in update_metadata_label
+    self.label_metadata.setText(st)
+                                ^^
+UnboundLocalError: cannot access local variable 'st' where it is not associated with a value
+
+2026-01-23 12:31:40,827 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\metadata\metadata_tool.py", line 669, in update_metadata_label
+    self.label_metadata.setText(st)
+                                ^^
+UnboundLocalError: cannot access local variable 'st' where it is not associated with a value
+
+2026-01-23 12:31:50,401 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\metadata\metadata_tool.py", line 669, in update_metadata_label
+    self.label_metadata.setText(st)
+                                ^^
+UnboundLocalError: cannot access local variable 'st' where it is not associated with a value
+
+2026-01-23 12:32:06,948 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\metadata\metadata_tool.py", line 772, in toggle_edit_metadata
+    self.update_metadata_label()
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\metadata\metadata_tool.py", line 669, in update_metadata_label
+    self.label_metadata.setText(st)
+                                ^^
+UnboundLocalError: cannot access local variable 'st' where it is not associated with a value
+
+2026-01-23 12:32:21,404 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\metadata\metadata_tool.py", line 669, in update_metadata_label
+    self.label_metadata.setText(st)
+                                ^^
+UnboundLocalError: cannot access local variable 'st' where it is not associated with a value
+
+2026-01-23 12:32:24,444 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\metadata\metadata_tool.py", line 252, in generate_metadata
+    self.create_metadata_set()
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\metadata\metadata_tool.py", line 342, in create_metadata_set
+    self.update_combo_meta(init=True)
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\metadata\metadata_tool.py", line 211, in update_combo_meta
+    self.update_metadata_label()
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\metadata\metadata_tool.py", line 669, in update_metadata_label
+    self.label_metadata.setText(st)
+                                ^^
+UnboundLocalError: cannot access local variable 'st' where it is not associated with a value
+
+2026-01-23 12:32:39,376 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\metadata\metadata_tool.py", line 772, in toggle_edit_metadata
+    self.update_metadata_label()
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\metadata\metadata_tool.py", line 669, in update_metadata_label
+    self.label_metadata.setText(st)
+                                ^^
+UnboundLocalError: cannot access local variable 'st' where it is not associated with a value
+

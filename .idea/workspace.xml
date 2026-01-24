@@ -4,10 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="[identification] :&#10;- small buggs fixed">
+    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="[metadata] :&#10;- small buggs fixed&#10;[fileBrowser] :&#10;- small buggs fixed">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/illumination/illumination_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/illumination/illumination_tool.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/log/error.log" beforeDir="false" afterPath="$PROJECT_DIR$/log/error.log" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/unmixing/unmixing_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/unmixing/unmixing_tool.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -136,30 +136,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1744020944801</updated>
-    </task>
-    <task id="LOCAL-00138" summary="[MINI CUBE] : &#10;- Bugg fixed with non classic spectral range for false rgb channels (float to int)">
-      <option name="closed" value="true" />
-      <created>1763976005932</created>
-      <option name="number" value="00138" />
-      <option name="presentableId" value="LOCAL-00138" />
-      <option name="project" value="LOCAL" />
-      <updated>1763976005932</updated>
-    </task>
-    <task id="LOCAL-00139" summary="[MINI CUBE] : &#10;- Bugg fixed for clip R to 0..1">
-      <option name="closed" value="true" />
-      <created>1763997469666</created>
-      <option name="number" value="00139" />
-      <option name="presentableId" value="LOCAL-00139" />
-      <option name="project" value="LOCAL" />
-      <updated>1763997469668</updated>
-    </task>
-    <task id="LOCAL-00140" summary="[MAIN] : &#10;- switch to tab if send to tool">
-      <option name="closed" value="true" />
-      <created>1764001941394</created>
-      <option name="number" value="00140" />
-      <option name="presentableId" value="LOCAL-00140" />
-      <option name="project" value="LOCAL" />
-      <updated>1764001941396</updated>
     </task>
     <task id="LOCAL-00141" summary="[MAIN-CALIB-UNMIX] : &#10;- one tool dialog after adding cube&#10;- savgol filters adusted to order 4 and window 43">
       <option name="closed" value="true" />
@@ -529,7 +505,31 @@
       <option name="project" value="LOCAL" />
       <updated>1768859154078</updated>
     </task>
-    <option name="localTasksCounter" value="187" />
+    <task id="LOCAL-00187" summary="[unmixing] :&#10;- small buggs fixed">
+      <option name="closed" value="true" />
+      <created>1769033433095</created>
+      <option name="number" value="00187" />
+      <option name="presentableId" value="LOCAL-00187" />
+      <option name="project" value="LOCAL" />
+      <updated>1769033433096</updated>
+    </task>
+    <task id="LOCAL-00188" summary="[unmixing] :&#10;- small buggs fixed">
+      <option name="closed" value="true" />
+      <created>1769033496351</created>
+      <option name="number" value="00188" />
+      <option name="presentableId" value="LOCAL-00188" />
+      <option name="project" value="LOCAL" />
+      <updated>1769033496351</updated>
+    </task>
+    <task id="LOCAL-00189" summary="[metadata] :&#10;- small buggs fixed&#10;[fileBrowser] :&#10;- small buggs fixed">
+      <option name="closed" value="true" />
+      <created>1769168569186</created>
+      <option name="number" value="00189" />
+      <option name="presentableId" value="LOCAL-00189" />
+      <option name="project" value="LOCAL" />
+      <updated>1769168569187</updated>
+    </task>
+    <option name="localTasksCounter" value="190" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -581,8 +581,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="[UNMIX] : &#10;- cursor change to cross&#10;- save on pixel abundaces + metadata update&#10;- modif matplotlib_toolbar and margen" />
-    <MESSAGE value="[UNMIX] : &#10;- fixing buggs and ui details" />
     <MESSAGE value="[UNMIX] : &#10;- tool_tips added" />
     <MESSAGE value="[IDENTIFICATION] : &#10;- tool_tips added&#10;[GT] : &#10;- tab coherent&#10;[UNMIX] : &#10;- tab coherent" />
     <MESSAGE value="[GNL] : &#10;- tool_tips &#10;[REGISTRATION] : &#10;- fixed interferences rectangle_move keypoint" />
@@ -606,6 +604,8 @@
     <MESSAGE value="[GT] :&#10;- Clamp Zoom in local zoomable graphics view&#10;[Hypercube]&#10;- squeeze wl to have ndim=1 on loading" />
     <MESSAGE value="[GT] :&#10;- small buggs" />
     <MESSAGE value="[identification] :&#10;- small buggs fixed" />
-    <option name="LAST_COMMIT_MESSAGE" value="[identification] :&#10;- small buggs fixed" />
+    <MESSAGE value="[unmixing] :&#10;- small buggs fixed" />
+    <MESSAGE value="[metadata] :&#10;- small buggs fixed&#10;[fileBrowser] :&#10;- small buggs fixed" />
+    <option name="LAST_COMMIT_MESSAGE" value="[metadata] :&#10;- small buggs fixed&#10;[fileBrowser] :&#10;- small buggs fixed" />
   </component>
 </project>
