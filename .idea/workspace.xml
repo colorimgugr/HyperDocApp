@@ -4,10 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="[metadata] :&#10;- small buggs fixed&#10;[fileBrowser] :&#10;- small buggs fixed">
+    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="[illumination] :&#10;- small buggs fixed">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/illumination/illumination_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/illumination/illumination_tool.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data_vizualisation/data_vizualisation_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/data_vizualisation/data_vizualisation_tool.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/log/error.log" beforeDir="false" afterPath="$PROJECT_DIR$/log/error.log" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/metadata/metadata_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/metadata/metadata_tool.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -136,14 +137,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1744020944801</updated>
-    </task>
-    <task id="LOCAL-00141" summary="[MAIN-CALIB-UNMIX] : &#10;- one tool dialog after adding cube&#10;- savgol filters adusted to order 4 and window 43">
-      <option name="closed" value="true" />
-      <created>1764240990085</created>
-      <option name="number" value="00141" />
-      <option name="presentableId" value="LOCAL-00141" />
-      <option name="project" value="LOCAL" />
-      <updated>1764240990085</updated>
     </task>
     <task id="LOCAL-00142" summary="[UNMIX] : &#10;- ADD one FTIR spectrum to an hypercube OK&#10;- Select good sample if csv with multiple samples">
       <option name="closed" value="true" />
@@ -529,7 +522,15 @@
       <option name="project" value="LOCAL" />
       <updated>1769168569187</updated>
     </task>
-    <option name="localTasksCounter" value="190" />
+    <task id="LOCAL-00190" summary="[illumination] :&#10;- small buggs fixed">
+      <option name="closed" value="true" />
+      <created>1769243323960</created>
+      <option name="number" value="00190" />
+      <option name="presentableId" value="LOCAL-00190" />
+      <option name="project" value="LOCAL" />
+      <updated>1769243323960</updated>
+    </task>
+    <option name="localTasksCounter" value="191" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -581,7 +582,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="[UNMIX] : &#10;- tool_tips added" />
     <MESSAGE value="[IDENTIFICATION] : &#10;- tool_tips added&#10;[GT] : &#10;- tab coherent&#10;[UNMIX] : &#10;- tab coherent" />
     <MESSAGE value="[GNL] : &#10;- tool_tips &#10;[REGISTRATION] : &#10;- fixed interferences rectangle_move keypoint" />
     <MESSAGE value="[GNL] : &#10;- global activation of tool_tips" />
@@ -606,6 +606,7 @@
     <MESSAGE value="[identification] :&#10;- small buggs fixed" />
     <MESSAGE value="[unmixing] :&#10;- small buggs fixed" />
     <MESSAGE value="[metadata] :&#10;- small buggs fixed&#10;[fileBrowser] :&#10;- small buggs fixed" />
-    <option name="LAST_COMMIT_MESSAGE" value="[metadata] :&#10;- small buggs fixed&#10;[fileBrowser] :&#10;- small buggs fixed" />
+    <MESSAGE value="[illumination] :&#10;- small buggs fixed" />
+    <option name="LAST_COMMIT_MESSAGE" value="[illumination] :&#10;- small buggs fixed" />
   </component>
 </project>

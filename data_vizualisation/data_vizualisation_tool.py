@@ -725,17 +725,38 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
             self.update_metadata_label()
 
     def update_metadata_label(self):
-        key = self.comboBox_metadata.currentText()
         hyp = self.hyps[self.radioButton_SWIR.isChecked()]
+        key = self.comboBox_metadata.currentText().strip()
 
-        if key == '':
-            try:
-                key = 'cubeinfo'
-                hyp.metadata[key]
-            except:
-                pass
+        # Valeur par défaut si rien n'est sélectionné
+        if not key:
+            key = "cubeinfo"
 
-        raw = hyp.metadata[key]
+        # Cas spécial: cubeinfo n'est pas dans hyp.metadata
+        if key.lower() == "cubeinfo":
+            ci = getattr(hyp, "cube_info", None)
+            if ci is None:
+                self.label_metadata.setText("<b>Cube info not available</b>")
+                return
+
+            # Adapte ce texte à ce que tu veux afficher
+            st = (
+                f"<b>File:</b> {getattr(ci, 'filepath', '')}<br>"
+                f"<b>Type:</b> {getattr(ci, 'cube_type', '')}<br>"
+                f"<b>Sensor:</b> {getattr(ci, 'sensor', '')}<br>"
+            )
+            self.label_metadata.setText(st)
+            return
+
+        # Accès sécurisé aux métadonnées (évite KeyError)
+        raw = hyp.metadata.get(key, None)
+        if raw is None:
+            # optionnel: essayer une variante de casse
+            raw = hyp.metadata.get(key.lower(), None)
+
+        if raw is None:
+            self.label_metadata.setText(f"<b>Metadata '{key}' not found</b>")
+            return
 
         try:
             if key in ['GTLabels', 'gtlabels']:

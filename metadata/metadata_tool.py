@@ -547,21 +547,71 @@ class MetadataTool(QWidget, Ui_Metadata_tool):
         self.update_metadata_label()
 
     def update_metadata_label(self):
-        self.textEdit_metadata.setStyleSheet("QTextEdit  { color: black; }")
-        key = self.comboBox_metadata.currentText()
-        if key=='':
-            try:
-                key='cubeinfo'
-                raw = self.cube_info.metadata_temp[key]
+        hyp = self.hyps[self.radioButton_SWIR.isChecked()]
+        key = self.comboBox_metadata.currentText().strip()
 
-            except:
-                pass
+        # Valeur par défaut si rien n'est sélectionné
+        if not key:
+            key = "cubeinfo"
 
-        try:
-            raw = self.cube_info.metadata_temp[key]
-        except:
+        # Cas spécial: cubeinfo n'est pas dans hyp.metadata
+        if key.lower() == "cubeinfo":
+            ci = getattr(hyp, "cube_info", None)
+            if ci is None:
+                self.label_metadata.setText("<b>Cube info not available</b>")
+                return
+
+            # Adapte ce texte à ce que tu veux afficher
+            st = (
+                f"<b>File:</b> {getattr(ci, 'filepath', '')}<br>"
+                f"<b>Type:</b> {getattr(ci, 'cube_type', '')}<br>"
+                f"<b>Sensor:</b> {getattr(ci, 'sensor', '')}<br>"
+            )
+            self.label_metadata.setText(st)
             return
 
+        # Accès sécurisé aux métadonnées (évite KeyError)
+        raw = hyp.metadata.get(key, None)
+        if raw is None:
+            # optionnel: essayer une variante de casse
+            raw = hyp.metadata.get(key.lower(), None)
+
+        if raw is None:
+            self.label_metadata.setText(f"<b>Metadata '{key}' not found</b>")
+            return
+
+    def update_metadata_label(self):
+        self.textEdit_metadata.setStyleSheet("QTextEdit  { color: black; }")
+        key = (self.comboBox_metadata.currentText() or "").strip()
+        if not key:
+            key = "cubeinfo"
+
+        # --- pseudo-key : cubeinfo (ne pas chercher dans metadata_temp) ---
+        if key.lower() == "cubeinfo":
+            ci = getattr(self, "cube_info", None)
+            if ci is None:
+                self.label_metadata.setText("<b>Cube info not available</b>")
+                return
+
+            st = (
+                f"<b>File:</b> {getattr(ci, 'filepath', '')}<br>"
+                f"<b>Type:</b> {getattr(ci, 'cube_type', '')}<br>"
+                f"<b>Sensor:</b> {getattr(ci, 'sensor', '')}<br>"
+            )
+            self.label_metadata.setText(st)
+            self.textEdit_metadata.setText(st.replace("<br>", "\n"))  # optionnel
+            return
+
+        # --- accès robuste aux metadata temporaires ---
+        meta = getattr(self.cube_info, "metadata_temp", {}) or {}
+        raw = meta.get(key, None)
+        if raw is None:
+            raw = meta.get(key.lower(), None)
+
+        if raw is None:
+            self.label_metadata.setText(f"<b>Metadata '{key}' not found</b>")
+            self.textEdit_metadata.setText("")
+            return
 
         try :
             if key in ['GTLabels','gtlabels']:

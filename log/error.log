@@ -736,3 +736,99 @@ Traceback (most recent call last):
                                 ^^
 UnboundLocalError: cannot access local variable 'st' where it is not associated with a value
 
+2026-01-24 18:57:34,897 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\data_vizualisation\data_vizualisation_tool.py", line 738, in update_metadata_label
+    raw = hyp.metadata[key]
+          ~~~~~~~~~~~~^^^^^
+KeyError: 'cubeinfo'
+
+2026-01-24 19:00:11,542 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\data_vizualisation\data_vizualisation_tool.py", line 738, in update_metadata_label
+    raw = hyp.metadata[key]
+          ~~~~~~~~~~~~^^^^^
+KeyError: 'cubeinfo'
+
+2026-01-24 19:12:24,780 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\metadata\metadata_tool.py", line 550, in update_metadata_label
+    hyp = self.hyps[self.radioButton_SWIR.isChecked()]
+          ^^^^^^^^^
+AttributeError: 'MetadataTool' object has no attribute 'hyps'
+
+2026-01-24 19:16:48,191 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\MainWindow.py", line 926, in <lambda>
+    act_meta.triggered.connect(lambda checked, p=path: self._send_to_metadata(p))
+                                                       ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\MainWindow.py", line 697, in _send_to_metadata
+    widget.set_cube_info(ci)
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\metadata\metadata_tool.py", line 217, in set_cube_info
+    self.update_combo_meta(init=True)
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\metadata\metadata_tool.py", line 211, in update_combo_meta
+    self.update_metadata_label()
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\metadata\metadata_tool.py", line 550, in update_metadata_label
+    hyp = self.hyps[self.radioButton_SWIR.isChecked()]
+          ^^^^^^^^^
+AttributeError: 'MetadataTool' object has no attribute 'hyps'
+
+2026-01-24 19:17:35,843 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\metadata\metadata_tool.py", line 604, in update_metadata_label
+    raw = self.cube_info.metadata.get(key, None)
+          ^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'CubeInfoTemp' object has no attribute 'metadata'
+
+2026-01-24 19:22:28,721 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\metadata\metadata_tool.py", line 716, in update_metadata_label
+    st=f"<b>{self.cube_info.metadata_temp[key]}</b>"
+             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^
+KeyError: ''
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\metadata\metadata_tool.py", line 719, in update_metadata_label
+    st=f"<b> !!! PROBLEM WITH METADATUM FORMAT !!! <br> <br> Here the raw :  <br> <br> {raw} </b>"
+                                                                                        ^^^
+NameError: name 'raw' is not defined
+
+2026-01-24 19:24:03,590 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\metadata\metadata_tool.py", line 602, in update_metadata_label
+    raw = self.metadata.get(key, None)  # ou self.cube.metadata.get(...)
+          ^^^^^^^^^^^^^
+AttributeError: 'MetadataTool' object has no attribute 'metadata'
+
+2026-01-24 19:25:06,900 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\metadata\metadata_tool.py", line 602, in update_metadata_label
+    raw = self.metadata.get(key, None)  # ou self.cube.metadata.get(...)
+          ^^^^^^^^^^^^^
+AttributeError: 'MetadataTool' object has no attribute 'metadata'
+
+2026-01-24 19:25:10,236 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\metadata\metadata_tool.py", line 602, in update_metadata_label
+    raw = self.metadata.get(key, None)  # ou self.cube.metadata.get(...)
+          ^^^^^^^^^^^^^
+AttributeError: 'MetadataTool' object has no attribute 'metadata'
+
+2026-01-24 19:25:13,069 - ERROR - Uncaught exception:
+Traceback (most recent call last):
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\MainWindow.py", line 926, in <lambda>
+    act_meta.triggered.connect(lambda checked, p=path: self._send_to_metadata(p))
+                                                       ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\MainWindow.py", line 697, in _send_to_metadata
+    widget.set_cube_info(ci)
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\metadata\metadata_tool.py", line 217, in set_cube_info
+    self.update_combo_meta(init=True)
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\metadata\metadata_tool.py", line 211, in update_combo_meta
+    self.update_metadata_label()
+  File "C:\Users\Usuario\Documents\GitHub\Hypertool\metadata\metadata_tool.py", line 602, in update_metadata_label
+    raw = self.metadata.get(key, None)  # ou self.cube.metadata.get(...)
+          ^^^^^^^^^^^^^
+AttributeError: 'MetadataTool' object has no attribute 'metadata'
+
