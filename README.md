@@ -53,6 +53,12 @@ Most tools in Hyperdoc provide **detailed tooltips** describing parameters, algo
 Tooltips can be **enabled or disabled globally** using the **“Show tooltips” button in the main toolbar**.
 This option is especially useful when discovering a new tool or unfamiliar parameters, and can be turned off at any time for a cleaner interface.
 
+⚠️ **Display Resolution Notice**
+
+For screen resolutions **below 1920×1080**, some interface elements or text may appear slightly compressed
+or partially truncated in some elements.  
+For the best user experience, a **Full HD (1920×1080) display or higher** is recommended.
+
 
 ### Main Tools
 | Tool | Description |
