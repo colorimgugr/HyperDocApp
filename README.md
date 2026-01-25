@@ -192,8 +192,7 @@ and `metadata` as standard MATLAB variables before saving.
 
 ℹ️ **Current Scope of the Identification Tool**
 In this first public version of HyperdocApp, the **Identification Tool** is configured to classify pixels into
- **three ink classes**, following the taxonomy defined in our reference study
- (*Spectrochimica Acta Part A: Molecular and Biomolecular Spectroscopy*, 2025).
+ **three ink classes**, following the taxonomy defined in our reference study : 
  https://www.sciencedirect.com/science/article/pii/S1386142525002227
 
  The implemented classes are:
