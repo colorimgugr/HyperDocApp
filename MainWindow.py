@@ -296,6 +296,9 @@ class MainApp(QtWidgets.QMainWindow):
         self.ICONS_DIR = os.path.join(self.BASE_DIR,"Hypertool","interface", "icons")
         icon_main= "Hyperdoc_logo_transparente_CIMLab.png"
         self.setWindowIcon(QIcon(os.path.join(self.ICONS_DIR,icon_main)))
+        self.FORM_PATH = os.path.join(self.BASE_DIR,"Hypertool","interface", "url_form.txt")
+        f = open(self.FORM_PATH)
+        self.url_form =f.read()
 
         # perso style title bar
         self.title_bar_style = {
@@ -344,17 +347,17 @@ class MainApp(QtWidgets.QMainWindow):
         self.toolbar.setIconSize(QSize(48, 48))  # Taille des icônes
         self.toolbar.setToolButtonStyle(Qt.ToolButtonIconOnly)  #ToolButtonIconOnly ou TextUnderIcon)
 
-        act_file = self.onToolButtonPress(self.file_browser_dock,icon_name="file_browser_icon.png",    tooltip="File Browser — Browse cube files, inspect internal datasets, and send selections to the tools.")
-        act_met = self.onToolButtonPress(self.meta_dock, "metadata_icon.png",     "Metadata — View and edit cube metadata with safe synchronization.")
+        act_file = self.onToolButtonPress(self.file_browser_dock,icon_name="file_browser_icon.png",    tooltip="File Browser — Browse cube files, inspect internal datasets.")
+        act_met = self.onToolButtonPress(self.meta_dock, "metadata_icon.png",     "Metadata — View and edit cube metadata.")
         self.toolbar.addSeparator()
-        act_mini=self.onToolButtonPress(self.minicube_dock, "minicube_icon.png",     "Minicube Extract — Crop regions of interest and export compact minicubes while preserving parent metadata.")
+        act_mini=self.onToolButtonPress(self.minicube_dock, "minicube_icon.png",     "Minicube Extract — Crop regions of interest and export compact minicubes.")
         act_data = self.onToolButtonPress(self.data_viz_dock, "icon_data_viz.svg", "Data Visualization — Explore cubes of the dataset interactively")
-        act_illumination = self.onToolButtonPress(self.illumination_dock, "illumination_icon.png", "Illumination — Inspect illumination effects")
+        act_illumination = self.onToolButtonPress(self.illumination_dock, "illumination_icon.png", "Illumination — Simulate illumination effects")
         act_reg = self.onToolButtonPress(self.reg_dock, "registration_icon.png",     "Registration — Align a moving cube to a fixed cube using feature matching and geometric transforms.")
         act_gt =self.onToolButtonPress(self.gt_dock, "GT_icon_1.png",     "Ground Truth — Create, edit, and export labeled maps (manual selection + supervised/unsupervised segmentation).")
         self.toolbar.addSeparator()
-        act_ident=self.onToolButtonPress(self.identification_dock,"Ident_icon.png",    "Identification — Run ink/substrate identification workflows using the dataset.")
-        act_unmix=self.onToolButtonPress(self.unmixing_dock,"unmixing_icon.png",    "Unmixing — Estimate per-pixel abundances by fitting mixtures of reference spectra and visualize abundance maps.")
+        act_ident=self.onToolButtonPress(self.identification_dock,"Ident_icon.png",    "Identification — Classify ink/substrate family per-pixel.")
+        act_unmix=self.onToolButtonPress(self.unmixing_dock,"unmixing_icon.png",    "Unmixing — Estimate per-pixel abundances by fitting mixtures of reference spectra.")
 
         self.toolbar.addSeparator()
 
@@ -475,7 +478,7 @@ class MainApp(QtWidgets.QMainWindow):
 
     def open_suggestion_box(self):
         # Public distribution: redirect suggestions to an online form.
-        url = "https://docs.google.com/forms/d/e/1FAIpQLSff0dXWaO57mmHGBjkNVxKFjhxLHEYXgzifMafPH8soU93PdA/viewform?usp=publish-editor"
+        url = self.url_form
 
         msg = QMessageBox(self)
         msg.setIcon(QMessageBox.Information)
