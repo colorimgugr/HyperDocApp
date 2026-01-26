@@ -181,6 +181,7 @@ and `metadata` as standard MATLAB variables before saving.
 
 **Purpose:** Perform spectral classification using trained machine learning models.
 
+
 ### Steps
 - Load VNIR + SWIR cubes (fused) using the VNIR/SWIR dialog.
 - Launch the ink/substrate binarization with the chosen algorithm and parameters.
@@ -188,6 +189,21 @@ and `metadata` as standard MATLAB variables before saving.
 - Display classification maps per model.
 - Clean and post-process classification maps.
 - Save outputs as HDF5 or PNG with palette.
+
+ℹ️ **Current Scope of the Identification Tool**
+In this first public version of HyperdocApp, the **Identification Tool** is configured to classify pixels into
+ **three ink classes**, following the taxonomy defined in our reference study : 
+ 
+ https://www.sciencedirect.com/science/article/pii/S1386142525002227
+
+ The implemented classes are:
+ - **MGP** — *Pure metallo-gallate inks*, typically iron-gall inks without carbon additives.
+ - **CC** — *Carbon-containing inks*, including pure carbon inks and mixtures of carbon with metallo-gallate or sepia.
+ - **NCC** — *Non-carbon-containing inks*, such as sepia inks and mixtures of sepia with metallo-gallate.
+
+ This classification scheme reflects the experimental design and conservation-oriented interpretation
+ described in the reference work. While the underlying machine-learning framework is generic,
+ extension to finer subclasses or additional material categories will be addressed in future releases.
 
 ---
 
