@@ -734,17 +734,14 @@ class Data_Viz_Window(QWidget,Ui_DataVizualisation):
 
         # Cas spécial: cubeinfo n'est pas dans hyp.metadata
         if key.lower() == "cubeinfo":
-            ci = getattr(hyp, "cube_info", None)
+            ci = getattr(hyp, "cubeinfo", None)
             if ci is None:
                 self.label_metadata.setText("<b>Cube info not available</b>")
                 return
 
             # Adapte ce texte à ce que tu veux afficher
-            st = (
-                f"<b>File:</b> {getattr(ci, 'filepath', '')}<br>"
-                f"<b>Type:</b> {getattr(ci, 'cube_type', '')}<br>"
-                f"<b>Sensor:</b> {getattr(ci, 'sensor', '')}<br>"
-            )
+            st =
+                "No cubeinfo metadata yet"
             self.label_metadata.setText(st)
             return
 
