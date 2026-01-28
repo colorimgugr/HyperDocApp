@@ -34,7 +34,8 @@ The simplest way for windows :
 - Extract it on your disk
 - Lauch the .exe file
 
-
+For MAC or Linux users, they will have to use python to run the application. 
+You may try to copy/paste these lines and adapt them to your OS if needed : 
 ```bash
 # From your project root
 git clone https://github.com/llanick/Hypertool.git
