@@ -13,7 +13,6 @@ https://colorimaginglab.ugr.es/pages/hyperdoc/publications
 > **🎥 Video Tutorials**  
 > Watch step-by-step video tutorials for HyperdocApp here: [HyperdocApp tutorials](https://youtube.com/playlist?list=PLZ3I2ygGBU3Jcj_D8jwjva1HvlTM514KF&si=8Cizrt1jmEF74hPN)
 
-
 ---
 
 ## 📚 Table of Contents
@@ -40,7 +39,7 @@ The simplest way for windows :
 - Extract it on your disk
 - Launch the .exe file
 
-*🎥 Video Tutorial*  : [App Overview tutorial](https://youtube.com/playlist?list=PLZ3I2ygGBU3Jcj_D8jwjva1HvlTM514KF&si=8Cizrt1jmEF74hPN](https://youtu.be/pOmTUfG_FhA?si=RBBLrxPrjgulqC7G)
+*🎥 Video Tutorial*  : [App Overview tutorial](https://youtu.be/pOmTUfG_FhA?si=RBBLrxPrjgulqC7G)
 
 For MAC or Linux users, they will have to use python to run the application. 
 You may try to copy/paste these lines and adapt them to your OS if needed : 
