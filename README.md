@@ -34,7 +34,7 @@ https://colorimaginglab.ugr.es/pages/hyperdoc/publications
 **(Add link to video)**
 
 The simplest way for windows : 
-- To download the .zip file, please fill the form at this adress : https://docs.google.com/forms/u/1/d/1Gga7ZenYweVdifhYfSwW6Ro48kt7LjFG3XKhPcctLyc/edit?usp=drivesdk
+- To download the .zip file, please fill in the following form:  [Link to download form](https://docs.google.com/forms/u/1/d/1Gga7ZenYweVdifhYfSwW6Ro48kt7LjFG3XKhPcctLyc/edit?usp=drivesdk)
 - Extract it on your disk
 - Lauch the .exe file
 
