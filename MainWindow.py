@@ -1,10 +1,8 @@
 # cd C:\Users\Usuario\Documents\GitHub\Hypertool
-# set HYPERDOC_EDITION=light
-#
 # python MainWindow.py
 # sys.excepthook = excepthook #set the exception handler
 # pyinstaller  --noconfirm --noconsole --exclude-module tensorflow --exclude-module torch --exclude-module matlab --icon="interface/icons/hyperdoc_logo_transparente.ico" --add-data "interface/icons:Hypertool/interface/icons" --add-data "interface/url_form.txt:Hypertool/interface" --add-data "hypercubes/white_ref_reflectance_data:hypercubes/white_ref_reflectance_data" --add-data "ground_truth/Materials labels and palette assignation - Materials_labels_palette.csv:ground_truth"  --add-data "data_vizualisation/Spatially registered minicubes equivalence.csv:data_vizualisation" --add-data "illumination/Illuminants.csv:illumination" --add-data "unmixing/data:unmixing/data"  MainWindow.py
-# if IS_LIGHT
+# IS_LIGHT=True
 # pyinstaller  --name "HyperdocApp_light" --noconfirm --noconsole --exclude-module tensorflow --exclude-module torch --exclude-module matlab --exclude-module unmixing --exclude-module identification --icon="interface/icons/hyperdoc_logo_transparente.ico" --add-data "interface/icons:Hypertool/interface/icons" --add-data "interface/url_form.txt:Hypertool/interface" --add-data "hypercubes/white_ref_reflectance_data:hypercubes/white_ref_reflectance_data" --add-data "ground_truth/Materials labels and palette assignation - Materials_labels_palette.csv:ground_truth"  --add-data "data_vizualisation/Spatially registered minicubes equivalence.csv:data_vizualisation" --add-data "illumination/Illuminants.csv:illumination"   MainWindow.py
 
 # C:\Envs\py37test\Scripts\activate
@@ -837,9 +835,9 @@ class MainApp(QtWidgets.QMainWindow):
         pass
 
     def _send_to_unmix(self,filepath,icube,show_tab=True):
-        if self._premium_block("Identification"):
+        if self._premium_block("Unmixing"):
             if show_tab:
-                self.identification_dock.raise_()
+                self.unmixing_dock.raise_()
             return
         widget = self.unmixing_dock.widget()
         ci = self.hypercube_manager.add_or_sync_cube(filepath)
@@ -1209,6 +1207,8 @@ def check_resolution_change():
             last_width = current_width
 
 if __name__ == "__main__":
+
+    IS_LIGHT=True
 
     sys.excepthook = excepthook #set the exception handler
 
