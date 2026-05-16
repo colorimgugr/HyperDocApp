@@ -83,7 +83,7 @@ class Ui_Save_Window(object):
         self.groupBox_hypercube_save_option.setTitle(_translate("Save_Window", "Hypercube save options"))
         self.radioButton_only_aligned_save.setText(_translate("Save_Window", "Only Aligned"))
         self.radioButton_both_cube_save.setText(_translate("Save_Window", "Both Cubes"))
-        self.checkBox_minicube_save.setText(_translate("Save_Window", "Croped cubes"))
+        self.checkBox_minicube_save.setText(_translate("Save_Window", "Cropped cubes"))
         self.comboBox_cube_format.setItemText(0, _translate("Save_Window", "HDF5"))
         self.comboBox_cube_format.setItemText(1, _translate("Save_Window", "ENVI"))
         self.comboBox_cube_format.setItemText(2, _translate("Save_Window", "MATLAB"))

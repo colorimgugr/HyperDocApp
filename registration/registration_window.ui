@@ -113,7 +113,7 @@
 When enabled, loading a file containing VNIR (or SWIR) will try to automatically load the corresponding SWIR (or VNIR) cube from the same folder (by filename replacement).</string>
                  </property>
                  <property name="text">
-                  <string>Automatic search for complentary cube</string>
+                  <string>Automatic search for complementary cube</string>
                  </property>
                  <property name="checked">
                   <bool>true</bool>

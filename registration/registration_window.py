@@ -381,7 +381,7 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle(_translate("MainWindow", "Registration Tool"))
         self.checkBox_auto_load_complental.setToolTip(_translate("MainWindow", "Auto-load paired cube\n"
 "When enabled, loading a file containing VNIR (or SWIR) will try to automatically load the corresponding SWIR (or VNIR) cube from the same folder (by filename replacement)."))
-        self.checkBox_auto_load_complental.setText(_translate("MainWindow", "Automatic search for complentary cube"))
+        self.checkBox_auto_load_complental.setText(_translate("MainWindow", "Automatic search for complementary cube"))
         self.pushButton_switch_images.setToolTip(_translate("MainWindow", "Swap fixed / moving\n"
 "Swap the fixed and moving cubes (and refresh their viewers and wavelength controls)."))
         self.pushButton_switch_images.setText(_translate("MainWindow", " <->"))

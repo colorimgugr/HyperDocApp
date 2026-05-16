@@ -464,7 +464,7 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
     def get_features(self, detector):
 
         if not self.checkBox_autorize_modify.isChecked():
-            QMessageBox.warning(self,'Not autorized','Check Autorize modifying registered cube. \nDoing this, you will loose actual parent cube for minicube extraction.')
+            QMessageBox.warning(self,'Not autorized','Check Autorize modifying registered cube. \nDoing this, you will lose actual parent cube for minicube extraction.')
             return
 
         crop = False
@@ -516,7 +516,7 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
     def register_imageAndCube(self):
 
         if not self.checkBox_autorize_modify.isChecked():
-            QMessageBox.warning(self,'Not autorized','Check Autorize modifying registered cube. \nDoing this, you will loose actual parent cube for minicube extraction.')
+            QMessageBox.warning(self,'Not autorized','Check Autorize modifying registered cube. \nDoing this, you will lose actual parent cube for minicube extraction.')
             return
 
         # Keep only the top percentage of matches
@@ -842,18 +842,18 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
 
                     if self.viewer_aligned.get_rect_coords() is None:
                         QMessageBox.warning(self, 'NO selected zone',
-                                            'NO selected zone in the aligned cube.\nSelect first a rectangle with the right click or do not check "Croped cubes" on saving')
+                                            'NO selected zone in the aligned cube.\nSelect first a rectangle with the right click or do not check "Cropped cubes" on saving')
                         return
 
             if not save_both and not flag_save_aligned:
 
-                # if croped selected but not save both -> ask if sure
+                # if cropped selected but not save both -> ask if sure
                 msg_box = QMessageBox(self)
                 msg_box.setWindowTitle("Only one cube ?")
                 msg_box.setIcon(QMessageBox.Question)
                 msg_box.setText(
-                    "You choosed to keep only the selected part of the whole cube.\nAre you sure you do not want to save both croped cubes ?")
-                only_aligned = msg_box.addButton("Yes, just keep croped aligned cube", QMessageBox.ActionRole)
+                    "You choosed to keep only the selected part of the whole cube.\nAre you sure you do not want to save both cropped cubes ?")
+                only_aligned = msg_box.addButton("Yes, just keep cropped aligned cube", QMessageBox.ActionRole)
                 save_both = msg_box.addButton("No, save both", QMessageBox.ActionRole)
                 msg_box.exec()
 
@@ -899,7 +899,7 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
                 aligned_img = self.aligned_img[x:x + dx, y:y + dy]
 
 
-                ## metadata for croped fixed cube from fixed_cube
+                ## metadata for cropped fixed cube from fixed_cube
                 mini_fixed_cube.cube_info.metadata_temp['position'] =[y, x, dy, dx]
                 try:
                    mini_fixed_cube.cube_info.metadata_temp['parent_cube']=self.fixed_cube.cube_info.metadata_temp['name']
@@ -907,7 +907,7 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
                    mini_fixed_cube.cube_info.metadata_temp['parent_cube'] = os.path.basename(self.fixed_cube.cube_info.filepath).split('.')[0]
 
 
-                ## metadata for croped moving cube from parent_aligned_for_minicubes
+                ## metadata for cropped moving cube from parent_aligned_for_minicubes
                 mini_align_cube.cube_info.metadata_temp['position'] = [y, x, dy, dx]
                 if self.parent_aligned_for_minicubes is not None:
                     try:
@@ -1072,7 +1072,7 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
                 self.parent_aligned_for_minicubes=mini_align_cube
                 self.checkBox_autorize_modify.setChecked(False)
             if not save_both:
-                QMessageBox.information(self, "Succès", f"Cube saved as {fmt} in :\n{save_path_align}")
+                QMessageBox.information(self, "Success", f"Cube saved as {fmt} in :\n{save_path_align}")
 
         except :
             QMessageBox.warning(self, "Problem", f"Cube NOT SAVED as {fmt} in :\n{save_path_align}")
@@ -1091,7 +1091,7 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
                 save_path_fixed+=ext
             mini_fixed_cube.cube_info.filepath=save_path_fixed
             self.cube_saved.emit(mini_fixed_cube.cube_info)
-            QMessageBox.information(self, "Succès", f"Cubes saved as {fmt} in :\n{save_path_align} \n{save_path_fixed} ")
+            QMessageBox.information(self, "Success", f"Cubes saved as {fmt} in :\n{save_path_align} \n{save_path_fixed} ")
 
     def switch_fixe_mov(self):
         self.load_cube(switch=True)
@@ -1189,7 +1189,7 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
 
     def reset_all(self):
         
-        ans=QMessageBox.warning(self,'Reset All','If you reset you will loose all the work you have done here.\n \nAre you sure you want to reset this tool ? ', QMessageBox.Yes|QMessageBox.Cancel)
+        ans=QMessageBox.warning(self,'Reset All','If you reset you will lose all the work you have done here.\n \nAre you sure you want to reset this tool ? ', QMessageBox.Yes|QMessageBox.Cancel)
         if ans==QMessageBox.Cancel:
             return
         

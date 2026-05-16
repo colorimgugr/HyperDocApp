@@ -1068,7 +1068,7 @@ class MainApp(QtWidgets.QMainWindow):
         reply = QMessageBox.question(
             self,
             "Confirm Exit",
-            "You may loose unsaved modifications. \nAre you sure you want to quit the application?",
+            "You may lose unsaved modifications. \nAre you sure you want to quit the application?",
             QMessageBox.Ok | QMessageBox.Cancel
         )
 

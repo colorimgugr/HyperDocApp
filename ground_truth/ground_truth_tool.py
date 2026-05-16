@@ -2125,7 +2125,7 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
     def reset_all(self):
         # Check if sure ?
         ans = QMessageBox.warning(self, 'Reset All',
-                                  'If you reset you will loose all the work you have done here.\n \nAre you sure you want to reset this tool ? ',
+                                  'If you reset you will lose all the work you have done here.\n \nAre you sure you want to reset this tool ? ',
                                   QMessageBox.Yes | QMessageBox.Cancel)
         if ans == QMessageBox.Cancel:
             return

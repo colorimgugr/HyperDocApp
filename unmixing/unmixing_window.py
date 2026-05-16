@@ -857,7 +857,7 @@ class Ui_GroundTruthWidget(object):
 "- L1 / L2: scale each spectrum to unit norm\n"
 "\n"
 "Normalization changes the relative scale of spectra, which can affect extraction and comparison."))
-        self.comboBox_normalisation.setItemText(0, _translate("GroundTruthWidget", "L2 (Euclidian)"))
+        self.comboBox_normalisation.setItemText(0, _translate("GroundTruthWidget", "L2 (Euclidean)"))
         self.comboBox_normalisation.setItemText(1, _translate("GroundTruthWidget", "L1 (Sum=1)"))
         self.comboBox_normalisation.setItemText(2, _translate("GroundTruthWidget", "None"))
         self.run_btn.setToolTip(_translate("GroundTruthWidget", "Run unmixing now\n"
@@ -898,7 +898,7 @@ class Ui_GroundTruthWidget(object):
         self.label_normalisation_unmix.setToolTip(_translate("GroundTruthWidget", "  "))
         self.label_normalisation_unmix.setText(_translate("GroundTruthWidget", "Normalisation :"))
         self.comboBox_normalisation_unmix.setToolTip(_translate("GroundTruthWidget", "<html><head/><body><p>Spectral normalization</p><p>Select how spectra are normalized before unmixing.</p><p>• L2 (Euclidean)</p><p>Each spectrum is normalized by its L2 norm</p><p>(square root of the sum of squared values).</p><p>Preserves spectral shape while reducing sensitivity to absolute intensity.</p><p>Common default for least-squares-based methods.</p><p><br/></p><p>• L1 (Sum = 1)</p><p>Each spectrum is normalized so that the sum of its values equals 1.</p><p>Emphasizes relative band contributions.</p><p>Often used when comparing proportions or compositional spectra.</p><p>• None</p><p>No normalization is applied.</p><p>Use only if spectra are already calibrated and comparable in magnitude.<br/></p></body></html>"))
-        self.comboBox_normalisation_unmix.setItemText(0, _translate("GroundTruthWidget", "L2 (Euclidian)"))
+        self.comboBox_normalisation_unmix.setItemText(0, _translate("GroundTruthWidget", "L2 (Euclidean)"))
         self.comboBox_normalisation_unmix.setItemText(1, _translate("GroundTruthWidget", "L1 (Sum=1)"))
         self.comboBox_normalisation_unmix.setItemText(2, _translate("GroundTruthWidget", "None"))
         self.comboBox_preprocess.setToolTip(_translate("GroundTruthWidget", "<html><head/><body><p>Preprocess spectra for unmixing<br/></p><p>Choose how spectra are transformed before unmixing:</p><p>- Raw: reflectance without derivative</p><p>- 1st derivative: emphasize slopes, reduce baseline effects</p><p>- 2nd derivative: emphasize narrow features, stronger noise amplification</p><p><br/></p></body></html>"))

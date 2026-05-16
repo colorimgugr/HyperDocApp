@@ -4,10 +4,17 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="[data viz] :&#10;- small bugg fixed">
+    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="test despues migracion">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/MainWindow.py" beforeDir="false" afterPath="$PROJECT_DIR$/MainWindow.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/MainWindow.spec" beforeDir="false" afterPath="$PROJECT_DIR$/MainWindow.spec" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ground_truth/ground_truth_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/ground_truth/ground_truth_tool.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/registration/register_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/registration/register_tool.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/registration/registration_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/registration/registration_window.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/registration/registration_window.ui" beforeDir="false" afterPath="$PROJECT_DIR$/registration/registration_window.ui" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/registration/save_window_register_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/registration/save_window_register_tool.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/registration/save_window_register_tool.ui" beforeDir="false" afterPath="$PROJECT_DIR$/registration/save_window_register_tool.ui" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/unmixing/unmixing_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/unmixing/unmixing_window.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/unmixing/unmixing_window.ui" beforeDir="false" afterPath="$PROJECT_DIR$/unmixing/unmixing_window.ui" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -136,30 +143,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1744020944801</updated>
-    </task>
-    <task id="LOCAL-00148" summary="[UNMIX] : &#10;- ctrl+clic gauche OK pour selectionner&#10;[GROUND TRUTH] : &#10;- IDEM avec ctrl+clic gauche">
-      <option name="closed" value="true" />
-      <created>1764596969488</created>
-      <option name="number" value="00148" />
-      <option name="presentableId" value="LOCAL-00148" />
-      <option name="project" value="LOCAL" />
-      <updated>1764596969488</updated>
-    </task>
-    <task id="LOCAL-00149" summary="[GROUND TRUTH] : &#10;- CANCEL for ctrl+left clic -&gt; probelems">
-      <option name="closed" value="true" />
-      <created>1764598325744</created>
-      <option name="number" value="00149" />
-      <option name="presentableId" value="LOCAL-00149" />
-      <option name="project" value="LOCAL" />
-      <updated>1764598325744</updated>
-    </task>
-    <task id="LOCAL-00150" summary="[GROUND TRUTH] : &#10;- ctrl+left clic OK">
-      <option name="closed" value="true" />
-      <created>1764599008509</created>
-      <option name="number" value="00150" />
-      <option name="presentableId" value="LOCAL-00150" />
-      <option name="project" value="LOCAL" />
-      <updated>1764599008509</updated>
     </task>
     <task id="LOCAL-00151" summary="[UNMIX] : &#10;- added variable row height in show all&#10;- separate scroll action in show all&#10;- autosize viewer on loading (interesting for one pixel)&#10;- reset all&#10;[MAIN WINDOW]&#10;- Unmix_tool added and connected&#10;- icons of unmix done">
       <option name="closed" value="true" />
@@ -529,7 +512,31 @@
       <option name="project" value="LOCAL" />
       <updated>1769545608144</updated>
     </task>
-    <option name="localTasksCounter" value="197" />
+    <task id="LOCAL-00197" summary="[MainWindow] :&#10;- Added light version without identification and unmixing tool">
+      <option name="closed" value="true" />
+      <created>1769617111609</created>
+      <option name="number" value="00197" />
+      <option name="presentableId" value="LOCAL-00197" />
+      <option name="project" value="LOCAL" />
+      <updated>1769617111609</updated>
+    </task>
+    <task id="LOCAL-00198" summary="[MainWindow] :&#10;- Added light version without identification and unmixing tool">
+      <option name="closed" value="true" />
+      <created>1769678097130</created>
+      <option name="number" value="00198" />
+      <option name="presentableId" value="LOCAL-00198" />
+      <option name="project" value="LOCAL" />
+      <updated>1769678097131</updated>
+    </task>
+    <task id="LOCAL-00199" summary="test despues migracion">
+      <option name="closed" value="true" />
+      <created>1769683049362</created>
+      <option name="number" value="00199" />
+      <option name="presentableId" value="LOCAL-00199" />
+      <option name="project" value="LOCAL" />
+      <updated>1769683049362</updated>
+    </task>
+    <option name="localTasksCounter" value="200" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -581,8 +588,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="[Main] : &#10;- added send to ident and unmix if send to all&#10;[Illum]:&#10;- error message plus precis" />
-    <MESSAGE value="Implementing multiple progress bar for some task :&#10;-&gt; EM extrat&#10;-&gt; Unmixing loading cube" />
     <MESSAGE value="-&gt; Unmixing loading cube with progress bar OK" />
     <MESSAGE value="-&gt; Tooltips for data viz&#10;-&gt; More detailed tooltips for unmixing" />
     <MESSAGE value="Progress bar on loading cube in identification_tool.py" />
@@ -606,6 +611,8 @@
     <MESSAGE value="[Main] :&#10;- tooltips&#10;- url of form accessible depuis l'exterieur" />
     <MESSAGE value="[All] :&#10;- tooltips" />
     <MESSAGE value="[data viz] :&#10;- small bugg fixed" />
-    <option name="LAST_COMMIT_MESSAGE" value="[data viz] :&#10;- small bugg fixed" />
+    <MESSAGE value="[MainWindow] :&#10;- Added light version without identification and unmixing tool" />
+    <MESSAGE value="test despues migracion" />
+    <option name="LAST_COMMIT_MESSAGE" value="test despues migracion" />
   </component>
 </project>

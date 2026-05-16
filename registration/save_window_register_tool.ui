@@ -104,7 +104,7 @@
       <item row="1" column="0">
        <widget class="QCheckBox" name="checkBox_minicube_save">
         <property name="text">
-         <string>Croped cubes</string>
+         <string>Cropped cubes</string>
         </property>
        </widget>
       </item>
