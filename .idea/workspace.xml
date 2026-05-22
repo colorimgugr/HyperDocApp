@@ -4,12 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="correccion de ortografia">
+    <list default="true" id="d582d865-26c1-4224-a66c-1fa3811218c4" name="Changes" comment="correccion de ortografia Y new saving option for register tool to intersec both full cubes">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/MainWindow.py" beforeDir="false" afterPath="$PROJECT_DIR$/MainWindow.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/registration/register_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/registration/register_tool.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/registration/save_window_register_tool.py" beforeDir="false" afterPath="$PROJECT_DIR$/registration/save_window_register_tool.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/registration/save_window_register_tool.ui" beforeDir="false" afterPath="$PROJECT_DIR$/registration/save_window_register_tool.ui" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -53,12 +49,12 @@
     &quot;assignee&quot;: &quot;Llanik&quot;
   }
 }</component>
-  <component name="GithubPullRequestsUISettings">{
-  &quot;selectedUrlAndAccountId&quot;: {
-    &quot;url&quot;: &quot;https://github.com/Llanik/Hypertool.git&quot;,
-    &quot;accountId&quot;: &quot;95914ee3-b677-444b-a964-a8ed5b3dc5fa&quot;
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "git@github.com:colorimgugr/HyperDocApp.git",
+    "accountId": "95914ee3-b677-444b-a964-a8ed5b3dc5fa"
   }
-}</component>
+}]]></component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 4
 }</component>
@@ -138,14 +134,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1744020944801</updated>
-    </task>
-    <task id="LOCAL-00152" summary="[UNMIX] : &#10;- metric CGFC optimizada con scipy">
-      <option name="closed" value="true" />
-      <created>1764686648740</created>
-      <option name="number" value="00152" />
-      <option name="presentableId" value="LOCAL-00152" />
-      <option name="project" value="LOCAL" />
-      <updated>1764686648740</updated>
     </task>
     <task id="LOCAL-00153" summary="[UNMIX] : &#10;- show all zoom memory&#10;- selected_band realy active in job ! &#10;- visualisation et sauvegarde des bandes selectionnées pour le job&#10;-">
       <option name="closed" value="true" />
@@ -531,7 +519,15 @@
       <option name="project" value="LOCAL" />
       <updated>1778913239090</updated>
     </task>
-    <option name="localTasksCounter" value="201" />
+    <task id="LOCAL-00201" summary="correccion de ortografia Y new saving option for register tool to intersec both full cubes">
+      <option name="closed" value="true" />
+      <created>1779442428927</created>
+      <option name="number" value="00201" />
+      <option name="presentableId" value="LOCAL-00201" />
+      <option name="project" value="LOCAL" />
+      <updated>1779442428927</updated>
+    </task>
+    <option name="localTasksCounter" value="202" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -583,7 +579,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="-&gt; Tooltips for data viz&#10;-&gt; More detailed tooltips for unmixing" />
     <MESSAGE value="Progress bar on loading cube in identification_tool.py" />
     <MESSAGE value="Added busy bar for different substrate classification mode" />
     <MESSAGE value="[UNMIXING] Title addes to viewers and splitter correct initialisation" />
@@ -608,6 +603,7 @@
     <MESSAGE value="[MainWindow] :&#10;- Added light version without identification and unmixing tool" />
     <MESSAGE value="test despues migracion" />
     <MESSAGE value="correccion de ortografia" />
-    <option name="LAST_COMMIT_MESSAGE" value="correccion de ortografia" />
+    <MESSAGE value="correccion de ortografia Y new saving option for register tool to intersec both full cubes" />
+    <option name="LAST_COMMIT_MESSAGE" value="correccion de ortografia Y new saving option for register tool to intersec both full cubes" />
   </component>
 </project>
