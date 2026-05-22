@@ -810,6 +810,43 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
 
         return os.path.join(folder, stem)
 
+    def _auto_crop_common_intersection(self, fixed_data, aligned_data, fixed_img=None, aligned_img=None):
+        """
+        Crop fixed and aligned cubes to the valid common intersection.
+        The aligned cube contains zero-padding after warpAffine/warpPerspective,
+        so we use non-zero aligned pixels as the valid registration footprint.
+        """
+        if fixed_data is None or aligned_data is None:
+            raise ValueError("Fixed or aligned cube is missing.")
+
+        h = min(fixed_data.shape[0], aligned_data.shape[0])
+        w = min(fixed_data.shape[1], aligned_data.shape[1])
+
+        fixed_data = fixed_data[:h, :w, :]
+        aligned_data = aligned_data[:h, :w, :]
+
+        if fixed_img is not None:
+            fixed_img = fixed_img[:h, :w]
+        if aligned_img is not None:
+            aligned_img = aligned_img[:h, :w]
+
+        valid_aligned = np.any(aligned_data != 0, axis=2)
+
+        ys, xs = np.where(valid_aligned)
+        if ys.size == 0 or xs.size == 0:
+            raise ValueError("No valid common intersection found after registration.")
+
+        y0, y1 = int(ys.min()), int(ys.max()) + 1
+        x0, x1 = int(xs.min()), int(xs.max()) + 1
+
+        fixed_crop = fixed_data[y0:y1, x0:x1, :]
+        aligned_crop = aligned_data[y0:y1, x0:x1, :]
+
+        fixed_img_crop = fixed_img[y0:y1, x0:x1] if fixed_img is not None else None
+        aligned_img_crop = aligned_img[y0:y1, x0:x1] if aligned_img is not None else None
+
+        return fixed_crop, aligned_crop, fixed_img_crop, aligned_img_crop, [x0, y0, x1 - x0, y1 - y0]
+
     def save_cube_with_options(self, opts):
         """
         Sauvegarde les cubes et images selon le dict opts retourné par SaveWindow.get_options().
@@ -819,6 +856,12 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
         save_both = opts['save_both']
 
         flag_save_aligned=False #to follow if parent cube
+
+        mini_fixed_cube = Hypercube(data=self.fixed_cube.data, metadata=self.fixed_cube.cube_info.metadata_temp,
+                                    wl=self.fixed_cube.wl, cube_info=self.fixed_cube.cube_info)
+        mini_align_cube = Hypercube(data=self.moving_cube.data, wl=self.moving_cube.wl,
+                                    metadata=self.moving_cube.cube_info.metadata_temp,
+                                    cube_info=self.moving_cube.cube_info)
 
         if opts['crop_cube']:
 
@@ -862,11 +905,34 @@ class RegistrationApp(QMainWindow, Ui_MainWindow):
                 elif msg_box.clickedButton() == only_aligned:
                     save_both=False
 
-        print(f"save both : {save_both}")
+        elif opts.get('force_same_dimensions', False):
+            try:
+                (
+                    mini_fixed_cube.data,
+                    mini_align_cube.data,
+                    fixed_img,
+                    aligned_img,
+                    auto_position
+                ) = self._auto_crop_common_intersection(
+                    self.fixed_cube.data,
+                    self.aligned_cube.data,
+                    self.fixed_img,
+                    self.aligned_img
+                )
 
-        mini_fixed_cube = Hypercube(data=self.fixed_cube.data,metadata=self.fixed_cube.cube_info.metadata_temp, wl=self.fixed_cube.wl, cube_info=self.fixed_cube.cube_info)
-        mini_align_cube = Hypercube(data=self.moving_cube.data, wl=self.moving_cube.wl,metadata=self.moving_cube.cube_info.metadata_temp,
-                                    cube_info=self.moving_cube.cube_info)
+                mini_fixed_cube.cube_info.metadata_temp['position'] = auto_position
+                mini_align_cube.cube_info.metadata_temp['position'] = auto_position
+
+                mini_fixed_cube.cube_info.metadata_temp['auto_crop'] = "force_same_dimensions"
+                mini_align_cube.cube_info.metadata_temp['auto_crop'] = "force_same_dimensions"
+
+            except Exception as e:
+                QMessageBox.warning(
+                    self,
+                    "Auto crop failed",
+                    f"Could not force same dimensions:\n{e}"
+                )
+                return
 
         # 1) Choix des noms de fichier
         src_aligned = getattr(self.aligned_cube.cube_info, "filepath", None) or getattr(self.moving_cube.cube_info,
@@ -1255,6 +1321,10 @@ class SaveWindow(QDialog, Ui_Save_Window):
         # ----------------------------
         # Tooltips (Save dialog)
         # ----------------------------
+        self.checkBox_force_same_dimensions.setToolTip(
+            "Automatically crop fixed and registered cubes to their common valid intersection."
+        )
+
         self.comboBox_cube_format.setToolTip(
             "Cube format\n"
             "Choose the output cube format: MATLAB / HDF5 / ENVI (as provided by your Hypercube save backend)."
@@ -1313,6 +1383,7 @@ class SaveWindow(QDialog, Ui_Save_Window):
             'cube_format':   self.comboBox_cube_format.currentText(),
             'save_both':     self.radioButton_both_cube_save.isChecked(),
             'crop_cube':     self.checkBox_minicube_save.isChecked(),
+            'force_same_dimensions': self.checkBox_force_same_dimensions.isChecked(),
             'export_images': self.checkBox_export_images.isChecked(),
         }
         if opts['export_images']:

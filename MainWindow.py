@@ -22,7 +22,7 @@ import os
 
 APP_EDITION = os.environ.get("HYPERDOC_EDITION", "full").strip().lower()
 IS_LIGHT = (APP_EDITION == "light")
-IS_LIGHT=True # comment if full version
+IS_LIGHT=False # False if full version True if light version
 
 ## bloc non important warning
 import warnings
