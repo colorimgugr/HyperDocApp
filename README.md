@@ -2,6 +2,7 @@
 
 <img src="/interface/icons/hyperdoc_logo_transparente.ico" width="32" /> **Hyperdoc App** is a modular PyQt5-based application designed for loading, visualizing, registering, segmenting, classifying and unmixing hyperspectral cubes (VNIR, SWIR, or combined). It provides a unified graphical interface to handle all stages of hyperspectral data analysis with or without the Hyperdoc database.
 
+
 > **Open science notice**  
 > This project is source-available for academic, research, and educational use only.  
 > Commercial use is strictly prohibited.
@@ -9,6 +10,8 @@
 You will find here the scientific publications related to the Hyperdoc project:
 https://colorimaginglab.ugr.es/pages/hyperdoc/publications
 
+> **🎥 Video Tutorials**  
+> Watch step-by-step video tutorials for HyperdocApp here: [HyperdocApp tutorials](https://youtube.com/playlist?list=PLZ3I2ygGBU3Jcj_D8jwjva1HvlTM514KF&si=8Cizrt1jmEF74hPN)
 
 ---
 
@@ -31,12 +34,16 @@ https://colorimaginglab.ugr.es/pages/hyperdoc/publications
 <a id="launching"></a>
 ## 🧑‍💻 Launching the Application and Overview
 
-**(Add link to video)**
+The application is available in two versions:
+- **Full version**: includes all tools (~3.1 GB)  
+- **Light version**: excludes the Identification and Unmixing tools (~228 MB)
 
 The simplest way for windows : 
-- Dowload the .zip file at this adress : **(Add link to formulario de descarga)**
+- To download the .zip file, please fill in the following form:  [Link to download form](https://docs.google.com/forms/u/1/d/1Gga7ZenYweVdifhYfSwW6Ro48kt7LjFG3XKhPcctLyc/edit?usp=drivesdk)
 - Extract it on your disk
-- Lauch the .exe file
+- Launch the .exe file
+
+*🎥 Video Tutorial*  : [App Overview tutorial](https://youtu.be/pOmTUfG_FhA?si=RBBLrxPrjgulqC7G)
 
 For MAC or Linux users, they will have to use python to run the application. 
 You may try to copy/paste these lines and adapt them to your OS if needed : 
@@ -116,6 +123,8 @@ and `metadata` as standard MATLAB variables before saving.
 
 **Purpose:** Select and extract smaller subcubes (regions of interest) from a full hyperspectral cube.
 
+*🎥 Video Tutorial*  : [Minicube and Calibration tutorial](https://youtu.be/s-0yh1Xtdw0?si=Z64Jf5GDwjltytKM)
+
 ### Steps
 1. Load a cube.
 2. Adjust RGB or grayscale visualization.
@@ -129,6 +138,8 @@ and `metadata` as standard MATLAB variables before saving.
 
 **Purpose:** Display hyperspectral cubes and explore their spectral or spatial properties.
 
+*🎥 Video Tutorial*  : [Visualization tutorial](https://youtu.be/JSaTjEa1goE?si=BHYJ4UJVUpXRvySY)
+
 ### Key Functions
 - Load VNIR/SWIR cubes (auto-detect pairs).
 - Display RGB composites or grayscale.
@@ -140,6 +151,8 @@ and `metadata` as standard MATLAB variables before saving.
 ## <img src="/interface/icons/registration_icon.svg" width="32" /> 3. Registration Tool
 
 **Purpose:** Align two hyperspectral cubes (e.g., VNIR and SWIR) spatially.
+
+*🎥 Video Tutorial*  : [Image registration tutorial](https://youtu.be/X2J7KJFD_AU?si=QBDqeX9gu17honHa)
 
 ### Steps
 1. Load a **Fixed Cube** and a **Moving Cube**.
@@ -160,6 +173,8 @@ and `metadata` as standard MATLAB variables before saving.
 
 **Purpose:** Create or edit pixel-level classification maps used for supervised training.
 
+*🎥 Video Tutorial*  : [Ground Truth tutorial](https://youtu.be/NBPDC7kSdOI?si=sUx21ki5ykXvZe1I)
+
 ### Key Functions
 - Define number of classes (`nclass_box`).
 - Draw or erase regions directly on the image.
@@ -173,6 +188,8 @@ and `metadata` as standard MATLAB variables before saving.
 
 **Purpose:** Inspect, edit, and generate metadata for a loaded cube.
 
+*🎥 Video Tutorial*  : [File browser, Metadata and Illumination tools tutorial](https://youtu.be/apza9H2ZtPA?si=MXSXPjEDqY3P7Q7K)
+
 ### Key Functions
 - Enable **Edit Mode** to modify values.
 - Validate changes with **Validate** or **Validate All**.
@@ -181,11 +198,11 @@ and `metadata` as standard MATLAB variables before saving.
 
 ---
 
-
 ## <img src="/interface/icons/Ident_icon.png" width="32" /> 6. Identification Tool
 
 **Purpose:** Perform spectral classification using trained machine learning models.
 
+*🎥 Video Tutorial*  : [Material Identification tutorial](https://youtu.be/wp2bC3D8nZU?si=AKli4TgM8JvSNMyL)
 
 ### Steps
 - Load VNIR + SWIR cubes (fused) using the VNIR/SWIR dialog.
@@ -219,6 +236,8 @@ The **Unmixing Tool** estimates **per-pixel abundance maps** by decomposing each
 Endmembers can originate from hyperspectral data (**VNIR / SWIR**), spectral libraries, or **external spectroscopic sources such as FTIR**.
 
 The tool is designed for exploratory analysis, material mapping, and comparison of different unmixing strategies on hyperspectral cubes.
+
+*🎥 Video Tutorial*  : [Spectral unmixing tutorial](https://youtu.be/7-ncbJq7TFw?si=7-TeKa4XylVqb9_X)
 
 ### Key Features
 - Unmixing of VNIR, SWIR, or fused VNIR+SWIR hyperspectral cubes and FTIR specra.
@@ -275,6 +294,8 @@ The tool is designed for exploratory analysis, material mapping, and comparison 
 
 **Purpose:** Convert reflectance cubes to RGB appearance under chosen illuminants.
 
+*🎥 Video Tutorial*  : [File browser, Metadata and Illumination tools tutorial](https://youtu.be/apza9H2ZtPA?si=MXSXPjEDqY3P7Q7K)
+
 ### Steps
 1. Load a reflectance cube (covering 400–780 nm).
 2. Choose an illuminant (e.g., D65, A, F2, etc.).
@@ -288,6 +309,8 @@ The tool is designed for exploratory analysis, material mapping, and comparison 
 
 **Purpose:** Inspect unknown HDF5 or MATLAB files and manually select the paths for data, wavelengths, and metadata.
 
+*🎥 Video Tutorial*  : [File browser, Metadata and Illumination tools tutorial](https://youtu.be/apza9H2ZtPA?si=MXSXPjEDqY3P7Q7K)
+
 ### Steps
 1. Open the **File Browser** dock.
 2. Explore file tree structure.
@@ -299,6 +322,8 @@ The tool is designed for exploratory analysis, material mapping, and comparison 
 ## ⚪ 10. White Calibration Window
 
 **Purpose:** Perform white reference calibration to convert raw data to reflectance.
+
+*🎥 Video Tutorial*  : [Minicube and Calibration tutorial](https://youtu.be/s-0yh1Xtdw0?si=Z64Jf5GDwjltytKM)
 
 ### Options
 - Load white capture image.
