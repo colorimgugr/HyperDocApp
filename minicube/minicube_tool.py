@@ -122,10 +122,10 @@ class MiniCubeTool(QWidget, Ui_Form):
 
         # Choix des canaux par défaut
         if self.wl[-1] < 1100 and not self.wl[0] > 435:
-            self.hyps_rgb_chan_DEFAULT = [610, 540, 435]
+            self.hyps_rgb_chan_DEFAULT = [435, 540, 610]
             self.range='-VNIR-'
         elif self.wl[-1] >= 1100 and not self.wl[0]> 1005:
-            self.hyps_rgb_chan_DEFAULT = [1605, 1205, 1005]
+            self.hyps_rgb_chan_DEFAULT = [1005, 1205, 1605]
             self.range = '-SWIR-'
         else:
             mid = int(len(self.wl) / 2)
