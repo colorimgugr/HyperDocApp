@@ -251,7 +251,7 @@ Loaded jobs are inserted into the job table and can be visualized like any other
          <enum>QTabWidget::North</enum>
         </property>
         <property name="currentIndex">
-         <number>0</number>
+         <number>1</number>
         </property>
         <widget class="QWidget" name="tab_endmembers">
          <attribute name="title">
@@ -300,7 +300,7 @@ Loaded jobs are inserted into the job table and can be visualized like any other
                <item>
                 <widget class="QLabel" name="label_n_EM">
                  <property name="toolTip">
-                  <string>  </string>
+                  <string/>
                  </property>
                  <property name="text">
                   <string># Endmembers:</string>
@@ -414,8 +414,8 @@ Assign a human-readable name to the selected class (used in legends, exports, an
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>408</width>
-                   <height>103</height>
+                   <width>414</width>
+                   <height>104</height>
                   </rect>
                  </property>
                  <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -491,8 +491,8 @@ Assign a human-readable name to the selected class (used in legends, exports, an
                   <rect>
                    <x>0</x>
                    <y>0</y>
-                   <width>408</width>
-                   <height>113</height>
+                   <width>98</width>
+                   <height>28</height>
                   </rect>
                  </property>
                  <layout class="QVBoxLayout" name="verticalLayout_4">
@@ -783,7 +783,7 @@ color: rgb(255, 255, 255);</string>
                </size>
               </property>
               <property name="toolTip">
-               <string>  </string>
+               <string/>
               </property>
               <property name="styleSheet">
                <string notr="true">background-color: rgb(0, 170, 0);</string>
@@ -805,7 +805,7 @@ color: rgb(255, 255, 255);</string>
                </size>
               </property>
               <property name="toolTip">
-               <string>  </string>
+               <string/>
               </property>
               <property name="text">
                <string>Normalisation :</string>
@@ -987,7 +987,12 @@ Upper bound on the number of iterations for iterative unmixing solvers. If set t
               </item>
               <item>
                <property name="text">
-                <string>Metric (cGFC)</string>
+                <string>Metric (cGFC) Additive</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Metric (cGFC) Subtractive</string>
                </property>
               </item>
               <item>

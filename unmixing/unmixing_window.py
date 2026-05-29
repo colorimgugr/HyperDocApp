@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'unmixing_window.ui'
+# Form implementation generated from reading ui file 'unmixing\unmixing_window.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.11
 #
@@ -129,6 +129,7 @@ class Ui_GroundTruthWidget(object):
         self.horizontalLayout_11 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_11.setObjectName("horizontalLayout_11")
         self.label_n_EM = QtWidgets.QLabel(self.frame_3)
+        self.label_n_EM.setToolTip("")
         self.label_n_EM.setObjectName("label_n_EM")
         self.horizontalLayout_11.addWidget(self.label_n_EM)
         self.nclass_box = QtWidgets.QSpinBox(self.frame_3)
@@ -171,7 +172,7 @@ class Ui_GroundTruthWidget(object):
         self.scrollArea.setWidgetResizable(True)
         self.scrollArea.setObjectName("scrollArea")
         self.scrollAreaWidgetContents = QtWidgets.QWidget()
-        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 408, 103))
+        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 414, 104))
         self.scrollAreaWidgetContents.setObjectName("scrollAreaWidgetContents")
         self.verticalLayout_2 = QtWidgets.QVBoxLayout(self.scrollAreaWidgetContents)
         self.verticalLayout_2.setObjectName("verticalLayout_2")
@@ -205,7 +206,7 @@ class Ui_GroundTruthWidget(object):
         self.scrollArea_2.setWidgetResizable(True)
         self.scrollArea_2.setObjectName("scrollArea_2")
         self.scrollAreaWidgetContents_2 = QtWidgets.QWidget()
-        self.scrollAreaWidgetContents_2.setGeometry(QtCore.QRect(0, 0, 408, 113))
+        self.scrollAreaWidgetContents_2.setGeometry(QtCore.QRect(0, 0, 98, 28))
         self.scrollAreaWidgetContents_2.setObjectName("scrollAreaWidgetContents_2")
         self.verticalLayout_4 = QtWidgets.QVBoxLayout(self.scrollAreaWidgetContents_2)
         self.verticalLayout_4.setObjectName("verticalLayout_4")
@@ -308,12 +309,14 @@ class Ui_GroundTruthWidget(object):
         self.label_EM_choose = QtWidgets.QLabel(self.tab)
         self.label_EM_choose.setMinimumSize(QtCore.QSize(100, 0))
         self.label_EM_choose.setMaximumSize(QtCore.QSize(16777215, 20))
+        self.label_EM_choose.setToolTip("")
         self.label_EM_choose.setStyleSheet("background-color: rgb(0, 170, 0);")
         self.label_EM_choose.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignTrailing|QtCore.Qt.AlignVCenter)
         self.label_EM_choose.setObjectName("label_EM_choose")
         self.gridLayout_3.addWidget(self.label_EM_choose, 1, 4, 1, 1)
         self.label_normalisation_unmix = QtWidgets.QLabel(self.tab)
         self.label_normalisation_unmix.setMaximumSize(QtCore.QSize(16777215, 20))
+        self.label_normalisation_unmix.setToolTip("")
         self.label_normalisation_unmix.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignTrailing|QtCore.Qt.AlignVCenter)
         self.label_normalisation_unmix.setObjectName("label_normalisation_unmix")
         self.gridLayout_3.addWidget(self.label_normalisation_unmix, 3, 4, 1, 1)
@@ -380,6 +383,7 @@ class Ui_GroundTruthWidget(object):
         self.gridLayout_3.addWidget(self.label_unmix_algorithm_choice, 3, 1, 1, 1)
         self.comboBox_unmix_algorithm = QtWidgets.QComboBox(self.tab)
         self.comboBox_unmix_algorithm.setObjectName("comboBox_unmix_algorithm")
+        self.comboBox_unmix_algorithm.addItem("")
         self.comboBox_unmix_algorithm.addItem("")
         self.comboBox_unmix_algorithm.addItem("")
         self.comboBox_unmix_algorithm.addItem("")
@@ -770,7 +774,7 @@ class Ui_GroundTruthWidget(object):
         self.verticalLayout.setStretch(1, 6)
 
         self.retranslateUi(GroundTruthWidget)
-        self.tabWidget.setCurrentIndex(0)
+        self.tabWidget.setCurrentIndex(1)
         self.stackedWidget.setCurrentIndex(0)
         self.stackedWidget_3.setCurrentIndex(0)
         self.stackedWidget_4.setCurrentIndex(0)
@@ -811,7 +815,6 @@ class Ui_GroundTruthWidget(object):
         self.comboBox_endmembers_get.setItemText(0, _translate("GroundTruthWidget", "From library"))
         self.comboBox_endmembers_get.setItemText(1, _translate("GroundTruthWidget", "Manual"))
         self.comboBox_endmembers_get.setItemText(2, _translate("GroundTruthWidget", "Auto"))
-        self.label_n_EM.setToolTip(_translate("GroundTruthWidget", "  "))
         self.label_n_EM.setText(_translate("GroundTruthWidget", "# Endmembers:"))
         self.nclass_box.setToolTip(_translate("GroundTruthWidget", "<html><head/><body><p>Number of classes</p><p>Sets how many endmember classes you manage in the current source (Manual/Auto/Library).</p></body></html>"))
         self.pushButton_class_name_assign.setToolTip(_translate("GroundTruthWidget", "Rename class\n"
@@ -893,9 +896,7 @@ class Ui_GroundTruthWidget(object):
         self.comboBox_endmembers_use_for_unmixing.setItemText(0, _translate("GroundTruthWidget", "From library"))
         self.comboBox_endmembers_use_for_unmixing.setItemText(1, _translate("GroundTruthWidget", "Manual"))
         self.comboBox_endmembers_use_for_unmixing.setItemText(2, _translate("GroundTruthWidget", "Auto"))
-        self.label_EM_choose.setToolTip(_translate("GroundTruthWidget", "  "))
         self.label_EM_choose.setText(_translate("GroundTruthWidget", "<html><head/><body><p><span style=\" font-weight:600; text-decoration: underline; color:#ffffff;\">ENDMEMBERS SOURCES :</span></p></body></html>"))
-        self.label_normalisation_unmix.setToolTip(_translate("GroundTruthWidget", "  "))
         self.label_normalisation_unmix.setText(_translate("GroundTruthWidget", "Normalisation :"))
         self.comboBox_normalisation_unmix.setToolTip(_translate("GroundTruthWidget", "<html><head/><body><p>Spectral normalization</p><p>Select how spectra are normalized before unmixing.</p><p>• L2 (Euclidean)</p><p>Each spectrum is normalized by its L2 norm</p><p>(square root of the sum of squared values).</p><p>Preserves spectral shape while reducing sensitivity to absolute intensity.</p><p>Common default for least-squares-based methods.</p><p><br/></p><p>• L1 (Sum = 1)</p><p>Each spectrum is normalized so that the sum of its values equals 1.</p><p>Emphasizes relative band contributions.</p><p>Often used when comparing proportions or compositional spectra.</p><p>• None</p><p>No normalization is applied.</p><p>Use only if spectra are already calibrated and comparable in magnitude.<br/></p></body></html>"))
         self.comboBox_normalisation_unmix.setItemText(0, _translate("GroundTruthWidget", "L2 (Euclidean)"))
@@ -916,8 +917,9 @@ class Ui_GroundTruthWidget(object):
         self.comboBox_unmix_algorithm.setItemText(0, _translate("GroundTruthWidget", "UCLS"))
         self.comboBox_unmix_algorithm.setItemText(1, _translate("GroundTruthWidget", "NNLS"))
         self.comboBox_unmix_algorithm.setItemText(2, _translate("GroundTruthWidget", "FCLS"))
-        self.comboBox_unmix_algorithm.setItemText(3, _translate("GroundTruthWidget", "Metric (cGFC)"))
-        self.comboBox_unmix_algorithm.setItemText(4, _translate("GroundTruthWidget", "SUnSAL"))
+        self.comboBox_unmix_algorithm.setItemText(3, _translate("GroundTruthWidget", "Metric (cGFC) Additive"))
+        self.comboBox_unmix_algorithm.setItemText(4, _translate("GroundTruthWidget", "Metric (cGFC) Subtractive"))
+        self.comboBox_unmix_algorithm.setItemText(5, _translate("GroundTruthWidget", "SUnSAL"))
         self.pushButton_add_queue_unmixing.setToolTip(_translate("GroundTruthWidget", "Add job to queue\n"
 "\n"
 "Create an unmixing job using:\n"
@@ -1092,13 +1094,3 @@ class Ui_GroundTruthWidget(object):
         self.tabWidget_Image.setTabText(self.tabWidget_Image.indexOf(self.tab_2), _translate("GroundTruthWidget", "Spectra"))
         self.label_viewer_left.setText(_translate("GroundTruthWidget", "Cube False RGB"))
         self.label_viewer_right.setText(_translate("GroundTruthWidget", "Results Vizualisation"))
-
-
-if __name__ == "__main__":
-    import sys
-    app = QtWidgets.QApplication(sys.argv)
-    GroundTruthWidget = QtWidgets.QWidget()
-    ui = Ui_GroundTruthWidget()
-    ui.setupUi(GroundTruthWidget)
-    GroundTruthWidget.show()
-    sys.exit(app.exec_())

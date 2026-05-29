@@ -1408,7 +1408,7 @@ class UnmixWorker(QRunnable):
                         max_iter=self.job.max_iter,
                         tol=self.job.tol,
                     )
-                elif self.job.model in {"Metric (cGFC)","METRIC (CGFC)"}:
+                elif self.job.model in {"Metric (cGFC) Additive","METRIC (CGFC) ADDITIVE"}:
 
                     # A_sub = unmix_metric(
                     #     E, Y_sub,
@@ -1423,6 +1423,28 @@ class UnmixWorker(QRunnable):
                     A_sub = unmix_metric_scipy(
                         E, Y_sub,
                         metric="cGFC",
+                        model="additive",
+                        anc=self.job.anc,
+                        asc=self.job.asc,
+                        max_iter=self.job.max_iter,
+                        tol=self.job.tol,
+                    )
+                elif self.job.model in {"Metric (cGFC) Subtractive","METRIC (CGFC) SUBTRACTIVE"}:
+
+                    # A_sub = unmix_metric(
+                    #     E, Y_sub,
+                    #     metric="cGFC",
+                    #     anc=self.job.anc,
+                    #     asc=self.job.asc,
+                    #     max_iter=self.job.max_iter,
+                    #     step=1e-2,
+                    #     tol=self.job.tol,
+                    # )
+
+                    A_sub = unmix_metric_scipy(
+                        E, Y_sub,
+                        metric="cGFC",
+                        model="subtractive",
                         anc=self.job.anc,
                         asc=self.job.asc,
                         max_iter=self.job.max_iter,
@@ -2005,9 +2027,9 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
     def default_rgb_channels(self):
         """Renvoie les canaux RGB par défaut selon plage spectrale"""
         if self.wl[0] <= 435 and self.wl[-1]>=610 :
-            return [610, 540, 435]
+            return [435, 540, 610]
         elif self.wl[-1] >= 1100 and self.wl[0] > 800:
-            return [1605, 1205, 1005]
+            return [1005, 1205, 1605]
         else:
             if len(self.wl) > 7:
                 sixieme = len(self.wl) // 6
@@ -2104,7 +2126,20 @@ class UnmixingTool(QWidget,Ui_GroundTruthWidget):
                 for w in (lam3, lam2, lam4, maxit):
                     w.setEnabled(True)
 
-            elif algo == 'METRIC (CGFC)':
+            elif algo == 'METRIC (CGFC) ADDITIVE':
+                self.stackedWidget_3.setCurrentIndex(0)
+                self.stackedWidget_4.setCurrentIndex(1)
+
+                anc.setEnabled(True)
+                asc.setEnabled(True)
+                mrg.setEnabled(True)
+
+                for w in (lam3, lam4):
+                    w.setEnabled(False)
+                for w in (lam2, maxit):
+                    w.setEnabled(True)
+
+            elif algo == 'METRIC (CGFC) SUBTRACTIVE':
                 self.stackedWidget_3.setCurrentIndex(0)
                 self.stackedWidget_4.setCurrentIndex(1)
 

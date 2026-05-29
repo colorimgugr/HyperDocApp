@@ -606,6 +606,7 @@ def _metric_cost_grad(E: np.ndarray,
                       y: np.ndarray,
                       a: np.ndarray,
                       metric: str = "cGFC",
+                      model: str = "additive",
                       eps: float = 1e-12) -> tuple[float, np.ndarray]:
     """
     Calcule (cost, grad) pour une métrique donnée.
@@ -624,7 +625,15 @@ def _metric_cost_grad(E: np.ndarray,
     if y.shape[0] != L:
         raise ValueError("E and y must have consistent number of bands")
 
-    z = E @ a  # (L,)
+    if model.lower() == "additive":
+        z = E @ a  # (L,)
+    elif model.lower() == "subtractive":
+        eps = 1e-12
+        E_safe = np.clip(E,eps,None)
+        z = np.exp((np.log(E_safe) @ a))
+    else:
+        raise ValueError(f"Unknown model: {model}")
+
 
     m = (metric or "cGFC").lower()
 
@@ -696,7 +705,7 @@ def _unmix_metric_pg_single(E: np.ndarray,
     last_cost = None
 
     for it in range(max_iter):
-        cost, grad = _metric_cost_grad(E, y, a, metric=metric)
+        cost, grad = _metric_cost_grad(E, y, a, metric=metric, model=model)
 
         # étape de descente
         a_new = a - step * grad
@@ -761,6 +770,7 @@ def unmix_metric(E: np.ndarray,
 def _unmix_metric_scipy_single(E: np.ndarray,
                                y: np.ndarray,
                                metric: str = "cGFC",
+                               model: str = "additive",
                                anc: bool = True,
                                asc: bool = True,
                                max_iter: int = 500,
@@ -782,8 +792,17 @@ def _unmix_metric_scipy_single(E: np.ndarray,
     # --- fonction coût en utilisant tes métriques existantes ---
     def _cost(a: np.ndarray) -> float:
         # a: (p,)
-        z = E @ a
         m = (metric or "cGFC").lower()
+        mod = model.lower()
+        if mod == "additive":
+            z = E @ a
+        elif mod == "subtractive":
+            eps = 1e-12
+            E_safe = np.clip(E,eps,None)
+            z = np.exp((np.log(E_safe) @ a))
+        else:
+            raise ValueError(f"Unknown model: {model}")
+
         if m in ("mse", "ls", "l2"):
             return metric_mse(y, z)
         elif m == "cgfc":
@@ -840,6 +859,7 @@ def _unmix_metric_scipy_single(E: np.ndarray,
 def unmix_metric_scipy(E: np.ndarray,
                        Y: np.ndarray,
                        metric: str = "cGFC",
+                       model: str = "additive",
                        anc: bool = True,
                        asc: bool = True,
                        max_iter: int = 500,
@@ -866,6 +886,7 @@ def unmix_metric_scipy(E: np.ndarray,
         a_j = _unmix_metric_scipy_single(
             E, y,
             metric=metric,
+            model=model,
             anc=anc,
             asc=asc,
             max_iter=max_iter,
