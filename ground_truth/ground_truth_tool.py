@@ -1615,9 +1615,9 @@ class GroundTruthWidget(QWidget, Ui_GroundTruthWidget):
         self.wl = self.cube.wl
 
         if self.wl[-1] < 1100 and self.wl[0] > 350:
-            self.hyps_rgb_chan_DEFAULT = [610, 540, 435]
+            self.hyps_rgb_chan_DEFAULT = [435, 540, 610]
         elif self.wl[-1] >= 1100:
-            self.hyps_rgb_chan_DEFAULT = [1605, 1205, 1005]
+            self.hyps_rgb_chan_DEFAULT = [1005, 1205, 1605]
         else:
             mid = int(len(self.wl) / 2)
             self.hyps_rgb_chan_DEFAULT = [self.wl[0], self.wl[mid], self.wl[-1]]
