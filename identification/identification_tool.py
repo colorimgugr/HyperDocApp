@@ -1132,9 +1132,9 @@ class IdentificationWidget(QWidget, Ui_IdentificationWidget):
     def default_rgb_channels(self):
         """Renvoie les canaux RGB par défaut selon plage spectrale"""
         if self.wl[-1] < 1100 and self.wl[0] > 350:
-            return [610, 540, 435]
+            return [435, 540, 610]
         elif self.wl[-1] >= 1100 and self.wl[0] > 800:
-            return [1605, 1205, 1005]
+            return [1005, 1205, 1605]
         else:
             if len(self.wl)>7:
                 sixieme=len(self.wl) // 6
