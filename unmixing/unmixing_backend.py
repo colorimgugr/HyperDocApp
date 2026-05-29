@@ -593,7 +593,6 @@ def metric_cgfc(y: np.ndarray, y_hat: np.ndarray, eps: float = 1e-12) -> float:
     gfc = num / (ny * nyh)
     return 1.0 - gfc
 
-
 def metric_mse(y: np.ndarray, y_hat: np.ndarray) -> float:
     """
     MSE(y, y_hat) = mean((y - y_hat)^2).
